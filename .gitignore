@@ -1,0 +1,9 @@
+# Product photos and logo source files
+pictures/
+logo/
+website/images/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
