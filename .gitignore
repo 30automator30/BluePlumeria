@@ -1,7 +1,6 @@
 # Product photos and logo source files
 pictures/
 logo/
-docs/images/
 
 # OS files
 .DS_Store
