@@ -3,13 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Studio Collection — Blue Plumeria</title>
+  <title>The Collection — Blue Plumeria</title>
   <meta name="description" content="Browse the Blue Plumeria Studio Series — limited small-batch earrings, necklaces, and bracelets. Each piece handcrafted with natural stones, crystals, and copper.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+  <!-- Social sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Collection — Blue Plumeria">
+  <meta property="og:description" content="Twenty one-of-a-kind pieces, handcrafted in natural stones, crystals, and copper.">
+  <meta property="og:image" content="images/silver_black_1.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Collection — Blue Plumeria">
+  <meta name="twitter:description" content="Twenty one-of-a-kind pieces, handcrafted in natural stones, crystals, and copper.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="preconnect" href="https://app.snipcart.com">
-  <link rel="stylesheet" href="https://cdn.snipcart.com/themes/v3.7.1/default/snipcart.css">
+  <link rel="preconnect" href="https://cdn.snipcart.com">
+  <noscript><style>.reveal{opacity:1 !important;transform:none !important}</style></noscript>
 </head>
 <body>
+
+  <a href="#main-content" class="skip-link">Skip to content</a>
 
   <!-- ── Header ── -->
   <header class="site-header">
@@ -36,10 +53,12 @@
     </div>
   </nav>
 
+  <main id="main-content">
+
   <!-- ── Shop Header ── -->
   <section class="shop-header">
-    <h1>Studio Collection</h1>
-    <p class="product-count">7 limited pieces</p>
+    <h1>The Collection</h1>
+    <p class="product-count">20 one-of-a-kind pieces</p>
   </section>
 
   <!-- Filter bar hidden until more products are photographed
@@ -53,203 +72,604 @@
   </div>
   -->
 
-  <!-- ── Featured Showcase ── -->
+  <!-- ── Featured Collection (13 heroes, worn + detail) ── -->
   <section class="showcase-section section-padding">
     <div class="container">
-      <h2 class="section-heading">New Studio Pieces</h2>
+      <h2 class="section-heading reveal">Featured Collection</h2>
 
-      <!-- Silver Plumeria Earrings -->
-      <div class="showcase-set">
-        <p class="showcase-label">Signature Piece</p>
-        <h3 class="showcase-name">Silver Plumeria Drop Earrings</h3>
-        <p class="showcase-price">$80</p>
-        <div class="showcase-slider" data-slider>
-          <img src="images/Silver_plumeria_1.png" alt="Silver Plumeria Drop Earrings — product" class="active">
-          <img src="images/Silver_plumeria_2.png" alt="Silver Plumeria Drop Earrings — worn">
-          <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
-          <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+      <!-- 1. Blue Lapis, Sodalite & Quartz Necklace -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-n-004-worn.jpg" alt="Blue Lapis, Sodalite &amp; Quartz Necklace — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-n-004-detail.jpg" alt="Blue Lapis, Sodalite &amp; Quartz Necklace — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
         </div>
-        <div class="slider-dots">
-          <button class="slider-dot active" aria-label="Slide 1"></button>
-          <button class="slider-dot" aria-label="Slide 2"></button>
-        </div>
-        <div class="showcase-cta">
-          <button class="snipcart-add-item btn btn-primary"
-            data-item-id="studio-silver-plumeria"
-            data-item-name="Silver Plumeria Drop Earrings"
-            data-item-price="80.00"
-            data-item-url="/shop.html"
-            data-item-image="images/Silver_plumeria_1.png">
-            Add to Cart
-          </button>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Piece</span>
+          <h3 class="showcase-name">Blue Lapis, Sodalite &amp; Quartz Necklace</h3>
+          <p class="showcase-price">$150</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-N-004" data-item-name="Blue Lapis, Sodalite &amp; Quartz Necklace"
+              data-item-price="150.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-n-004-detail.jpg">Add to Cart</button>
+          </div>
         </div>
       </div>
 
-      <!-- Noir Pearl & Silver Necklace -->
-      <div class="showcase-set">
-        <p class="showcase-label">Studio Series</p>
-        <h3 class="showcase-name">Noir Pearl &amp; Silver Statement Necklace</h3>
-        <p class="showcase-price">$85</p>
-        <div class="showcase-slider" data-slider>
-          <img src="images/silver_black_1.png" alt="Noir Pearl & Silver Statement Necklace — product" class="active">
-          <img src="images/silver_black_2.png" alt="Noir Pearl & Silver Statement Necklace — worn">
-          <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
-          <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+      <!-- 2. Blue Glass & Starfish Necklace -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-n-030-worn.jpg" alt="Blue Glass &amp; Starfish Necklace — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-n-030-detail.jpg" alt="Blue Glass &amp; Starfish Necklace — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
         </div>
-        <div class="slider-dots">
-          <button class="slider-dot active" aria-label="Slide 1"></button>
-          <button class="slider-dot" aria-label="Slide 2"></button>
-        </div>
-        <div class="showcase-cta">
-          <button class="snipcart-add-item btn btn-primary"
-            data-item-id="studio-noir-pearl-silver"
-            data-item-name="Noir Pearl & Silver Statement Necklace"
-            data-item-price="85.00"
-            data-item-url="/shop.html"
-            data-item-image="images/silver_black_1.png">
-            Add to Cart
-          </button>
-        </div>
-      </div>
-
-      <!-- Blue Ombre Bracelet -->
-      <div class="showcase-set">
-        <p class="showcase-label">Studio Series</p>
-        <h3 class="showcase-name">Blue Ombr&eacute; Crystal Bracelet</h3>
-        <p class="showcase-price">$45</p>
-        <div class="showcase-slider" data-slider>
-          <img src="images/blue_bracelet_1.png" alt="Blue Ombré Crystal Bracelet — product" class="active">
-          <img src="images/blue_bracelet_2.png" alt="Blue Ombré Crystal Bracelet — worn">
-          <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
-          <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
-        </div>
-        <div class="slider-dots">
-          <button class="slider-dot active" aria-label="Slide 1"></button>
-          <button class="slider-dot" aria-label="Slide 2"></button>
-        </div>
-        <div class="showcase-cta">
-          <button class="snipcart-add-item btn btn-primary"
-            data-item-id="studio-blue-ombre-bracelet"
-            data-item-name="Blue Ombré Crystal Bracelet"
-            data-item-price="45.00"
-            data-item-url="/shop.html"
-            data-item-image="images/blue_bracelet_1.png">
-            Add to Cart
-          </button>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series</span>
+          <h3 class="showcase-name">Blue Glass &amp; Starfish Necklace</h3>
+          <p class="showcase-price">$55</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-N-030" data-item-name="Blue Glass &amp; Starfish Necklace"
+              data-item-price="55.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-n-030-detail.jpg">Add to Cart</button>
+          </div>
         </div>
       </div>
 
-      <!-- Blue Sodalite -->
-      <div class="showcase-set">
-        <p class="showcase-label">Studio Series</p>
-        <h3 class="showcase-name">Blue Sodalite &amp; Pearl Necklace</h3>
-        <p class="showcase-price">$55</p>
-        <div class="showcase-slider" data-slider>
-          <img src="images/blue_sodalite_1.png" alt="Blue Sodalite & Pearl Necklace — product" class="active">
-          <img src="images/blue_sodalite_2.png" alt="Blue Sodalite & Pearl Necklace — worn">
-          <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
-          <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+      <!-- 3. Emerald Crystal & Glass Pearl Earrings -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-e-011-worn.jpg" alt="Emerald Crystal &amp; Glass Pearl Earrings — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-e-011-detail.jpg" alt="Emerald Crystal &amp; Glass Pearl Earrings — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
         </div>
-        <div class="slider-dots">
-          <button class="slider-dot active" aria-label="Slide 1"></button>
-          <button class="slider-dot" aria-label="Slide 2"></button>
-        </div>
-        <div class="showcase-cta">
-          <button class="snipcart-add-item btn btn-primary"
-            data-item-id="studio-blue-sodalite"
-            data-item-name="Blue Sodalite & Pearl Necklace"
-            data-item-price="55.00"
-            data-item-url="/shop.html"
-            data-item-image="images/blue_sodalite_1.png">
-            Add to Cart
-          </button>
-        </div>
-      </div>
-
-      <!-- Lava Stone -->
-      <div class="showcase-set">
-        <p class="showcase-label">Studio Series</p>
-        <h3 class="showcase-name">Lava Stone &amp; Gold Statement Necklace</h3>
-        <p class="showcase-price">$65</p>
-        <div class="showcase-slider" data-slider>
-          <img src="images/LavaStone_1.png" alt="Lava Stone & Gold Statement Necklace — product" class="active">
-          <img src="images/LavaStone_2.png" alt="Lava Stone & Gold Statement Necklace — worn">
-          <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
-          <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
-        </div>
-        <div class="slider-dots">
-          <button class="slider-dot active" aria-label="Slide 1"></button>
-          <button class="slider-dot" aria-label="Slide 2"></button>
-        </div>
-        <div class="showcase-cta">
-          <button class="snipcart-add-item btn btn-primary"
-            data-item-id="studio-lava-stone"
-            data-item-name="Lava Stone & Gold Statement Necklace"
-            data-item-price="65.00"
-            data-item-url="/shop.html"
-            data-item-image="images/LavaStone_1.png">
-            Add to Cart
-          </button>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series</span>
+          <h3 class="showcase-name">Emerald Crystal &amp; Glass Pearl Earrings</h3>
+          <p class="showcase-price">$38</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-E-011" data-item-name="Emerald Crystal &amp; Glass Pearl Earrings"
+              data-item-price="38.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-e-011-detail.jpg">Add to Cart</button>
+          </div>
         </div>
       </div>
 
-      <!-- Jade -->
-      <div class="showcase-set">
-        <p class="showcase-label">Studio Series</p>
-        <h3 class="showcase-name">Jade &amp; Gold Chain Necklace</h3>
-        <p class="showcase-price">$50</p>
-        <div class="showcase-slider" data-slider>
-          <img src="images/jade_1.png" alt="Jade & Gold Chain Necklace — product" class="active">
-          <img src="images/Jade_2.png" alt="Jade & Gold Chain Necklace — worn">
-          <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
-          <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+      <!-- 4. Shells, Howlite & Tiger's Eye Necklace -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-n-010-worn.jpg" alt="Shells, Howlite &amp; Tiger's Eye Necklace — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-n-010-detail.jpg" alt="Shells, Howlite &amp; Tiger's Eye Necklace — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
         </div>
-        <div class="slider-dots">
-          <button class="slider-dot active" aria-label="Slide 1"></button>
-          <button class="slider-dot" aria-label="Slide 2"></button>
-        </div>
-        <div class="showcase-cta">
-          <button class="snipcart-add-item btn btn-primary"
-            data-item-id="studio-jade-gold"
-            data-item-name="Jade & Gold Chain Necklace"
-            data-item-price="50.00"
-            data-item-url="/shop.html"
-            data-item-image="images/jade_1.png">
-            Add to Cart
-          </button>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series</span>
+          <h3 class="showcase-name">Shells, Howlite &amp; Tiger's Eye Necklace</h3>
+          <p class="showcase-price">$65</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-N-010" data-item-name="Shells, Howlite &amp; Tiger's Eye Necklace"
+              data-item-price="65.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-n-010-detail.jpg">Add to Cart</button>
+          </div>
         </div>
       </div>
 
-      <!-- Yellow & White -->
-      <div class="showcase-set">
-        <p class="showcase-label">Studio Series</p>
-        <h3 class="showcase-name">Honey &amp; Frost Glass Necklace</h3>
-        <p class="showcase-price">$45</p>
-        <div class="showcase-slider" data-slider>
-          <img src="images/yellow_white_1.png" alt="Honey & Frost Glass Necklace — worn" class="active">
-          <img src="images/yellow_white_2.png" alt="Honey & Frost Glass Necklace — product">
-          <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
-          <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+      <!-- 5. Onyx, Druzy, Gold & Pearl Necklace -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-n-042-worn.jpg" alt="Onyx, Druzy, Gold &amp; Pearl Necklace — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-n-042-detail.jpg" alt="Onyx, Druzy, Gold &amp; Pearl Necklace — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
         </div>
-        <div class="slider-dots">
-          <button class="slider-dot active" aria-label="Slide 1"></button>
-          <button class="slider-dot" aria-label="Slide 2"></button>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series</span>
+          <h3 class="showcase-name">Onyx, Druzy, Gold &amp; Pearl Necklace</h3>
+          <p class="showcase-price">$70</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-N-042" data-item-name="Onyx, Druzy, Gold &amp; Pearl Necklace"
+              data-item-price="70.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-n-042-detail.jpg">Add to Cart</button>
+          </div>
         </div>
-        <div class="showcase-cta">
-          <button class="snipcart-add-item btn btn-primary"
-            data-item-id="studio-honey-frost"
-            data-item-name="Honey & Frost Glass Necklace"
-            data-item-price="45.00"
-            data-item-url="/shop.html"
-            data-item-image="images/yellow_white_1.png">
-            Add to Cart
-          </button>
+      </div>
+
+      <!-- 6. Cream Pearl & Shell Coil Bracelet -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-b-003-worn.jpg" alt="Cream Pearl &amp; Shell Coil Bracelet — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-b-003-detail.jpg" alt="Cream Pearl &amp; Shell Coil Bracelet — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series</span>
+          <h3 class="showcase-name">Cream Pearl &amp; Shell Coil Bracelet</h3>
+          <p class="showcase-price">$42</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-B-003" data-item-name="Cream Pearl &amp; Shell Coil Bracelet"
+              data-item-price="42.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-b-003-detail.jpg">Add to Cart</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Woven Aqua Rope Necklace -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-n-043-worn.jpg" alt="Woven Aqua Rope Necklace — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-n-043-detail.jpg" alt="Woven Aqua Rope Necklace — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series &middot; Bead-woven</span>
+          <h3 class="showcase-name">Woven Aqua Rope Necklace</h3>
+          <p class="showcase-price">$70</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-N-043" data-item-name="Woven Aqua Rope Necklace"
+              data-item-price="70.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-n-043-detail.jpg">Add to Cart</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. Woven Amethyst Stud Earrings -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-e-023-worn.jpg" alt="Woven Amethyst Stud Earrings — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-e-023-detail.jpg" alt="Woven Amethyst Stud Earrings — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series &middot; Bead-woven</span>
+          <h3 class="showcase-name">Woven Amethyst Stud Earrings</h3>
+          <p class="showcase-price">$35</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-E-023" data-item-name="Woven Amethyst Stud Earrings"
+              data-item-price="35.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-e-023-detail.jpg">Add to Cart</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 9. Blue Crystal & Porcelain Necklace -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-n-024-worn.jpg" alt="Blue Crystal &amp; Porcelain Necklace — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-n-024-detail.jpg" alt="Blue Crystal &amp; Porcelain Necklace — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series</span>
+          <h3 class="showcase-name">Blue Crystal &amp; Porcelain Necklace</h3>
+          <p class="showcase-price">$65</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-N-024" data-item-name="Blue Crystal &amp; Porcelain Necklace"
+              data-item-price="65.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-n-024-detail.jpg">Add to Cart</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 10. Rose Quartz, Grey Agate & Moonstone Necklace -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-n-044-worn.jpg" alt="Rose Quartz, Grey Agate &amp; Moonstone Necklace — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-n-044-detail.jpg" alt="Rose Quartz, Grey Agate &amp; Moonstone Necklace — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series</span>
+          <h3 class="showcase-name">Rose Quartz, Grey Agate &amp; Moonstone Necklace</h3>
+          <p class="showcase-price">$60</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-N-044" data-item-name="Rose Quartz, Grey Agate &amp; Moonstone Necklace"
+              data-item-price="60.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-n-044-detail.jpg">Add to Cart</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 11. Woven Pearl & Navy Cluster Earrings -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-e-042-worn.jpg" alt="Woven Pearl &amp; Navy Cluster Earrings — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-e-042-detail.jpg" alt="Woven Pearl &amp; Navy Cluster Earrings — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series &middot; Bead-woven</span>
+          <h3 class="showcase-name">Woven Pearl &amp; Navy Cluster Earrings</h3>
+          <p class="showcase-price">$38</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-E-042" data-item-name="Woven Pearl &amp; Navy Cluster Earrings"
+              data-item-price="38.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-e-042-detail.jpg">Add to Cart</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 12. Pale Blue Crystal Cube Necklace -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-n-012-worn.jpg" alt="Pale Blue Crystal Cube Necklace — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-n-012-detail.jpg" alt="Pale Blue Crystal Cube Necklace — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series</span>
+          <h3 class="showcase-name">Pale Blue Crystal Cube Necklace</h3>
+          <p class="showcase-price">$55</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-N-012" data-item-name="Pale Blue Crystal Cube Necklace"
+              data-item-price="55.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-n-012-detail.jpg">Add to Cart</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 13. Shell, Howlite & Pearl Bracelet -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/featured/bp-b-006-worn.jpg" alt="Shell, Howlite &amp; Pearl Bracelet — worn" class="active" loading="lazy">
+            <img src="images/featured/bp-b-006-detail.jpg" alt="Shell, Howlite &amp; Pearl Bracelet — detail" loading="lazy">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+          <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Series</span>
+          <h3 class="showcase-name">Shell, Howlite &amp; Pearl Bracelet</h3>
+          <p class="showcase-price">$42</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="BP-B-006" data-item-name="Shell, Howlite &amp; Pearl Bracelet"
+              data-item-price="42.00" data-item-url="/shop.html"
+              data-item-image="images/featured/bp-b-006-detail.jpg">Add to Cart</button>
+          </div>
         </div>
       </div>
 
     </div>
   </section>
 
+  <!-- ── Studio Editions (original 7) ── -->
+  <section class="showcase-section section-padding" style="background: var(--bone);">
+    <div class="container">
+      <h2 class="section-heading reveal">Studio Editions</h2>
+
+      <!-- Silver Plumeria Earrings -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/Silver_plumeria_2.png" alt="Silver Plumeria Drop Earrings — worn" class="active">
+            <img src="images/Silver_plumeria_1.png" alt="Silver Plumeria Drop Earrings — product">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Signature Piece</span>
+          <h3 class="showcase-name">Silver Plumeria Drop Earrings</h3>
+          <p class="showcase-price">$80</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="studio-silver-plumeria"
+              data-item-name="Silver Plumeria Drop Earrings"
+              data-item-price="80.00"
+              data-item-url="/shop.html"
+              data-item-image="images/Silver_plumeria_1.png">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Noir Pearl & Silver Necklace -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/silver_black_2.png" alt="Noir Pearl & Silver Statement Necklace — worn" class="active">
+            <img src="images/silver_black_1.png" alt="Noir Pearl & Silver Statement Necklace — product">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Studio Series</span>
+          <h3 class="showcase-name">Noir Pearl &amp; Silver Statement Necklace</h3>
+          <p class="showcase-price">$85</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="studio-noir-pearl-silver"
+              data-item-name="Noir Pearl & Silver Statement Necklace"
+              data-item-price="85.00"
+              data-item-url="/shop.html"
+              data-item-image="images/silver_black_1.png">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blue Ombre Necklace -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/blue_bracelet_2.png" alt="Blue Ombré Crystal Necklace — worn" class="active">
+            <img src="images/blue_bracelet_1.png" alt="Blue Ombré Crystal Necklace — product">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Studio Series</span>
+          <h3 class="showcase-name">Blue Ombr&eacute; Crystal Necklace</h3>
+          <p class="showcase-price">$55</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="studio-blue-ombre-necklace"
+              data-item-name="Blue Ombré Crystal Necklace"
+              data-item-price="55.00"
+              data-item-url="/shop.html"
+              data-item-image="images/blue_bracelet_1.png">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blue Sodalite -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/blue_sodalite_2.png" alt="Blue Sodalite & Pearl Necklace — worn" class="active">
+            <img src="images/blue_sodalite_1.png" alt="Blue Sodalite & Pearl Necklace — product">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Studio Series</span>
+          <h3 class="showcase-name">Blue Sodalite &amp; Pearl Necklace</h3>
+          <p class="showcase-price">$55</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="studio-blue-sodalite"
+              data-item-name="Blue Sodalite & Pearl Necklace"
+              data-item-price="55.00"
+              data-item-url="/shop.html"
+              data-item-image="images/blue_sodalite_1.png">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lava Stone -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/LavaStone_2.png" alt="Lava Stone & Gold Statement Necklace — worn" class="active">
+            <img src="images/LavaStone_1.png" alt="Lava Stone & Gold Statement Necklace — product">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Studio Series</span>
+          <h3 class="showcase-name">Lava Stone &amp; Gold Statement Necklace</h3>
+          <p class="showcase-price">$65</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="studio-lava-stone"
+              data-item-name="Lava Stone & Gold Statement Necklace"
+              data-item-price="65.00"
+              data-item-url="/shop.html"
+              data-item-image="images/LavaStone_1.png">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Jade -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/Jade_2.png" alt="Jade & Gold Chain Necklace — worn" class="active">
+            <img src="images/jade_1.png" alt="Jade & Gold Chain Necklace — product">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Studio Series</span>
+          <h3 class="showcase-name">Jade &amp; Gold Chain Necklace</h3>
+          <p class="showcase-price">$50</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="studio-jade-gold"
+              data-item-name="Jade & Gold Chain Necklace"
+              data-item-price="50.00"
+              data-item-url="/shop.html"
+              data-item-image="images/jade_1.png">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Yellow & White -->
+      <div class="showcase-set reveal">
+        <div class="showcase-media">
+          <div class="showcase-slider" data-slider>
+            <img src="images/yellow_white_1.png" alt="Honey & Frost Glass Necklace — worn" class="active">
+            <img src="images/yellow_white_2.png" alt="Honey & Frost Glass Necklace — product">
+            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
+          </div>
+          <div class="slider-dots">
+            <button class="slider-dot active" aria-label="Slide 1"></button>
+            <button class="slider-dot" aria-label="Slide 2"></button>
+          </div>
+        </div>
+        <div class="showcase-info">
+          <span class="showcase-label">Studio Series</span>
+          <h3 class="showcase-name">Honey &amp; Frost Glass Necklace</h3>
+          <p class="showcase-price">$45</p>
+          <div class="showcase-cta">
+            <button class="snipcart-add-item btn btn-primary"
+              data-item-id="studio-honey-frost"
+              data-item-name="Honey & Frost Glass Necklace"
+              data-item-price="45.00"
+              data-item-url="/shop.html"
+              data-item-image="images/yellow_white_1.png">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  </main>
 
   <!-- ── Footer ── -->
   <footer class="site-footer">
@@ -283,8 +703,16 @@
     </div>
   </footer>
 
-  <div hidden id="snipcart" data-api-key="YOUR_SNIPCART_API_KEY" data-config-modal-style="side"></div>
-  <script async src="https://cdn.snipcart.com/themes/v3.7.1/default/snipcart.js"></script>
+  <!-- Snipcart — loads on first user interaction -->
+  <script>
+    window.SnipcartSettings = {
+      publicApiKey: 'YjdjZThlMmMtZWIwMS00OWFlLTkzMmMtMTM3YzRkZDA2ZjNhNjM5MTg3NzgwMTA4ODEzNjky',
+      loadStrategy: 'on-user-interaction',
+      modalStyle: 'side',
+    };
+
+    (()=>{var c,d;(d=(c=window.SnipcartSettings).version)!=null||(c.version="3.0");var s,S;(S=(s=window.SnipcartSettings).timeoutDuration)!=null||(s.timeoutDuration=2750);var l,p;(p=(l=window.SnipcartSettings).domain)!=null||(l.domain="cdn.snipcart.com");var w,u;(u=(w=window.SnipcartSettings).protocol)!=null||(w.protocol="https");var f=window.SnipcartSettings.version.includes("v3.0.0-ci")||window.SnipcartSettings.version!="3.0"&&window.SnipcartSettings.version.localeCompare("3.4.0",void 0,{numeric:!0,sensitivity:"base"})===-1,m=["focus","mouseover","touchmove","scroll","keydown"];window.LoadSnipcart=o;document.readyState==="loading"?document.addEventListener("DOMContentLoaded",r):r();function r(){window.SnipcartSettings.loadStrategy?window.SnipcartSettings.loadStrategy==="on-user-interaction"&&(m.forEach(t=>document.addEventListener(t,o)),setTimeout(o,window.SnipcartSettings.timeoutDuration)):o()}var a=!1;function o(){if(a)return;a=!0;let t=document.getElementsByTagName("head")[0],e=document.querySelector("#snipcart"),i=document.querySelector(`src[src^="${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}"][src$="snipcart.js"]`),n=document.querySelector(`link[href^="${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}"][href$="snipcart.css"]`);e||(e=document.createElement("div"),e.id="snipcart",e.setAttribute("hidden","true"),document.body.appendChild(e)),v(e),i||(i=document.createElement("script"),i.src=`${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}/themes/v${window.SnipcartSettings.version}/default/snipcart.js`,i.async=!0,t.appendChild(i)),n||(n=document.createElement("link"),n.rel="stylesheet",n.type="text/css",n.href=`${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}/themes/v${window.SnipcartSettings.version}/default/snipcart.css`,t.prepend(n)),m.forEach(g=>document.removeEventListener(g,o))}function v(t){!f||(t.dataset.apiKey=window.SnipcartSettings.publicApiKey,window.SnipcartSettings.addProductBehavior&&(t.dataset.configAddProductBehavior=window.SnipcartSettings.addProductBehavior),window.SnipcartSettings.modalStyle&&(t.dataset.configModalStyle=window.SnipcartSettings.modalStyle),window.SnipcartSettings.currency&&(t.dataset.currency=window.SnipcartSettings.currency),window.SnipcartSettings.templatesUrl&&(t.dataset.templatesUrl=window.SnipcartSettings.templatesUrl))}})();
+  </script>
   <script src="js/main.js"></script>
 </body>
 </html>

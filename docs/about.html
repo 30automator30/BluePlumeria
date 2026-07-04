@@ -5,11 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Atelier — Blue Plumeria</title>
   <meta name="description" content="The story behind Blue Plumeria — a working atelier crafting limited studio editions in natural stones, crystals, copper, and beads.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+  <!-- Social sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Atelier — Blue Plumeria">
+  <meta property="og:description" content="A working atelier crafting limited studio editions in natural stones, crystals, copper, and beads.">
+  <meta property="og:image" content="images/LavaStone_2.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Atelier — Blue Plumeria">
+  <meta name="twitter:description" content="A working atelier crafting limited studio editions in natural stones, crystals, and copper.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="preconnect" href="https://app.snipcart.com">
-  <link rel="stylesheet" href="https://cdn.snipcart.com/themes/v3.7.1/default/snipcart.css">
+  <link rel="preconnect" href="https://cdn.snipcart.com">
+  <noscript><style>.reveal{opacity:1 !important;transform:none !important}</style></noscript>
 </head>
 <body>
+
+  <a href="#main-content" class="skip-link">Skip to content</a>
 
   <!-- ── Header ── -->
   <header class="site-header">
@@ -36,6 +53,8 @@
     </div>
   </nav>
 
+  <main id="main-content">
+
   <!-- ── About Hero ── -->
   <section class="about-hero">
     <h1>The Atelier</h1>
@@ -45,9 +64,10 @@
   <section class="story-section section-padding">
     <div class="container">
       <div class="story-grid">
-        <img src="images/LavaStone_2.png" alt="Blue Plumeria jewelry" class="story-image" loading="lazy">
-        <div class="story-content">
-          <h2>The Studio</h2>
+        <img src="images/LavaStone_2.png" alt="Lava stone and gold necklace styled on olive wood" class="story-image reveal" loading="lazy">
+        <div class="story-content reveal">
+          <span class="overline">Our Story</span>
+          <h2>A working atelier</h2>
           <p>Blue Plumeria is a working atelier — a place where design ideas take shape through hands-on exploration of texture, color, and form. Every piece begins as an experiment and evolves into something meant to be worn and felt.</p>
           <p>Our Studio Series represents this process: small-batch, limited editions crafted from natural stones, crystals, freshwater pearls, and copper wire. No two pieces are exactly alike. Each one carries its own character and energy.</p>
           <p>The name "Blue Plumeria" draws from the plumeria flower — delicate, vibrant, and full of life. Blue represents calm, creativity, and depth. Together, they capture the spirit of a brand in motion: intentional artistry, always evolving.</p>
@@ -59,24 +79,24 @@
   <!-- ── Materials Section ── -->
   <section class="materials-section section-padding">
     <div class="container">
-      <h2 class="section-heading">Crafted With Intention</h2>
+      <h2 class="section-heading reveal">Crafted with intention</h2>
       <div class="materials-grid">
-        <div class="material-item">
+        <div class="material-item reveal">
           <div class="material-icon">&#9830;</div>
           <h3>Natural Stones</h3>
           <p>Agate, sodalite, turquoise, and jade — each stone is chosen for its unique color and natural beauty.</p>
         </div>
-        <div class="material-item">
+        <div class="material-item reveal">
           <div class="material-icon">&#10022;</div>
           <h3>Crystals</h3>
           <p>Sparkling glass crystals and gemstone chips add brilliance and light to every design.</p>
         </div>
-        <div class="material-item">
+        <div class="material-item reveal">
           <div class="material-icon">&#9675;</div>
           <h3>Copper &amp; Wire</h3>
           <p>Hand-shaped copper and wire wrapping give each piece its sculptural, organic form.</p>
         </div>
-        <div class="material-item">
+        <div class="material-item reveal">
           <div class="material-icon">&#9679;</div>
           <h3>Beads &amp; Pearls</h3>
           <p>Freshwater pearls, seed beads, and artisan glass beads bring texture, depth, and warmth.</p>
@@ -86,12 +106,14 @@
   </section>
 
   <!-- ── CTA Section ── -->
-  <section class="section-padding text-center" style="background: var(--alt-bg);">
+  <section class="section-padding text-center" style="background: var(--bone);">
     <div class="container">
-      <h2 class="section-heading">Shop the Studio</h2>
-      <a href="shop.html" class="btn btn-primary">View Studio Collection</a>
+      <h2 class="section-heading reveal" style="margin-bottom: 2rem;">Shop the Studio</h2>
+      <a href="shop.html" class="btn btn-primary reveal">View Studio Collection</a>
     </div>
   </section>
+
+  </main>
 
   <!-- ── Footer ── -->
   <footer class="site-footer">
@@ -125,8 +147,16 @@
     </div>
   </footer>
 
-  <div hidden id="snipcart" data-api-key="YOUR_SNIPCART_API_KEY" data-config-modal-style="side"></div>
-  <script async src="https://cdn.snipcart.com/themes/v3.7.1/default/snipcart.js"></script>
+  <!-- Snipcart — loads on first user interaction -->
+  <script>
+    window.SnipcartSettings = {
+      publicApiKey: 'YjdjZThlMmMtZWIwMS00OWFlLTkzMmMtMTM3YzRkZDA2ZjNhNjM5MTg3NzgwMTA4ODEzNjky',
+      loadStrategy: 'on-user-interaction',
+      modalStyle: 'side',
+    };
+
+    (()=>{var c,d;(d=(c=window.SnipcartSettings).version)!=null||(c.version="3.0");var s,S;(S=(s=window.SnipcartSettings).timeoutDuration)!=null||(s.timeoutDuration=2750);var l,p;(p=(l=window.SnipcartSettings).domain)!=null||(l.domain="cdn.snipcart.com");var w,u;(u=(w=window.SnipcartSettings).protocol)!=null||(w.protocol="https");var f=window.SnipcartSettings.version.includes("v3.0.0-ci")||window.SnipcartSettings.version!="3.0"&&window.SnipcartSettings.version.localeCompare("3.4.0",void 0,{numeric:!0,sensitivity:"base"})===-1,m=["focus","mouseover","touchmove","scroll","keydown"];window.LoadSnipcart=o;document.readyState==="loading"?document.addEventListener("DOMContentLoaded",r):r();function r(){window.SnipcartSettings.loadStrategy?window.SnipcartSettings.loadStrategy==="on-user-interaction"&&(m.forEach(t=>document.addEventListener(t,o)),setTimeout(o,window.SnipcartSettings.timeoutDuration)):o()}var a=!1;function o(){if(a)return;a=!0;let t=document.getElementsByTagName("head")[0],e=document.querySelector("#snipcart"),i=document.querySelector(`src[src^="${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}"][src$="snipcart.js"]`),n=document.querySelector(`link[href^="${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}"][href$="snipcart.css"]`);e||(e=document.createElement("div"),e.id="snipcart",e.setAttribute("hidden","true"),document.body.appendChild(e)),v(e),i||(i=document.createElement("script"),i.src=`${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}/themes/v${window.SnipcartSettings.version}/default/snipcart.js`,i.async=!0,t.appendChild(i)),n||(n=document.createElement("link"),n.rel="stylesheet",n.type="text/css",n.href=`${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}/themes/v${window.SnipcartSettings.version}/default/snipcart.css`,t.prepend(n)),m.forEach(g=>document.removeEventListener(g,o))}function v(t){!f||(t.dataset.apiKey=window.SnipcartSettings.publicApiKey,window.SnipcartSettings.addProductBehavior&&(t.dataset.configAddProductBehavior=window.SnipcartSettings.addProductBehavior),window.SnipcartSettings.modalStyle&&(t.dataset.configModalStyle=window.SnipcartSettings.modalStyle),window.SnipcartSettings.currency&&(t.dataset.currency=window.SnipcartSettings.currency),window.SnipcartSettings.templatesUrl&&(t.dataset.templatesUrl=window.SnipcartSettings.templatesUrl))}})();
+  </script>
   <script src="js/main.js"></script>
 </body>
 </html>

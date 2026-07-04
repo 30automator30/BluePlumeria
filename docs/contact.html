@@ -5,11 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contact — Blue Plumeria</title>
   <meta name="description" content="Get in touch with Blue Plumeria for custom jewelry orders, questions, or collaborations.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+  <!-- Social sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Contact — Blue Plumeria">
+  <meta property="og:description" content="Questions, custom orders, or collaborations — get in touch with the Blue Plumeria studio.">
+  <meta property="og:image" content="images/Silver_plumeria_1.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Contact — Blue Plumeria">
+  <meta name="twitter:description" content="Questions, custom orders, or collaborations — get in touch with the studio.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="preconnect" href="https://app.snipcart.com">
-  <link rel="stylesheet" href="https://cdn.snipcart.com/themes/v3.7.1/default/snipcart.css">
+  <link rel="preconnect" href="https://cdn.snipcart.com">
+  <noscript><style>.reveal{opacity:1 !important;transform:none !important}</style></noscript>
 </head>
 <body>
+
+  <a href="#main-content" class="skip-link">Skip to content</a>
 
   <!-- ── Header ── -->
   <header class="site-header">
@@ -36,6 +53,8 @@
     </div>
   </nav>
 
+  <main id="main-content">
+
   <!-- ── Contact Hero ── -->
   <section class="contact-hero">
     <h1>Contact Us</h1>
@@ -47,8 +66,8 @@
       <div class="contact-grid">
 
         <!-- Contact Form -->
-        <div class="contact-form">
-          <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+        <div class="contact-form reveal">
+          <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" novalidate>
             <label for="name">Name</label>
             <input type="text" id="name" name="name" required placeholder="Your name">
 
@@ -62,12 +81,13 @@
             <textarea id="message" name="message" required placeholder="Tell us what you're looking for..."></textarea>
 
             <button type="submit" class="btn btn-primary">Send Message</button>
+            <p class="form-status" role="status" aria-live="polite"></p>
           </form>
         </div>
 
         <!-- Contact Info -->
-        <div class="contact-info">
-          <h3>We'd love to hear from you.</h3>
+        <div class="contact-info reveal">
+          <h3>We'd love to hear from you</h3>
           <p>Whether you have a question about a piece, want to request a custom order, or just want to say hello — drop us a line and we'll get back to you as soon as we can.</p>
 
           <h3>Email</h3>
@@ -90,6 +110,8 @@
       </div>
     </div>
   </section>
+
+  </main>
 
   <!-- ── Footer ── -->
   <footer class="site-footer">
@@ -123,8 +145,16 @@
     </div>
   </footer>
 
-  <div hidden id="snipcart" data-api-key="YOUR_SNIPCART_API_KEY" data-config-modal-style="side"></div>
-  <script async src="https://cdn.snipcart.com/themes/v3.7.1/default/snipcart.js"></script>
+  <!-- Snipcart — loads on first user interaction -->
+  <script>
+    window.SnipcartSettings = {
+      publicApiKey: 'YjdjZThlMmMtZWIwMS00OWFlLTkzMmMtMTM3YzRkZDA2ZjNhNjM5MTg3NzgwMTA4ODEzNjky',
+      loadStrategy: 'on-user-interaction',
+      modalStyle: 'side',
+    };
+
+    (()=>{var c,d;(d=(c=window.SnipcartSettings).version)!=null||(c.version="3.0");var s,S;(S=(s=window.SnipcartSettings).timeoutDuration)!=null||(s.timeoutDuration=2750);var l,p;(p=(l=window.SnipcartSettings).domain)!=null||(l.domain="cdn.snipcart.com");var w,u;(u=(w=window.SnipcartSettings).protocol)!=null||(w.protocol="https");var f=window.SnipcartSettings.version.includes("v3.0.0-ci")||window.SnipcartSettings.version!="3.0"&&window.SnipcartSettings.version.localeCompare("3.4.0",void 0,{numeric:!0,sensitivity:"base"})===-1,m=["focus","mouseover","touchmove","scroll","keydown"];window.LoadSnipcart=o;document.readyState==="loading"?document.addEventListener("DOMContentLoaded",r):r();function r(){window.SnipcartSettings.loadStrategy?window.SnipcartSettings.loadStrategy==="on-user-interaction"&&(m.forEach(t=>document.addEventListener(t,o)),setTimeout(o,window.SnipcartSettings.timeoutDuration)):o()}var a=!1;function o(){if(a)return;a=!0;let t=document.getElementsByTagName("head")[0],e=document.querySelector("#snipcart"),i=document.querySelector(`src[src^="${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}"][src$="snipcart.js"]`),n=document.querySelector(`link[href^="${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}"][href$="snipcart.css"]`);e||(e=document.createElement("div"),e.id="snipcart",e.setAttribute("hidden","true"),document.body.appendChild(e)),v(e),i||(i=document.createElement("script"),i.src=`${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}/themes/v${window.SnipcartSettings.version}/default/snipcart.js`,i.async=!0,t.appendChild(i)),n||(n=document.createElement("link"),n.rel="stylesheet",n.type="text/css",n.href=`${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}/themes/v${window.SnipcartSettings.version}/default/snipcart.css`,t.prepend(n)),m.forEach(g=>document.removeEventListener(g,o))}function v(t){!f||(t.dataset.apiKey=window.SnipcartSettings.publicApiKey,window.SnipcartSettings.addProductBehavior&&(t.dataset.configAddProductBehavior=window.SnipcartSettings.addProductBehavior),window.SnipcartSettings.modalStyle&&(t.dataset.configModalStyle=window.SnipcartSettings.modalStyle),window.SnipcartSettings.currency&&(t.dataset.currency=window.SnipcartSettings.currency),window.SnipcartSettings.templatesUrl&&(t.dataset.templatesUrl=window.SnipcartSettings.templatesUrl))}})();
+  </script>
   <script src="js/main.js"></script>
 </body>
 </html>
