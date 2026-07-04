@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blue Plumeria — Business Analysis & Direction</title>
+<style>
+  :root {
+    --paper:   #F4EFE4;
+    --raised:  #FBF8F1;
+    --ink:     #241D15;
+    --muted:   #877B67;
+    --hair:    #E2D9C8;
+    --gold:    #A67E38;
+    --gold-2:  #C6A45E;
+    --slate:   #4E6D88;
+    --slate-2: #6C8AA4;
+    --good:    #5C7C54;
+    --warn:    #A9502F;
+    --shadow:  20px 30px 60px -30px rgba(60,45,20,.28);
+    --maxw: 1120px;
+    --col: 680px;
+    --serif: Georgia, "Times New Roman", serif;
+    --sans: "Segoe UI", ui-sans-serif, system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    --mono: "Cascadia Code", ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:  #15120D;
+      --raised: #1E1913;
+      --ink:    #ECE3D3;
+      --muted:  #9A8D78;
+      --hair:   #33291D;
+      --gold:   #C6A45E;
+      --gold-2: #E0C486;
+      --slate:  #7F9DB8;
+      --slate-2:#A6C0D6;
+      --good:   #86A879;
+      --warn:   #D6805E;
+      --shadow: 24px 34px 70px -34px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper:#F4EFE4; --raised:#FBF8F1; --ink:#241D15; --muted:#877B67; --hair:#E2D9C8;
+    --gold:#A67E38; --gold-2:#C6A45E; --slate:#4E6D88; --slate-2:#6C8AA4; --good:#5C7C54; --warn:#A9502F;
+    --shadow:20px 30px 60px -30px rgba(60,45,20,.28);
+  }
+  :root[data-theme="dark"] {
+    --paper:#15120D; --raised:#1E1913; --ink:#ECE3D3; --muted:#9A8D78; --hair:#33291D;
+    --gold:#C6A45E; --gold-2:#E0C486; --slate:#7F9DB8; --slate-2:#A6C0D6; --good:#86A879; --warn:#D6805E;
+    --shadow:24px 34px 70px -34px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(120% 80% at 85% -5%, color-mix(in srgb, var(--slate) 12%, transparent), transparent 60%),
+      radial-gradient(90% 60% at 5% 0%, color-mix(in srgb, var(--gold) 10%, transparent), transparent 55%),
+      var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.66;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: clamp(1.4rem, 4vw, 3.5rem); }
+
+  /* ---- Type ---- */
+  h1,h2,h3 { font-family: var(--serif); font-weight: 400; line-height: 1.1; text-wrap: balance; letter-spacing: -.01em; }
+  h2 { font-size: clamp(1.7rem, 3.2vw, 2.5rem); margin: 0 0 .2em; }
+  h3 { font-size: 1.28rem; margin: 2.2rem 0 .5rem; }
+  p { margin: 0 0 1.05rem; max-width: 66ch; }
+  strong { font-weight: 600; color: var(--ink); }
+  a { color: var(--slate); text-underline-offset: 3px; }
+  .eyebrow {
+    font-family: var(--sans); font-size: .72rem; font-weight: 600;
+    letter-spacing: .22em; text-transform: uppercase; color: var(--gold);
+    display: inline-flex; align-items: center; gap: .6rem;
+  }
+  .eyebrow::before { content:""; width: 26px; height: 1px; background: var(--gold); }
+  .lede { font-size: 1.16rem; color: color-mix(in srgb, var(--ink) 88%, var(--muted)); max-width: 60ch; }
+
+  /* ---- Masthead ---- */
+  header.mast {
+    display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 1.5rem;
+    padding-bottom: 1.4rem; border-bottom: 1px solid var(--hair); margin-bottom: 2.6rem;
+  }
+  .mark { display: flex; align-items: center; gap: .9rem; }
+  .mark svg { width: 46px; height: 46px; flex: none; }
+  .brand { font-family: var(--serif); font-size: 1.5rem; letter-spacing: .02em; }
+  .mast h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(2.1rem, 5vw, 3.4rem); margin: .7rem 0 .1rem; line-height: 1.02; }
+  .mast .meta { text-align: right; font-size: .82rem; color: var(--muted); line-height: 1.7; font-family: var(--mono); }
+  .mast .meta b { color: var(--ink); font-weight: 600; }
+
+  /* ---- Layout: editorial column + meta rail ---- */
+  section { margin: 3.2rem 0; scroll-margin-top: 1rem; }
+  .row { display: grid; grid-template-columns: 150px minmax(0,1fr); gap: clamp(1rem,3vw,2.6rem); align-items: start; }
+  .rail { position: sticky; top: 1.2rem; }
+  .rail .num { font-family: var(--mono); font-size: .8rem; color: var(--gold); }
+  .rail .tag { font-family: var(--sans); font-size: .74rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-top: .3rem; }
+  @media (max-width: 720px){ .row{ grid-template-columns: 1fr; gap:.4rem; } .rail{ position: static; } .rail .tag{ margin-top:0; } }
+
+  /* ---- Stat band ---- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--hair);
+    border: 1px solid var(--hair); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+  .stat { background: var(--raised); padding: 1.15rem 1.15rem 1.25rem; }
+  .stat .k { font-family: var(--sans); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .stat .v { font-family: var(--mono); font-size: 1.5rem; font-variant-numeric: tabular-nums; margin-top: .35rem; letter-spacing: -.02em; }
+  .stat .v.neg { color: var(--warn); }
+  .stat .v.pos { color: var(--good); }
+  .stat .s { font-size: .74rem; color: var(--muted); margin-top: .15rem; }
+  @media (max-width: 640px){ .stats{ grid-template-columns: repeat(2,1fr);} }
+
+  /* ---- Callout / cards ---- */
+  .callout { background: var(--raised); border: 1px solid var(--hair); border-left: 3px solid var(--slate);
+    border-radius: 8px; padding: 1.1rem 1.3rem; margin: 1.4rem 0; box-shadow: var(--shadow); }
+  .callout.gold { border-left-color: var(--gold); }
+  .callout.warn { border-left-color: var(--warn); }
+  .callout h4 { margin: 0 0 .4rem; font-family: var(--sans); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--slate); }
+  .callout.gold h4 { color: var(--gold); }
+  .callout.warn h4 { color: var(--warn); }
+  .callout p { margin: 0; font-size: .96rem; }
+  .callout p + p { margin-top: .6rem; }
+
+  .tiers { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; margin: 1.4rem 0; }
+  @media (max-width: 640px){ .tiers{ grid-template-columns: 1fr; } }
+  .tier { background: var(--raised); border: 1px solid var(--hair); border-top: 3px solid var(--gold);
+    border-radius: 10px; padding: 1.2rem 1.3rem 1.4rem; box-shadow: var(--shadow); }
+  .tier.two { border-top-color: var(--slate); }
+  .tier .lab { font-family: var(--sans); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+  .tier.two .lab { color: var(--slate); }
+  .tier h3 { margin: .3rem 0 .5rem; font-size: 1.35rem; }
+  .tier ul { margin: .6rem 0 0; padding-left: 1.1rem; }
+  .tier li { margin: .3rem 0; font-size: .95rem; }
+  .tier .pill { display:inline-block; font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+
+  ul.clean { list-style: none; padding: 0; margin: 1rem 0; }
+  ul.clean > li { padding-left: 1.6rem; position: relative; margin: .55rem 0; max-width: 64ch; }
+  ul.clean > li::before { content:""; position:absolute; left:.2rem; top:.62em; width:7px; height:7px; border-radius:50%;
+    background: var(--gold); }
+
+  /* ---- Channels ordered ---- */
+  ol.channels { list-style: none; counter-reset: c; padding: 0; margin: 1.2rem 0; display: grid; gap: .8rem; }
+  ol.channels li { counter-increment: c; display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: start;
+    background: var(--raised); border: 1px solid var(--hair); border-radius: 9px; padding: .95rem 1.15rem; }
+  ol.channels li::before { content: counter(c); font-family: var(--serif); font-size: 1.5rem; color: var(--gold);
+    line-height: 1; width: 1.4em; }
+  ol.channels .h { font-weight: 600; }
+  ol.channels .h .rank { font-family: var(--mono); font-size: .72rem; color: var(--slate); margin-left: .5rem; letter-spacing: .04em; }
+  ol.channels p { margin: .2rem 0 0; font-size: .93rem; color: color-mix(in srgb, var(--ink) 84%, var(--muted)); max-width: 62ch; }
+
+  /* ---- Plan timeline ---- */
+  ol.plan { list-style: none; counter-reset: p; padding: 0; margin: 1.2rem 0 0; }
+  ol.plan li { counter-increment: p; position: relative; padding: 0 0 1.5rem 2.6rem; border-left: 1px solid var(--hair); margin-left: .5rem; }
+  ol.plan li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  ol.plan li::before { content: counter(p); position: absolute; left: calc(-.9rem - 1px); top: -.15rem;
+    width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--slate); color: #fff;
+    display: grid; place-items: center; font-family: var(--mono); font-size: .82rem; font-weight: 600; }
+  ol.plan .when { font-family: var(--sans); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+  ol.plan .what { margin: .15rem 0 0; font-size: .97rem; max-width: 62ch; }
+
+  /* ---- Table ---- */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--hair); border-radius: 10px; box-shadow: var(--shadow); margin: 1.2rem 0; }
+  table { border-collapse: collapse; width: 100%; min-width: 460px; background: var(--raised); font-size: .92rem; }
+  th, td { text-align: left; padding: .7rem .9rem; border-bottom: 1px solid var(--hair); }
+  th { font-family: var(--sans); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+
+  footer { margin-top: 3.5rem; padding-top: 1.4rem; border-top: 1px solid var(--hair); color: var(--muted); font-size: .85rem; }
+  .disc { font-size: .8rem; color: var(--muted); font-style: italic; max-width: 66ch; }
+
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce){ .reveal{ opacity:1; transform:none; transition:none; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <div>
+      <div class="mark">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <g fill="none" stroke="var(--gold)" stroke-width="2.1" stroke-linejoin="round" transform="translate(32 33)">
+            <path d="M0 -3 C6 -11 5 -22 0 -25 C-5 -22 -6 -11 0 -3 Z"/>
+            <path d="M0 -3 C6 -11 5 -22 0 -25 C-5 -22 -6 -11 0 -3 Z" transform="rotate(72)"/>
+            <path d="M0 -3 C6 -11 5 -22 0 -25 C-5 -22 -6 -11 0 -3 Z" transform="rotate(144)"/>
+            <path d="M0 -3 C6 -11 5 -22 0 -25 C-5 -22 -6 -11 0 -3 Z" transform="rotate(216)"/>
+            <path d="M0 -3 C6 -11 5 -22 0 -25 C-5 -22 -6 -11 0 -3 Z" transform="rotate(288)"/>
+          </g>
+        </svg>
+        <span class="brand">Blue Plumeria</span>
+      </div>
+      <h1>Turning the studio into a shop</h1>
+      <p class="lede">A working analysis of where the business stands, what to fix first, and how to grow from hobby into a real, curated small brand.</p>
+    </div>
+    <div class="meta">
+      <div>Prepared for <b>Amy L. DeSmit</b></div>
+      <div>Bastrop, TX &middot; Est. <b>2025</b></div>
+      <div>Draft &middot; <b>Jul 2026</b></div>
+    </div>
+  </header>
+
+  <section class="reveal">
+    <div class="row">
+      <div class="rail"><div class="num">01</div><div class="tag">The Situation</div></div>
+      <div>
+        <span class="eyebrow">Where things stand</span>
+        <h2>Year one did its job. Year two is about selling.</h2>
+        <p>2025 was a build year, and the numbers read exactly like one should: heavy investment in materials and tools, a deep inventory stocked, and almost no sales yet. That is normal and nothing to apologize for.</p>
+        <div class="stats" role="table" aria-label="Key figures">
+          <div class="stat"><div class="k">2025 Revenue</div><div class="v">$55</div><div class="s">First market sale</div></div>
+          <div class="stat"><div class="k">2025 COGS</div><div class="v neg">$2,997</div><div class="s">Materials &amp; tools</div></div>
+          <div class="stat"><div class="k">Inventory on hand</div><div class="v">$6,993</div><div class="s">Carried into 2026</div></div>
+          <div class="stat"><div class="k">2026 Target</div><div class="v pos">$1–2.5k</div><div class="s">Your goal</div></div>
+        </div>
+        <p style="margin:1.4rem 0 .7rem; font-size:.95rem; color:var(--muted)">And here is what that spending actually became — counted from the July studio shoot:</p>
+        <div class="stats" role="table" aria-label="Finished inventory">
+          <div class="stat"><div class="k">Finished pieces</div><div class="v">102</div><div class="s">All one of a kind</div></div>
+          <div class="stat"><div class="k">Est. retail value</div><div class="v pos">~$3,900</div><div class="s">$3.5–4.5k on hand</div></div>
+          <div class="stat"><div class="k">Signature tier</div><div class="v">55</div><div class="s">brand-aligned of 102</div></div>
+          <div class="stat"><div class="k">Bead-woven</div><div class="v">9</div><div class="s">Highest-labor pieces</div></div>
+        </div>
+        <p style="margin-top:1.3rem">Here is the reframe that matters: <strong>the bottleneck is not making more jewelry — it is selling what already exists.</strong> The ~$7,000 of materials became <strong>102 finished, one-of-a-kind pieces</strong> — roughly $3,500–4,500 of retail value sitting in trays. That's your whole 2026 revenue target, already made. Every hour and dollar now should go toward <em>curation, pricing, listings, and getting in front of buyers</em> — not toward more inventory.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="row">
+      <div class="rail"><div class="num">02</div><div class="tag">The Core Move</div></div>
+      <div>
+        <span class="eyebrow">Curate before you sell</span>
+        <h2>Your inventory is two businesses. Separate them.</h2>
+        <p>Looking across the finished pieces, there is a clear split — and seeing it is the single most valuable thing in this analysis. Treating both tiers the same way is what makes a handmade brand feel scattered instead of intentional.</p>
+        <div class="tiers">
+          <div class="tier">
+            <div class="lab">Tier 1 — Signature · 55 pieces</div>
+            <h3>The face of the brand</h3>
+            <p style="font-size:.95rem; color:var(--muted); margin:.2rem 0 .4rem">Cohesive beaded gemstone necklaces &amp; bracelets in the blue / slate / pearl palette, plus the bead-woven pieces — the ones that actually look like "Blue Plumeria."</p>
+            <ul>
+              <li>Blue Lapis, Sodalite &amp; Quartz necklace <span class="pill">$150 · flagship</span></li>
+              <li>Shells, Howlite &amp; Tiger's Eye necklace <span class="pill">$65</span></li>
+              <li>Onyx / druzy &amp; rose-quartz gemstone necklaces <span class="pill">gemstone</span></li>
+              <li>Bead-woven aqua rope necklace &amp; amethyst studs <span class="pill">woven</span></li>
+              <li>Emerald Crystal &amp; Glass Pearl earrings <span class="pill">.925</span></li>
+            </ul>
+            <p style="font-size:.9rem; margin-top:.7rem"><strong>13 heroes chosen.</strong> Curated from the 55 Signature pieces for the website and every reel.</p>
+          </div>
+          <div class="tier two">
+            <div class="lab">Tier 2 — Everyday · 47 pieces</div>
+            <h3>Fun, giftable, impulse</h3>
+            <p style="font-size:.95rem; color:var(--muted); margin:.2rem 0 .4rem">Enamel flower-and-heart earrings, Southwestern turquoise, patriotic drops, filigree, simple chains.</p>
+            <ul>
+              <li>Great at a craft-fair table</li>
+              <li>Great as Etsy impulse buys</li>
+              <li>Amy's own tags: $10–27, sold on charm &amp; volume</li>
+            </ul>
+            <p style="font-size:.9rem; margin-top:.7rem"><strong>Keep &amp; sell them</strong> — just don't let them define the brand's first impression. Different aesthetic, different shelf.</p>
+          </div>
+        </div>
+        <div class="callout gold">
+          <h4>Why this matters</h4>
+          <p>Your own plan lists "develop a signature collection for brand recognition" as a 2026 goal. With 102 one-of-a-kind pieces you physically can't feature them all — so this <em>is</em> the signature collection: the website stays tight and elevated around ~13 heroes, while the other 89 do the volume work in person and on Etsy. A first-time visitor should meet the elegant version of Blue Plumeria — then discover the rest.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="row">
+      <div class="rail"><div class="num">03</div><div class="tag">Pricing</div></div>
+      <div>
+        <span class="eyebrow">Charge for the craft</span>
+        <h2>Price the labor, not just the beads.</h2>
+        <p>The most common hobbyist mistake is pricing only materials and undercharging for hours. A seed-bead-woven statement necklace can take hours; selling it for $45 trains buyers to under-value everything you make.</p>
+        <p>You've already tagged pieces from <strong>$10 to $150</strong> — a healthy range and a good instinct, with the lapis flagship anchoring the top. The one adjustment: make sure the <strong>9 bead-woven pieces</strong> sit near the <em>top</em> of their bands, since they carry the most labor of anything you make.</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Category</th><th>Sensible retail band</th><th>Basis</th></tr></thead>
+            <tbody>
+              <tr><td>Everyday earrings (Tier 2)</td><td class="n">$15 – 28</td><td>Assembled components; sell on charm/volume</td></tr>
+              <tr><td>Artisan / gemstone earrings</td><td class="n">$28 – 45</td><td>Pearl &amp; stone chandeliers, statement drops</td></tr>
+              <tr><td>Bracelets</td><td class="n">$28 – 55</td><td>By materials &amp; technique</td></tr>
+              <tr><td>Beaded necklaces</td><td class="n">$45 – 120</td><td>Woven / gemstone statement pieces sit high</td></tr>
+              <tr><td>Custom / commission</td><td class="n">quote</td><td>Materials + hourly + design fee</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <h4>Rule of thumb</h4>
+          <p>Retail = <strong>(materials + packaging) &times; 4</strong>, <em>or</em> <strong>(materials + labor at a real hourly rate + overhead) &times; 2</strong> — whichever is higher. Use the higher number for the labor-heavy woven pieces; be honest that assembled-component earrings can't carry artisan prices.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="row">
+      <div class="rail"><div class="num">04</div><div class="tag">Channels</div></div>
+      <div>
+        <span class="eyebrow">Where the first dollars come from</span>
+        <h2>Sell in person first, build the audience second.</h2>
+        <p>You have four channels live or planned. They are not equal in near-term return — here they are in the order I'd put your energy for 2026.</p>
+        <ol class="channels">
+          <li>
+            <div>
+              <div class="h">Craft fairs &amp; local markets <span class="rank">highest conversion</span></div>
+              <p>The best handmade revenue engine you have: people can touch the pieces, there's no algorithm, and you get cash flow and live feedback. Bring Tier&nbsp;2 for impulse and Tier&nbsp;1 as the showpieces. Get a Square reader, a clean table, and cards with a QR to the site. Your plan already targets 2–4 events — make these the centerpiece.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <div class="h">Instagram &amp; Facebook <span class="rank">discovery + warm audience</span></div>
+              <p>You now have a redesigned site and a finished reel — post on a weekly cadence. Instagram is discovery; your Facebook page is the warm audience you've already built. Both should drive to the site and announce fair dates.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <div class="h">Website (Snipcart) <span class="rank">owned, repeat buyers</span></div>
+              <p>Your link-in-bio home and the place serious/repeat buyers check out. Keep it curated and elevated around Tier&nbsp;1. Two loose ends to close: set the live Snipcart key and the contact-form ID so checkout and messages actually work.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <div class="h">Etsy <span class="rank">only if you commit</span></div>
+              <p>You're paying monthly fees against ~$0 of Etsy sales — that's a small leak. It only pays off if you actively list 20+ pieces with good SEO (your stated Q2 goal). Either commit and list this quarter, or pause the shop to stop the bleed. Don't leave it half-open.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="row">
+      <div class="rail"><div class="num">05</div><div class="tag">Operations</div></div>
+      <div>
+        <span class="eyebrow">Run it like a business</span>
+        <h2>The unglamorous parts that protect the loss.</h2>
+        <p>The thing that separates "seller" from "hobbyist" is mostly bookkeeping and consistency — and it happens to be exactly what lets you treat this as a business for tax purposes.</p>
+        <ul class="clean">
+          <li><strong>SKUs &amp; a live inventory list.</strong> Give every piece a code (e.g. <span style="font-family:var(--mono)">BP-N-001</span> for necklaces). The spreadsheet I started is the seed — we'll finish it once all photos are in.</li>
+          <li><strong>Cost per piece.</strong> Record the material cost of each finished piece so pricing and COGS are grounded, not guessed.</li>
+          <li><strong>Separate money.</strong> A dedicated bank account/card keeps business and personal from co-mingling — the first thing anyone reviewing a Schedule C looks for.</li>
+          <li><strong>Packaging.</strong> A small branded touch — a plumeria card, a muslin pouch — lifts perceived value and repeat purchase for a few cents per order.</li>
+          <li><strong>Own your audience.</strong> Collect emails at fairs and on the site. A list you own beats reach you rent from an algorithm.</li>
+        </ul>
+        <div class="callout warn">
+          <h4>Two things to confirm with a professional</h4>
+          <p><strong>Hobby vs. business (IRS §183).</strong> Your plan already uses the right "profit motive" language. Keeping separate books, this inventory ledger, a sales log, and a written plan is what supports deducting the 2025 loss as a genuine business. Have a CPA confirm your specifics.</p>
+          <p><strong>Texas sales tax.</strong> Selling tangible goods online and at markets generally requires a Texas Sales &amp; Use Tax permit and collecting tax at events. Verify with the TX Comptroller or your CPA before the next fair.</p>
+          <p style="margin-top:.6rem" class="disc">This is general small-business guidance, not tax or legal advice.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="row">
+      <div class="rail"><div class="num">06</div><div class="tag">The Plan</div></div>
+      <div>
+        <span class="eyebrow">Next 90 days</span>
+        <h2>A sequence, not a to-do pile.</h2>
+        <ol class="plan">
+          <li><div class="when">Weeks 1–2</div><p class="what">Finish shooting inventory; complete the list; assign SKUs and confirmed prices; choose the 8–10 Tier&nbsp;1 heroes.</p></li>
+          <li><div class="when">Weeks 2–3</div><p class="what">Edit the featured photos to a consistent look (you're doing this in ChatGPT — I'll hand you a spec so they match); publish the curated collection on the site; set the live Snipcart &amp; contact keys; wire the Instagram/Facebook links.</p></li>
+          <li><div class="when">Weeks 3–4</div><p class="what">Post the reel and start a weekly cadence; list 20+ items on Etsy — or make the call to pause it.</p></li>
+          <li><div class="when">Weeks 4–8</div><p class="what">Book two local markets; build the table kit (Square, cards, display); bring Tier&nbsp;2 for impulse and Tier&nbsp;1 to anchor.</p></li>
+          <li><div class="when">Ongoing</div><p class="what">Capture emails, restock the heroes that sell, and review pricing monthly.</p></li>
+        </ol>
+        <div class="callout gold" style="margin-top:1.6rem">
+          <h4>What I'll do next</h4>
+          <p>Once all the photos are in: finish the inventory list, write titles and descriptions for the Tier&nbsp;1 pieces, hand you a ChatGPT prompt that edits the featured photos to one consistent style, add the featured collection to the site, and wire in your social links.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Blue Plumeria Jewelry &middot; Business analysis &amp; direction &middot; Draft, July 2026. Figures from the 2025 business plan; inventory read from the July product shoot and subject to confirmation.
+  </footer>
+
+</div>
+
+<script>
+  (function(){
+    var els = document.querySelectorAll('.reveal');
+    if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches){
+      els.forEach(function(e){ e.classList.add('in'); }); return;
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: .08 });
+    els.forEach(function(e){ io.observe(e); });
+  })();
+</script>
+
+</body>
+</html>
