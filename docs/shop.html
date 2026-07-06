@@ -58,27 +58,38 @@
   <!-- ── Shop Header ── -->
   <section class="shop-header">
     <h1>The Collection</h1>
-    <p class="product-count">20 one-of-a-kind pieces</p>
+    <p class="product-count"><span id="product-count">20</span> one-of-a-kind pieces</p>
   </section>
 
-  <!-- Filter bar hidden until more products are photographed
+  <!-- ── Collection Filter ── -->
   <div class="filter-bar">
     <div class="container">
       <button class="filter-tab active" data-filter="all">All</button>
-      <button class="filter-tab" data-filter="earrings">Earrings</button>
-      <button class="filter-tab" data-filter="necklaces">Necklaces</button>
-      <button class="filter-tab" data-filter="bracelets">Bracelets</button>
+      <button class="filter-tab" data-filter="sea-shore">Sea &amp; Shore</button>
+      <button class="filter-tab" data-filter="stone-earth">Stone &amp; Earth</button>
+      <button class="filter-tab" data-filter="pearl-crystal">Pearl &amp; Crystal</button>
+      <button class="filter-tab" data-filter="hand-woven">Hand-Woven</button>
     </div>
   </div>
-  -->
 
-  <!-- ── Featured Collection (13 heroes, worn + detail) ── -->
+  <!-- ══════════════════════════════════════════════════════════════════
+       COLLECTION GRID — every piece lives here; the filter tabs above
+       show/hide by its data-collection value.
+
+       TO ADD A PIECE: copy one <div class="showcase-set"> … </div> block
+       and change these fields:
+         • data-collection  → sea-shore | stone-earth | pearl-crystal | hand-woven
+         • the two <img> src + alt   (worn shot first, detail/product second)
+         • .showcase-name  and  .showcase-price
+         • the button's data-item-id / data-item-name / data-item-price / data-item-image
+       TO REMOVE A PIECE (e.g. it sold): delete its whole
+       <div class="showcase-set"> … </div> block. Nothing else to touch.
+       ══════════════════════════════════════════════════════════════════ -->
   <section class="showcase-section section-padding">
     <div class="container">
-      <h2 class="section-heading reveal">Featured Collection</h2>
 
       <!-- 1. Blue Lapis, Sodalite & Quartz Necklace -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-n-004-worn.jpg" alt="Blue Lapis, Sodalite &amp; Quartz Necklace — worn" class="active" loading="lazy">
@@ -106,7 +117,7 @@
       </div>
 
       <!-- 2. Blue Glass & Starfish Necklace -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-n-030-worn.jpg" alt="Blue Glass &amp; Starfish Necklace — worn" class="active" loading="lazy">
@@ -134,7 +145,7 @@
       </div>
 
       <!-- 3. Emerald Crystal & Glass Pearl Earrings -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="pearl-crystal">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-e-011-worn.jpg" alt="Emerald Crystal &amp; Glass Pearl Earrings — worn" class="active" loading="lazy">
@@ -162,7 +173,7 @@
       </div>
 
       <!-- 4. Shells, Howlite & Tiger's Eye Necklace -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-n-010-worn.jpg" alt="Shells, Howlite &amp; Tiger's Eye Necklace — worn" class="active" loading="lazy">
@@ -190,7 +201,7 @@
       </div>
 
       <!-- 5. Onyx, Druzy, Gold & Pearl Necklace -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-n-042-worn.jpg" alt="Onyx, Druzy, Gold &amp; Pearl Necklace — worn" class="active" loading="lazy">
@@ -218,7 +229,7 @@
       </div>
 
       <!-- 6. Cream Pearl & Shell Coil Bracelet -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-b-003-worn.jpg" alt="Cream Pearl &amp; Shell Coil Bracelet — worn" class="active" loading="lazy">
@@ -246,7 +257,7 @@
       </div>
 
       <!-- 7. Woven Aqua Rope Necklace -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="hand-woven">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-n-043-worn.jpg" alt="Woven Aqua Rope Necklace — worn" class="active" loading="lazy">
@@ -274,7 +285,7 @@
       </div>
 
       <!-- 8. Woven Amethyst Stud Earrings -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="hand-woven">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-e-023-worn.jpg" alt="Woven Amethyst Stud Earrings — worn" class="active" loading="lazy">
@@ -302,7 +313,7 @@
       </div>
 
       <!-- 9. Blue Crystal & Porcelain Necklace -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="pearl-crystal">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-n-024-worn.jpg" alt="Blue Crystal &amp; Porcelain Necklace — worn" class="active" loading="lazy">
@@ -330,7 +341,7 @@
       </div>
 
       <!-- 10. Rose Quartz, Grey Agate & Moonstone Necklace -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-n-044-worn.jpg" alt="Rose Quartz, Grey Agate &amp; Moonstone Necklace — worn" class="active" loading="lazy">
@@ -358,7 +369,7 @@
       </div>
 
       <!-- 11. Woven Pearl & Navy Cluster Earrings -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="hand-woven">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-e-042-worn.jpg" alt="Woven Pearl &amp; Navy Cluster Earrings — worn" class="active" loading="lazy">
@@ -386,7 +397,7 @@
       </div>
 
       <!-- 12. Pale Blue Crystal Cube Necklace -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="pearl-crystal">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-n-012-worn.jpg" alt="Pale Blue Crystal Cube Necklace — worn" class="active" loading="lazy">
@@ -414,7 +425,7 @@
       </div>
 
       <!-- 13. Shell, Howlite & Pearl Bracelet -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/featured/bp-b-006-worn.jpg" alt="Shell, Howlite &amp; Pearl Bracelet — worn" class="active" loading="lazy">
@@ -441,16 +452,8 @@
         </div>
       </div>
 
-    </div>
-  </section>
-
-  <!-- ── Studio Editions (original 7) ── -->
-  <section class="showcase-section section-padding" style="background: var(--bone);">
-    <div class="container">
-      <h2 class="section-heading reveal">Studio Editions</h2>
-
       <!-- Silver Plumeria Earrings -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/Silver_plumeria_2.png" alt="Silver Plumeria Drop Earrings — worn" class="active">
@@ -481,7 +484,7 @@
       </div>
 
       <!-- Noir Pearl & Silver Necklace -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="pearl-crystal">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/silver_black_2.png" alt="Noir Pearl & Silver Statement Necklace — worn" class="active">
@@ -512,7 +515,7 @@
       </div>
 
       <!-- Blue Ombre Necklace -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/blue_bracelet_2.png" alt="Blue Ombré Crystal Necklace — worn" class="active">
@@ -543,7 +546,7 @@
       </div>
 
       <!-- Blue Sodalite -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/blue_sodalite_2.png" alt="Blue Sodalite & Pearl Necklace — worn" class="active">
@@ -574,7 +577,7 @@
       </div>
 
       <!-- Lava Stone -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/LavaStone_2.png" alt="Lava Stone & Gold Statement Necklace — worn" class="active">
@@ -605,7 +608,7 @@
       </div>
 
       <!-- Jade -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/Jade_2.png" alt="Jade & Gold Chain Necklace — worn" class="active">
@@ -636,7 +639,7 @@
       </div>
 
       <!-- Yellow & White -->
-      <div class="showcase-set reveal">
+      <div class="showcase-set reveal" data-collection="pearl-crystal">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
             <img src="images/yellow_white_1.png" alt="Honey & Frost Glass Necklace — worn" class="active">

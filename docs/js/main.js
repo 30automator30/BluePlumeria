@@ -36,92 +36,62 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ────────────────────────────────────────
-     Product Filtering (Shop page)
-     The filter bar is currently commented out in the HTML;
-     these existence checks let the code sleep quietly until
-     it returns.
+     Collection Filtering (Shop page)
+     Filter tabs show/hide the .showcase-set cards by their
+     data-collection value. On load the cards are grouped by
+     collection order so the "All" view reads tidily. Every
+     block guards its own elements, so other pages skip this.
      ──────────────────────────────────────── */
-  const filterTabs = document.querySelectorAll('.filter-tab');
-  const productGrid = document.getElementById('product-grid');
+  const filterTabs = document.querySelectorAll('.filter-tab[data-filter]');
+  const showcaseSets = Array.from(document.querySelectorAll('.showcase-set[data-collection]'));
   const productCountEl = document.getElementById('product-count');
+  const COLLECTIONS = ['sea-shore', 'stone-earth', 'pearl-crystal', 'hand-woven'];
 
-  if (filterTabs.length && productGrid) {
-    const cards = Array.from(productGrid.querySelectorAll('.product-card'));
+  if (filterTabs.length && showcaseSets.length) {
+    // Group cards by collection order for a tidy "All" view.
+    const grid = showcaseSets[0].parentElement;
+    if (grid) {
+      [...showcaseSets]
+        .sort((a, b) =>
+          COLLECTIONS.indexOf(a.dataset.collection) - COLLECTIONS.indexOf(b.dataset.collection))
+        .forEach(set => grid.appendChild(set));
+    }
 
-    function filterProducts(category) {
-      let visibleCount = 0;
+    function filterCollection(collection) {
+      let visible = 0;
 
-      cards.forEach(card => {
-        const cardCategory = card.getAttribute('data-category');
-        if (category === 'all' || cardCategory === category) {
-          card.style.display = '';
-          visibleCount++;
-        } else {
-          card.style.display = 'none';
+      showcaseSets.forEach(set => {
+        const match = collection === 'all' || set.dataset.collection === collection;
+        set.style.display = match ? '' : 'none';
+        if (match) {
+          // Ensure a filtered-in card is revealed, never left blank.
+          set.classList.add('in');
+          visible++;
         }
       });
 
-      if (productCountEl) {
-        productCountEl.textContent = visibleCount;
-      }
+      if (productCountEl) productCountEl.textContent = visible;
 
-      // Reflect the active choice in the tab bar.
-      filterTabs.forEach(tab => {
-        tab.classList.toggle('active', tab.getAttribute('data-filter') === category);
-      });
+      filterTabs.forEach(tab =>
+        tab.classList.toggle('active', tab.dataset.filter === collection));
     }
 
     filterTabs.forEach(tab => {
       tab.addEventListener('click', () => {
-        const filter = tab.getAttribute('data-filter');
-        filterProducts(filter);
-        // Keep the URL shareable without scrolling the page.
-        history.replaceState(null, '', '#' + filter);
+        filterCollection(tab.dataset.filter);
+        // Keep the URL shareable without jumping the scroll position.
+        history.replaceState(null, '', '#' + tab.dataset.filter);
       });
     });
 
-    // Honor a category hash on arrival (e.g. from homepage tiles).
-    const hash = window.location.hash.replace('#', '');
-    if (hash && ['earrings', 'necklaces', 'bracelets'].includes(hash)) {
-      filterProducts(hash);
-    }
-
-    // React to hash changes while the page is open.
-    window.addEventListener('hashchange', () => {
-      const newHash = window.location.hash.replace('#', '');
-      if (newHash && ['earrings', 'necklaces', 'bracelets', 'all'].includes(newHash)) {
-        filterProducts(newHash);
-      }
-    });
-  }
-
-  /* ────────────────────────────────────────
-     Sort (Shop page)
-     ──────────────────────────────────────── */
-  const sortSelect = document.getElementById('sort-select');
-
-  if (sortSelect && productGrid) {
-    const cards = Array.from(productGrid.querySelectorAll('.product-card'));
-    const originalOrder = cards.map(card => card);
-
-    sortSelect.addEventListener('change', () => {
-      const value = sortSelect.value;
-      let sorted;
-
-      if (value === 'price-low') {
-        sorted = [...cards].sort(
-          (a, b) => parseFloat(a.dataset.price) - parseFloat(b.dataset.price)
-        );
-      } else if (value === 'price-high') {
-        sorted = [...cards].sort(
-          (a, b) => parseFloat(b.dataset.price) - parseFloat(a.dataset.price)
-        );
-      } else {
-        sorted = originalOrder;
-      }
-
-      sorted.forEach(card => productGrid.appendChild(card));
-    });
+    // Honor a collection hash on arrival, and react to changes.
+    const validFilters = ['all', ...COLLECTIONS];
+    const applyHash = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (validFilters.includes(hash)) filterCollection(hash);
+    };
+    applyHash();
+    window.addEventListener('hashchange', applyHash);
   }
 
   /* ────────────────────────────────────────
