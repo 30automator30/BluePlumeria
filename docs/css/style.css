@@ -1014,3 +1014,14 @@ p { text-wrap: pretty; }
   }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* ── Snipcart checkout ── */
+/* Snipcart's cart/checkout overlay is position:fixed at z-index 20 and scrolls
+   internally. The site header + nav are sticky at z-index 100/99, so they paint
+   on top of the overlay and cover its first fields (Full name, Email). While
+   Snipcart is open it sets .snipcart-cart--opened on <html> — drop the header
+   and nav below the overlay so the full checkout is visible. */
+html.snipcart-cart--opened .site-header,
+html.snipcart-cart--opened .site-nav {
+  z-index: 1;
+}
