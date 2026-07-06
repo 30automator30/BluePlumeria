@@ -2,6 +2,9 @@
 pictures/
 logo/
 
+# Raw camera photos — source files, processed into docs/images/ (too large to publish)
+docs/raw/
+
 # OS files
 .DS_Store
 Thumbs.db
