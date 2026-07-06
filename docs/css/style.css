@@ -1015,6 +1015,36 @@ p { text-wrap: pretty; }
   .reveal { opacity: 1; transform: none; }
 }
 
+/* ── Shop group headings (tier + collection) ── */
+/* Tier banner ("The Signature Collection") reuses .section-heading;
+   trim its base margin since a collection heading follows it. */
+.tier-heading {
+  margin-top: 1rem;
+  margin-bottom: 1.25rem;
+}
+/* Collection sub-heading — centered gold overline with flanking rules. */
+.collection-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 3.5rem 0 2.75rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  text-align: center;
+}
+.collection-heading::before,
+.collection-heading::after {
+  content: "";
+  width: 40px;
+  height: 1px;
+  background: var(--gold);
+}
+
 /* ── Snipcart checkout ── */
 /* Snipcart's cart/checkout overlay is position:fixed at z-index 20 and scrolls
    internally. The site header + nav are sticky at z-index 100/99, so they paint

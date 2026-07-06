@@ -36,25 +36,72 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ────────────────────────────────────────
-     Collection Filtering (Shop page)
-     Filter tabs show/hide the .showcase-set cards by their
-     data-collection value. On load the cards are grouped by
-     collection order so the "All" view reads tidily. Every
-     block guards its own elements, so other pages skip this.
+     Collection Filtering + Grouping (Shop page)
+     Cards carry data-collection (and optional data-tier). On load
+     they're ordered tier → collection, and headings are inserted at
+     each group boundary: a large tier heading (e.g. "The Signature
+     Collection") and an overline collection heading (e.g. "Sea &
+     Shore"). Filter tabs then show/hide by collection. Every block
+     guards its own elements, so other pages skip this.
      ──────────────────────────────────────── */
   const filterTabs = document.querySelectorAll('.filter-tab[data-filter]');
   const showcaseSets = Array.from(document.querySelectorAll('.showcase-set[data-collection]'));
   const productCountEl = document.getElementById('product-count');
-  const COLLECTIONS = ['sea-shore', 'stone-earth', 'pearl-crystal', 'hand-woven'];
+
+  // Two-level structure: tier (Signature / Everyday) → material collection.
+  // A piece without data-tier is treated as Signature.
+  const TIERS = [
+    { key: 'signature', label: 'The Signature Collection' },
+    { key: 'everyday',  label: 'Everyday Collection' }
+  ];
+  const COLLECTIONS = [
+    { key: 'sea-shore',     label: 'Sea & Shore' },
+    { key: 'stone-earth',   label: 'Stone & Earth' },
+    { key: 'pearl-crystal', label: 'Pearl & Crystal' },
+    { key: 'hand-woven',    label: 'Hand-Woven' }
+  ];
+  const tierOrder = TIERS.map(t => t.key);
+  const collectionOrder = COLLECTIONS.map(c => c.key);
+  const labelFor = (list, key) => (list.find(x => x.key === key) || {}).label || key;
+  const tierOf = set => set.dataset.tier || 'signature';
 
   if (filterTabs.length && showcaseSets.length) {
-    // Group cards by collection order for a tidy "All" view.
     const grid = showcaseSets[0].parentElement;
+    const headings = [];
+
     if (grid) {
-      [...showcaseSets]
-        .sort((a, b) =>
-          COLLECTIONS.indexOf(a.dataset.collection) - COLLECTIONS.indexOf(b.dataset.collection))
-        .forEach(set => grid.appendChild(set));
+      // Order by tier, then by collection.
+      const ordered = [...showcaseSets].sort((a, b) => {
+        const byTier = tierOrder.indexOf(tierOf(a)) - tierOrder.indexOf(tierOf(b));
+        if (byTier !== 0) return byTier;
+        return collectionOrder.indexOf(a.dataset.collection) - collectionOrder.indexOf(b.dataset.collection);
+      });
+
+      // Re-append in order, dropping a heading at each group boundary.
+      let lastTier = null, lastCollection = null;
+      ordered.forEach(set => {
+        const tier = tierOf(set);
+        const collection = set.dataset.collection;
+
+        if (tier !== lastTier) {
+          const h = document.createElement('h2');
+          h.className = 'section-heading tier-heading';
+          h.textContent = labelFor(TIERS, tier);
+          grid.appendChild(h);
+          headings.push({ el: h, type: 'tier', tier });
+          lastTier = tier;
+          lastCollection = null;
+        }
+        if (collection !== lastCollection) {
+          const h = document.createElement('h3');
+          h.className = 'collection-heading';
+          h.textContent = labelFor(COLLECTIONS, collection);
+          grid.appendChild(h);
+          headings.push({ el: h, type: 'collection', collection });
+          lastCollection = collection;
+        }
+        grid.appendChild(set);
+      });
     }
 
     function filterCollection(collection) {
@@ -64,10 +111,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const match = collection === 'all' || set.dataset.collection === collection;
         set.style.display = match ? '' : 'none';
         if (match) {
-          // Ensure a filtered-in card is revealed, never left blank.
-          set.classList.add('in');
+          set.classList.add('in'); // ensure a filtered-in card is revealed, never blank
           visible++;
         }
+      });
+
+      // "All" shows the full labelled structure; a single collection
+      // shows only its own heading (the active tab already names it).
+      headings.forEach(h => {
+        const show = collection === 'all'
+          ? true
+          : (h.type === 'collection' && h.collection === collection);
+        h.el.style.display = show ? '' : 'none';
       });
 
       if (productCountEl) productCountEl.textContent = visible;
@@ -85,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Honor a collection hash on arrival, and react to changes.
-    const validFilters = ['all', ...COLLECTIONS];
+    const validFilters = ['all', ...collectionOrder];
     const applyHash = () => {
       const hash = window.location.hash.replace('#', '');
       if (validFilters.includes(hash)) filterCollection(hash);
