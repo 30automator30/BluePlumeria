@@ -354,4 +354,78 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  /* ────────────────────────────────────────
+     Snipcart → GA4 E-commerce Events
+     Bridges Snipcart's cart lifecycle into GA4 so the
+     dedicated Blue Plumeria property records add_to_cart,
+     remove_from_cart, and purchase — each with item and
+     value detail. Every hop is guarded: no Snipcart on the
+     page, or a gtag stripped by a blocker, simply means no
+     event is sent — never a thrown error.
+     ──────────────────────────────────────── */
+  (function snipcartToGA4() {
+    // gtag() ships in each page's <head>. Send only if it's
+    // actually present so a privacy blocker can't break this.
+    const track = (name, params) => {
+      if (typeof window.gtag === 'function') window.gtag('event', name, params);
+    };
+
+    // Snipcart line item → GA4 item shape.
+    const toItem = it => ({
+      item_id:   it.id != null ? String(it.id) : undefined,
+      item_name: it.name,
+      price:     typeof it.price === 'number' ? it.price : undefined,
+      quantity:  it.quantity || 1
+    });
+
+    const lineValue = it =>
+      (typeof it.price === 'number' ? it.price : 0) * (it.quantity || 1);
+
+    // Read the active cart's currency, defaulting sensibly.
+    const currencyOf = cart =>
+      (cart && cart.currency) || 'USD';
+
+    const cartState = () => {
+      try { return window.Snipcart.store.getState().cart; }
+      catch (e) { return null; }
+    };
+
+    document.addEventListener('snipcart.ready', () => {
+      if (!window.Snipcart || !Snipcart.events) return;
+
+      Snipcart.events.on('item.added', item => {
+        if (!item) return;
+        track('add_to_cart', {
+          currency: currencyOf(cartState()),
+          value:    lineValue(item),
+          items:    [toItem(item)]
+        });
+      });
+
+      Snipcart.events.on('item.removed', item => {
+        if (!item) return;
+        track('remove_from_cart', {
+          currency: currencyOf(cartState()),
+          value:    lineValue(item),
+          items:    [toItem(item)]
+        });
+      });
+
+      // Order paid and confirmed — the conversion. Read the
+      // completed cart from the store at confirmation time.
+      Snipcart.events.on('cart.confirmed', () => {
+        const cart = cartState();
+        if (!cart) return;
+        // In Snipcart v3 the line items live at cart.items.items.
+        const rawItems = (cart.items && cart.items.items) || [];
+        track('purchase', {
+          transaction_id: cart.token || cart.invoiceNumber || undefined,
+          currency:       currencyOf(cart),
+          value:          typeof cart.total === 'number' ? cart.total : undefined,
+          items:          rawItems.map(toItem)
+        });
+      });
+    });
+  })();
+
 });
