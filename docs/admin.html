@@ -229,7 +229,7 @@ function orderRow(o) {
   const items = (o.order_items || []).map((i) => `${i.quantity}× ${esc(i.name || i.sku)}`).join(", ");
   return `<tr>
     <td>${fmtDate(o.placed_at)}</td>
-    <td class="cust"><b>${esc(o.customer_name || "—")}</b><span>${esc(items)}</span></td>
+    <td class="cust"><b>${esc(o.customer_name || "—")}</b><span>${items}</span></td>
     <td class="num">${money(o.total)}</td>
     <td><span class="badge ${o.status === "paid" ? "paid" : "test"}">${esc(o.status)}</span></td>
   </tr>`;
