@@ -1,0 +1,354 @@
+{
+  "products": [
+    {
+      "sku": "BP-N-004",
+      "name": "Blue Lapis, Sodalite & Quartz Necklace",
+      "price": 150.0,
+      "collection": "stone-earth",
+      "tier": "signature",
+      "label": "Signature Piece",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-n-004-detail.jpg",
+      "images": [
+        "images/featured/bp-n-004-worn.jpg",
+        "images/featured/bp-n-004-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-N-030",
+      "name": "Blue Glass & Starfish Necklace",
+      "price": 55.0,
+      "collection": "sea-shore",
+      "tier": "signature",
+      "label": "Signature Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-n-030-detail.jpg",
+      "images": [
+        "images/featured/bp-n-030-worn.jpg",
+        "images/featured/bp-n-030-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-E-011",
+      "name": "Emerald Crystal & Glass Pearl Earrings",
+      "price": 38.0,
+      "collection": "pearl-crystal",
+      "tier": "signature",
+      "label": "Signature Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-e-011-detail.jpg",
+      "images": [
+        "images/featured/bp-e-011-worn.jpg",
+        "images/featured/bp-e-011-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-N-010",
+      "name": "Shells, Howlite & Tiger's Eye Necklace",
+      "price": 65.0,
+      "collection": "sea-shore",
+      "tier": "signature",
+      "label": "Signature Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-n-010-detail.jpg",
+      "images": [
+        "images/featured/bp-n-010-worn.jpg",
+        "images/featured/bp-n-010-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-N-042",
+      "name": "Onyx, Druzy, Gold & Pearl Necklace",
+      "price": 70.0,
+      "collection": "stone-earth",
+      "tier": "signature",
+      "label": "Signature Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-n-042-detail.jpg",
+      "images": [
+        "images/featured/bp-n-042-worn.jpg",
+        "images/featured/bp-n-042-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-B-003",
+      "name": "Cream Pearl & Shell Coil Bracelet",
+      "price": 42.0,
+      "collection": "sea-shore",
+      "tier": "signature",
+      "label": "Signature Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-b-003-detail.jpg",
+      "images": [
+        "images/featured/bp-b-003-worn.jpg",
+        "images/featured/bp-b-003-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-N-043",
+      "name": "Woven Aqua Rope Necklace",
+      "price": 70.0,
+      "collection": "hand-woven",
+      "tier": "signature",
+      "label": "Signature Series · Bead-woven",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-n-043-detail.jpg",
+      "images": [
+        "images/featured/bp-n-043-worn.jpg",
+        "images/featured/bp-n-043-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-E-023",
+      "name": "Woven Amethyst Stud Earrings",
+      "price": 35.0,
+      "collection": "hand-woven",
+      "tier": "signature",
+      "label": "Signature Series · Bead-woven",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-e-023-detail.jpg",
+      "images": [
+        "images/featured/bp-e-023-worn.jpg",
+        "images/featured/bp-e-023-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-N-024",
+      "name": "Blue Crystal & Porcelain Necklace",
+      "price": 65.0,
+      "collection": "pearl-crystal",
+      "tier": "signature",
+      "label": "Signature Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-n-024-detail.jpg",
+      "images": [
+        "images/featured/bp-n-024-worn.jpg",
+        "images/featured/bp-n-024-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-N-044",
+      "name": "Rose Quartz, Grey Agate & Moonstone Necklace",
+      "price": 60.0,
+      "collection": "stone-earth",
+      "tier": "signature",
+      "label": "Signature Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-n-044-detail.jpg",
+      "images": [
+        "images/featured/bp-n-044-worn.jpg",
+        "images/featured/bp-n-044-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-E-042",
+      "name": "Woven Pearl & Navy Cluster Earrings",
+      "price": 38.0,
+      "collection": "hand-woven",
+      "tier": "signature",
+      "label": "Signature Series · Bead-woven",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-e-042-detail.jpg",
+      "images": [
+        "images/featured/bp-e-042-worn.jpg",
+        "images/featured/bp-e-042-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-N-012",
+      "name": "Pale Blue Crystal Cube Necklace",
+      "price": 55.0,
+      "collection": "pearl-crystal",
+      "tier": "signature",
+      "label": "Signature Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-n-012-detail.jpg",
+      "images": [
+        "images/featured/bp-n-012-worn.jpg",
+        "images/featured/bp-n-012-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-B-006",
+      "name": "Shell, Howlite & Pearl Bracelet",
+      "price": 42.0,
+      "collection": "sea-shore",
+      "tier": "signature",
+      "label": "Signature Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-b-006-detail.jpg",
+      "images": [
+        "images/featured/bp-b-006-worn.jpg",
+        "images/featured/bp-b-006-detail.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-STUDIO-001",
+      "name": "Silver Plumeria Drop Earrings",
+      "price": 80.0,
+      "collection": "sea-shore",
+      "tier": "signature",
+      "label": "Signature Piece",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/Silver_plumeria_1.png",
+      "images": [
+        "images/Silver_plumeria_2.png",
+        "images/Silver_plumeria_1.png"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-STUDIO-002",
+      "name": "Noir Pearl & Silver Statement Necklace",
+      "price": 85.0,
+      "collection": "pearl-crystal",
+      "tier": "signature",
+      "label": "Studio Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/silver_black_1.png",
+      "images": [
+        "images/silver_black_2.png",
+        "images/silver_black_1.png"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-STUDIO-003",
+      "name": "Blue Ombré Crystal Necklace",
+      "price": 55.0,
+      "collection": "sea-shore",
+      "tier": "signature",
+      "label": "Studio Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/blue_bracelet_1.png",
+      "images": [
+        "images/blue_bracelet_2.png",
+        "images/blue_bracelet_1.png"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-STUDIO-004",
+      "name": "Blue Sodalite & Pearl Necklace",
+      "price": 55.0,
+      "collection": "stone-earth",
+      "tier": "signature",
+      "label": "Studio Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/blue_sodalite_1.png",
+      "images": [
+        "images/blue_sodalite_2.png",
+        "images/blue_sodalite_1.png"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-STUDIO-005",
+      "name": "Lava Stone & Gold Statement Necklace",
+      "price": 65.0,
+      "collection": "stone-earth",
+      "tier": "signature",
+      "label": "Studio Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/LavaStone_1.png",
+      "images": [
+        "images/LavaStone_2.png",
+        "images/LavaStone_1.png"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-STUDIO-006",
+      "name": "Jade & Gold Chain Necklace",
+      "price": 50.0,
+      "collection": "stone-earth",
+      "tier": "signature",
+      "label": "Studio Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/jade_1.png",
+      "images": [
+        "images/Jade_2.png",
+        "images/jade_1.png"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-STUDIO-007",
+      "name": "Honey & Frost Glass Necklace",
+      "price": 45.0,
+      "collection": "pearl-crystal",
+      "tier": "signature",
+      "label": "Studio Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/yellow_white_1.png",
+      "images": [
+        "images/yellow_white_1.png",
+        "images/yellow_white_2.png"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-N-014",
+      "name": "Teal Aurora & Silver Sea-Charm Necklace",
+      "price": 55.0,
+      "collection": "sea-shore",
+      "tier": "everyday",
+      "label": "Everyday",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/everyday/BP-N-014.jpg",
+      "images": [
+        "images/everyday/BP-N-014.jpg"
+      ],
+      "available": true
+    },
+    {
+      "sku": "BP-N-002",
+      "name": "Peridot & Aqua Glass Necklace",
+      "price": 45.0,
+      "collection": "pearl-crystal",
+      "tier": "everyday",
+      "label": "Everyday",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/everyday/BP-N-002.jpg",
+      "images": [
+        "images/everyday/BP-N-002.jpg"
+      ],
+      "available": true
+    }
+  ]
+}
