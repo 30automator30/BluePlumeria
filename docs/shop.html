@@ -32,6 +32,15 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://cdn.snipcart.com">
   <noscript><style>.reveal{opacity:1 !important;transform:none !important}</style></noscript>
+  <style>
+    /* Sold-out state (one-of-a-kind pieces marked sold in the database) */
+    .showcase-set.sold .showcase-media{ position:relative; }
+    .showcase-set.sold .showcase-media img{ filter:grayscale(.4); opacity:.78; }
+    .showcase-set.sold .showcase-media::after{ content:"Sold"; position:absolute; top:12px; left:12px; z-index:3;
+      background:#1c1712; color:#fff; font-size:.68rem; letter-spacing:.16em; text-transform:uppercase; padding:6px 13px; border-radius:999px; }
+    .showcase-set.sold .showcase-price{ text-decoration:line-through; opacity:.55; }
+    .showcase-set.sold .btn-primary{ background:#cfc6b6; color:#6b6355; cursor:not-allowed; pointer-events:none; box-shadow:none; }
+  </style>
 </head>
 <body>
 
@@ -772,5 +781,30 @@
   <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "38a6ebb3dcc84f76a18885ecca1cf73b"}'></script>
   <!-- End Cloudflare Web Analytics -->
   <script src="js/main.js"></script>
+  <!-- Live availability: mark sold-out one-of-a-kind pieces from Supabase -->
+  <script>
+  (function(){
+    var URL="https://ktjxrxchrxtmyvlfsyof.supabase.co/rest/v1/products?select=sku,available";
+    var KEY="sb_publishable_8NSnU6lGLIt9GplZ-7hHUw_XvtDmX2s";
+    function apply(){
+      fetch(URL,{headers:{apikey:KEY,Authorization:"Bearer "+KEY}})
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(rows){
+          if(!rows) return;
+          var sold={}; rows.forEach(function(p){ if(!p.available) sold[p.sku]=1; });
+          document.querySelectorAll(".snipcart-add-item[data-item-id]").forEach(function(btn){
+            if(sold[btn.getAttribute("data-item-id")]){
+              var set=btn.closest(".showcase-set"); if(set) set.classList.add("sold");
+              btn.classList.remove("snipcart-add-item");   /* stops Snipcart from adding it */
+              btn.setAttribute("disabled","");
+              btn.textContent="Sold";
+            }
+          });
+        })
+        .catch(function(){ /* offline: leave the static page as-is */ });
+    }
+    if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",apply); else apply();
+  })();
+  </script>
 </body>
 </html>
