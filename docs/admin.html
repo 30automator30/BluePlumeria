@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Blue Plumeria — Owner Dashboard</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fcfaf6; --bone:#f5f0e7; --sand:#ece4d6; --card:#ffffff;
+    --ink:#1c1712; --ink-soft:#3a332b; --muted:#8a7f6e;
+    --border:#e4dbcc; --border-soft:#efe8db;
+    --gold:#b08d4f; --gold-deep:#8c6d37; --slate:#6e8ca6; --slate-deep:#47617a;
+    --good:#5a8a5f; --warn:#b4553f;
+    --shadow:0 14px 34px -20px rgba(28,23,18,.4);
+    --serif:"Cormorant Garamond",Georgia,serif;
+    --sans:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); line-height:1.5; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1140px; margin:0 auto; padding:0 22px; }
+  h1,h2,h3{ font-family:var(--serif); font-weight:600; line-height:1.1; }
+
+  /* login gate */
+  #login{ min-height:100vh; display:grid; place-items:center; padding:22px; }
+  .login-card{ width:400px; max-width:100%; background:var(--card); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow); padding:38px 34px; text-align:center; }
+  .login-card .brand{ font-family:var(--serif); font-size:1.9rem; letter-spacing:.01em; }
+  .login-card .brand small{ display:block; font-family:var(--sans); font-size:.66rem; letter-spacing:.28em; text-transform:uppercase; color:var(--muted); margin-top:6px; }
+  .login-card p.sub{ color:var(--muted); font-size:.9rem; margin:18px 0 24px; }
+  .field{ text-align:left; margin-bottom:14px; }
+  .field label{ font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; }
+  .field input{ width:100%; border:1px solid var(--border); border-radius:10px; padding:12px 14px; font:inherit; background:var(--paper); color:var(--ink); }
+  .field input:focus{ outline:none; border-color:var(--gold); }
+  .btn{ font:inherit; font-weight:600; cursor:pointer; border:none; border-radius:10px; padding:12px 20px; display:inline-flex; align-items:center; justify-content:center; gap:8px; transition:.15s; }
+  .btn-gold{ background:var(--gold); color:#fff; width:100%; } .btn-gold:hover{ background:var(--gold-deep); }
+  .btn-ghost{ background:transparent; color:var(--ink); border:1px solid var(--border); } .btn-ghost:hover{ border-color:var(--gold); }
+  .err{ color:var(--warn); font-size:.85rem; margin-top:12px; min-height:1.2em; }
+
+  /* app shell */
+  #app{ display:none; }
+  .top{ background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
+  .top .wrap{ display:flex; align-items:center; gap:16px; padding:14px 22px; }
+  .top .brand{ font-family:var(--serif); font-size:1.35rem; }
+  .top .brand small{ font-family:var(--sans); font-size:.6rem; letter-spacing:.24em; text-transform:uppercase; color:var(--muted); display:block; }
+  .top .who{ margin-left:auto; font-size:.82rem; color:var(--muted); }
+  .tabs{ display:flex; gap:4px; border-bottom:1px solid var(--border); background:var(--card); }
+  .tabs .wrap{ display:flex; gap:4px; padding:0 22px; }
+  .tab{ font:inherit; font-size:.9rem; font-weight:600; cursor:pointer; color:var(--muted); background:none; border:none; border-bottom:2px solid transparent; padding:13px 14px; }
+  .tab.on{ color:var(--ink); border-bottom-color:var(--gold); } .tab:hover{ color:var(--ink); }
+  main{ padding:26px 0 70px; }
+  .h{ font-size:1.5rem; margin-bottom:4px; } .sub{ color:var(--muted); font-size:.9rem; margin-bottom:20px; }
+
+  .kpis{ display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:26px; }
+  @media(max-width:900px){ .kpis{ grid-template-columns:repeat(3,1fr); } }
+  @media(max-width:560px){ .kpis{ grid-template-columns:repeat(2,1fr); } }
+  .kpi{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; }
+  .kpi .n{ font-family:var(--serif); font-size:1.8rem; color:var(--gold-deep); }
+  .kpi .l{ font-size:.72rem; color:var(--muted); margin-top:4px; letter-spacing:.02em; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:18px; } @media(max-width:820px){ .grid2{ grid-template-columns:1fr; } }
+  .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; }
+  .card h3{ font-size:1.15rem; margin-bottom:14px; display:flex; justify-content:space-between; align-items:baseline; }
+  .card h3 .tag{ font-family:var(--sans); font-size:.7rem; font-weight:600; color:var(--muted); }
+
+  table{ width:100%; border-collapse:collapse; font-size:.88rem; }
+  th{ text-align:left; font-size:.66rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700; padding:0 10px 10px; border-bottom:1px solid var(--border); }
+  td{ padding:12px 10px; border-bottom:1px solid var(--border-soft); vertical-align:top; }
+  tr:last-child td{ border-bottom:none; }
+  td.num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .cust b{ display:block; } .cust span{ color:var(--muted); font-size:.8rem; }
+  .badge{ font-size:.68rem; font-weight:700; padding:3px 10px; border-radius:999px; white-space:nowrap; }
+  .badge.paid{ background:color-mix(in srgb,var(--good) 16%,transparent); color:var(--good); }
+  .badge.test{ background:var(--sand); color:var(--muted); }
+  .chips{ display:flex; gap:8px; margin-bottom:16px; }
+  .chip{ font:inherit; font-size:.82rem; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--card); color:var(--muted); padding:7px 14px; border-radius:999px; }
+  .chip.on{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
+  .inv{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; }
+  .piece{ background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .piece .ph{ height:150px; background:var(--sand) center/cover no-repeat; position:relative; }
+  .piece .ph .st{ position:absolute; top:10px; left:10px; }
+  .piece .b{ padding:13px 14px; }
+  .piece .nm{ font-family:var(--serif); font-size:1.08rem; line-height:1.2; }
+  .piece .meta{ display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
+  .piece .pr{ color:var(--gold-deep); font-weight:600; font-variant-numeric:tabular-nums; }
+  .piece .coll{ font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .piece .toggle{ margin-top:10px; width:100%; font-size:.8rem; padding:8px; }
+  .empty{ text-align:center; color:var(--muted); padding:40px 0; }
+  .loading{ text-align:center; color:var(--muted); padding:60px 0; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login">
+  <form class="login-card" id="loginForm">
+    <div class="brand">Blue Plumeria<small>Owner Dashboard</small></div>
+    <p class="sub">Sign in to view orders &amp; inventory.</p>
+    <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="username" required></div>
+    <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+    <button class="btn btn-gold" type="submit" id="loginBtn">Sign in</button>
+    <p class="err" id="loginErr"></p>
+  </form>
+</section>
+
+<!-- APP -->
+<div id="app">
+  <div class="top"><div class="wrap">
+    <div class="brand">Blue Plumeria<small>Owner Dashboard</small></div>
+    <span class="who" id="who"></span>
+    <button class="btn btn-ghost" id="signout" style="padding:8px 14px">Sign out</button>
+  </div></div>
+  <nav class="tabs"><div class="wrap">
+    <button class="tab on" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="orders">Orders</button>
+    <button class="tab" data-tab="inventory">Inventory</button>
+  </div></nav>
+  <main><div class="wrap" id="view"><div class="loading">Loading…</div></div></main>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SB = createClient(
+  "https://ktjxrxchrxtmyvlfsyof.supabase.co",
+  "sb_publishable_8NSnU6lGLIt9GplZ-7hHUw_XvtDmX2s",
+);
+
+const $ = (s) => document.querySelector(s);
+const money = (v) => "$" + Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "—";
+
+let ORDERS = [], PRODUCTS = [], activeTab = "overview", orderFilter = "all";
+
+/* ---- auth ---- */
+async function boot() {
+  const { data: { session } } = await SB.auth.getSession();
+  if (session) showApp(session); else showLogin();
+}
+function showLogin() { $("#login").style.display = "grid"; $("#app").style.display = "none"; }
+async function showApp(session) {
+  $("#login").style.display = "none";
+  $("#app").style.display = "block";
+  $("#who").textContent = session.user.email;
+  await loadData();
+  render();
+}
+$("#loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("#loginErr").textContent = ""; $("#loginBtn").disabled = true; $("#loginBtn").textContent = "Signing in…";
+  const { data, error } = await SB.auth.signInWithPassword({ email: $("#email").value.trim(), password: $("#password").value });
+  $("#loginBtn").disabled = false; $("#loginBtn").textContent = "Sign in";
+  if (error) { $("#loginErr").textContent = error.message; return; }
+  showApp(data.session);
+});
+$("#signout").addEventListener("click", async () => { await SB.auth.signOut(); showLogin(); });
+
+/* ---- data ---- */
+async function loadData() {
+  const [o, p] = await Promise.all([
+    SB.from("orders").select("*, order_items(*)").order("placed_at", { ascending: false }),
+    SB.from("products").select("*").order("sku"),
+  ]);
+  ORDERS = o.data || [];
+  PRODUCTS = p.data || [];
+  if (o.error) console.error(o.error);
+  if (p.error) console.error(p.error);
+}
+
+/* ---- tabs ---- */
+document.querySelectorAll(".tab").forEach((t) =>
+  t.addEventListener("click", () => {
+    activeTab = t.dataset.tab;
+    document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
+    render();
+  }));
+
+function render() {
+  const v = $("#view");
+  if (activeTab === "overview") v.innerHTML = overview();
+  else if (activeTab === "orders") { v.innerHTML = orders(); wireOrderChips(); }
+  else v.innerHTML = inventory(), wireInventory();
+}
+
+/* ---- overview ---- */
+function overview() {
+  const paid = ORDERS.filter((o) => o.status === "paid");
+  const testCount = ORDERS.length - paid.length;
+  const revenue = paid.reduce((s, o) => s + Number(o.total || 0), 0);
+  const itemsSold = ORDERS.flatMap((o) => o.order_items || []).reduce((s, i) => s + (i.quantity || 0), 0);
+  const avail = PRODUCTS.filter((p) => p.available).length;
+  const sold = PRODUCTS.length - avail;
+  const kpis = [
+    [paid.length, "Paid orders"],
+    [money(revenue), "Revenue"],
+    [paid.length ? money(revenue / paid.length) : "—", "Avg order"],
+    [itemsSold, "Items sold"],
+    [avail, "Pieces available"],
+    [sold, "Pieces sold"],
+  ];
+  const recent = ORDERS.slice(0, 5).map(orderRow).join("") || `<tr><td class="empty">No orders yet.</td></tr>`;
+  // top pieces by qty
+  const tally = {};
+  ORDERS.flatMap((o) => o.order_items || []).forEach((i) => {
+    if (!i.sku) return; tally[i.sku] = tally[i.sku] || { name: i.name, qty: 0, rev: 0 };
+    tally[i.sku].qty += i.quantity || 0; tally[i.sku].rev += Number(i.line_total || 0);
+  });
+  const top = Object.entries(tally).sort((a, b) => b[1].qty - a[1].qty).slice(0, 6);
+  const topRows = top.map(([sku, t]) => `<tr><td class="cust"><b>${esc(t.name)}</b><span>${esc(sku)}</span></td><td class="num">${t.qty}</td><td class="num">${money(t.rev)}</td></tr>`).join("") || `<tr><td class="empty">Nothing sold yet.</td></tr>`;
+
+  return `
+    <h2 class="h">This week at a glance</h2>
+    <p class="sub">Your live store — orders, revenue, and one-of-a-kind stock in one place.${testCount ? ` <b>(${testCount} test order${testCount > 1 ? "s" : ""} excluded from revenue.)</b>` : ""}</p>
+    <div class="kpis">${kpis.map(([n, l]) => `<div class="kpi"><div class="n">${esc(n)}</div><div class="l">${esc(l)}</div></div>`).join("")}</div>
+    <div class="grid2">
+      <div class="card"><h3>Recent orders <span class="tag">${ORDERS.length} total</span></h3>
+        <table><thead><tr><th>Date</th><th>Customer</th><th style="text-align:right">Total</th><th></th></tr></thead><tbody>${recent}</tbody></table></div>
+      <div class="card"><h3>Best sellers</h3>
+        <table><thead><tr><th>Piece</th><th style="text-align:right">Sold</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${topRows}</tbody></table></div>
+    </div>`;
+}
+
+/* ---- orders ---- */
+function orderRow(o) {
+  const items = (o.order_items || []).map((i) => `${i.quantity}× ${esc(i.name || i.sku)}`).join(", ");
+  return `<tr>
+    <td>${fmtDate(o.placed_at)}</td>
+    <td class="cust"><b>${esc(o.customer_name || "—")}</b><span>${esc(items)}</span></td>
+    <td class="num">${money(o.total)}</td>
+    <td><span class="badge ${o.status === "paid" ? "paid" : "test"}">${esc(o.status)}</span></td>
+  </tr>`;
+}
+function orders() {
+  const rows = ORDERS.filter((o) => orderFilter === "all" || o.status === orderFilter);
+  const body = rows.map((o) => `<tr>
+      <td>${fmtDate(o.placed_at)}</td>
+      <td class="cust"><b>${esc(o.customer_name || "—")}</b><span>${esc(o.email || "")}</span></td>
+      <td>${(o.order_items || []).map((i) => `${i.quantity}× ${esc(i.name || i.sku)}`).join("<br>") || "—"}</td>
+      <td class="num">${money(o.total)}</td>
+      <td><span class="badge ${o.status === "paid" ? "paid" : "test"}">${esc(o.status)}</span></td>
+    </tr>`).join("") || `<tr><td colspan="5" class="empty">No orders in this view.</td></tr>`;
+  return `
+    <h2 class="h">Orders</h2>
+    <p class="sub">Every order, captured live from Snipcart.</p>
+    <div class="chips" id="ochips">
+      ${["all", "paid", "test"].map((f) => `<button class="chip ${orderFilter === f ? "on" : ""}" data-f="${f}">${f[0].toUpperCase() + f.slice(1)}</button>`).join("")}
+    </div>
+    <div class="card"><table>
+      <thead><tr><th>Date</th><th>Customer</th><th>Items</th><th style="text-align:right">Total</th><th>Status</th></tr></thead>
+      <tbody>${body}</tbody></table></div>`;
+}
+function wireOrderChips() {
+  document.querySelectorAll("#ochips .chip").forEach((c) =>
+    c.addEventListener("click", () => { orderFilter = c.dataset.f; render(); }));
+}
+
+/* ---- inventory ---- */
+function inventory() {
+  const avail = PRODUCTS.filter((p) => p.available).length;
+  const cards = PRODUCTS.map((p) => {
+    const img = (p.images && p.images[0]) || p.cart_image || "";
+    return `<div class="piece">
+      <div class="ph" style="background-image:url('${esc(img)}')"><span class="st"><span class="badge ${p.available ? "paid" : "test"}">${p.available ? "available" : "sold"}</span></span></div>
+      <div class="b">
+        <div class="nm">${esc(p.name)}</div>
+        <div class="meta"><span class="coll">${esc(p.collection || "")}</span><span class="pr">${money(p.price)}</span></div>
+        <button class="btn btn-ghost toggle" data-sku="${esc(p.sku)}">${p.available ? "Mark sold" : "Mark available"}</button>
+      </div></div>`;
+  }).join("");
+  return `
+    <h2 class="h">Inventory</h2>
+    <p class="sub">${avail} available · ${PRODUCTS.length - avail} sold · ${PRODUCTS.length} total. One-of-a-kind pieces flip to “sold” automatically when ordered.</p>
+    <div class="inv">${cards || `<div class="empty">No products.</div>`}</div>`;
+}
+function wireInventory() {
+  document.querySelectorAll(".toggle").forEach((b) =>
+    b.addEventListener("click", async () => {
+      const sku = b.dataset.sku; const p = PRODUCTS.find((x) => x.sku === sku); if (!p) return;
+      b.disabled = true; b.textContent = "Saving…";
+      const { error } = await SB.from("products").update({ available: !p.available }).eq("sku", sku);
+      if (error) { b.disabled = false; b.textContent = "Error — retry"; console.error(error); return; }
+      p.available = !p.available; render();
+    }));
+}
+
+boot();
+</script>
+</body>
+</html>
