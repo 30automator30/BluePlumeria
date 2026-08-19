@@ -91,22 +91,23 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════
-       COLLECTION GRID — every piece lives here; the filter tabs above
-       show/hide by its data-collection value.
+       COLLECTION GRID — the cards between the BEGIN/END markers below are
+       GENERATED from catalog/products.json. Do NOT edit them by hand.
 
-       TO ADD A PIECE: copy one <div class="showcase-set"> … </div> block
-       and change these fields:
-         • data-collection  → sea-shore | stone-earth | pearl-crystal | hand-woven
-         • the two <img> src + alt   (worn shot first, detail/product second)
-         • .showcase-name  and  .showcase-price
-         • the button's data-item-id / data-item-name / data-item-price / data-item-image
-       TO REMOVE A PIECE (e.g. it sold): delete its whole
-       <div class="showcase-set"> … </div> block. Nothing else to touch.
+       TO CHANGE A PIECE (price, name, images, collection, etc.):
+         1. edit the piece in  catalog/products.json   (single source of truth)
+         2. run   python catalog/gen-shop.py    → rewrites these cards
+         3. run   python catalog/gen-seed.py    → refreshes the DB seed
+       The filter tabs above show/hide by each card's data-collection value.
+       "Sold" state is applied at runtime from Supabase by the script at the
+       bottom of this page — availability is not stored here.
        ══════════════════════════════════════════════════════════════════ -->
   <section class="showcase-section section-padding">
     <div class="container">
 
-      <!-- 1. Blue Lapis, Sodalite & Quartz Necklace -->
+      <!-- BEGIN generated cards — do not edit by hand. Regenerate: python catalog/gen-shop.py -->
+
+      <!-- Blue Lapis, Sodalite & Quartz Necklace (BP-N-004) -->
       <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -134,7 +135,7 @@
         </div>
       </div>
 
-      <!-- 2. Blue Glass & Starfish Necklace -->
+      <!-- Blue Glass & Starfish Necklace (BP-N-030) -->
       <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -162,7 +163,7 @@
         </div>
       </div>
 
-      <!-- 3. Emerald Crystal & Glass Pearl Earrings -->
+      <!-- Emerald Crystal & Glass Pearl Earrings (BP-E-011) -->
       <div class="showcase-set reveal" data-collection="pearl-crystal">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -190,7 +191,7 @@
         </div>
       </div>
 
-      <!-- 4. Shells, Howlite & Tiger's Eye Necklace -->
+      <!-- Shells, Howlite & Tiger's Eye Necklace (BP-N-010) -->
       <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -218,7 +219,7 @@
         </div>
       </div>
 
-      <!-- 5. Onyx, Druzy, Gold & Pearl Necklace -->
+      <!-- Onyx, Druzy, Gold & Pearl Necklace (BP-N-042) -->
       <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -246,7 +247,7 @@
         </div>
       </div>
 
-      <!-- 6. Cream Pearl & Shell Coil Bracelet -->
+      <!-- Cream Pearl & Shell Coil Bracelet (BP-B-003) -->
       <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -274,7 +275,7 @@
         </div>
       </div>
 
-      <!-- 7. Woven Aqua Rope Necklace -->
+      <!-- Woven Aqua Rope Necklace (BP-N-043) -->
       <div class="showcase-set reveal" data-collection="hand-woven">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -290,7 +291,7 @@
           <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
         </div>
         <div class="showcase-info">
-          <span class="showcase-label">Signature Series &middot; Bead-woven</span>
+          <span class="showcase-label">Signature Series · Bead-woven</span>
           <h3 class="showcase-name">Woven Aqua Rope Necklace</h3>
           <p class="showcase-price">$70</p>
           <div class="showcase-cta">
@@ -302,7 +303,7 @@
         </div>
       </div>
 
-      <!-- 8. Woven Amethyst Stud Earrings -->
+      <!-- Woven Amethyst Stud Earrings (BP-E-023) -->
       <div class="showcase-set reveal" data-collection="hand-woven">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -318,7 +319,7 @@
           <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
         </div>
         <div class="showcase-info">
-          <span class="showcase-label">Signature Series &middot; Bead-woven</span>
+          <span class="showcase-label">Signature Series · Bead-woven</span>
           <h3 class="showcase-name">Woven Amethyst Stud Earrings</h3>
           <p class="showcase-price">$35</p>
           <div class="showcase-cta">
@@ -330,7 +331,7 @@
         </div>
       </div>
 
-      <!-- 9. Blue Crystal & Porcelain Necklace -->
+      <!-- Blue Crystal & Porcelain Necklace (BP-N-024) -->
       <div class="showcase-set reveal" data-collection="pearl-crystal">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -358,7 +359,7 @@
         </div>
       </div>
 
-      <!-- 10. Rose Quartz, Grey Agate & Moonstone Necklace -->
+      <!-- Rose Quartz, Grey Agate & Moonstone Necklace (BP-N-044) -->
       <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -386,7 +387,7 @@
         </div>
       </div>
 
-      <!-- 11. Woven Pearl & Navy Cluster Earrings -->
+      <!-- Woven Pearl & Navy Cluster Earrings (BP-E-042) -->
       <div class="showcase-set reveal" data-collection="hand-woven">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -402,7 +403,7 @@
           <p class="ai-note">Shown on an AI model to illustrate styling &mdash; swipe for a photo of the actual piece.</p>
         </div>
         <div class="showcase-info">
-          <span class="showcase-label">Signature Series &middot; Bead-woven</span>
+          <span class="showcase-label">Signature Series · Bead-woven</span>
           <h3 class="showcase-name">Woven Pearl &amp; Navy Cluster Earrings</h3>
           <p class="showcase-price">$38</p>
           <div class="showcase-cta">
@@ -414,7 +415,7 @@
         </div>
       </div>
 
-      <!-- 12. Pale Blue Crystal Cube Necklace -->
+      <!-- Pale Blue Crystal Cube Necklace (BP-N-012) -->
       <div class="showcase-set reveal" data-collection="pearl-crystal">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -442,7 +443,7 @@
         </div>
       </div>
 
-      <!-- 13. Shell, Howlite & Pearl Bracelet -->
+      <!-- Shell, Howlite & Pearl Bracelet (BP-B-006) -->
       <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -470,7 +471,7 @@
         </div>
       </div>
 
-      <!-- Silver Plumeria Earrings -->
+      <!-- Silver Plumeria Drop Earrings (BP-STUDIO-001) -->
       <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -490,23 +491,19 @@
           <p class="showcase-price">$80</p>
           <div class="showcase-cta">
             <button class="snipcart-add-item btn btn-primary" data-item-max-quantity="1"
-              data-item-id="BP-STUDIO-001"
-              data-item-name="Silver Plumeria Drop Earrings"
-              data-item-price="80.00"
-              data-item-url="/shop.html"
-              data-item-image="images/Silver_plumeria_1.png">
-              Add to Cart
-            </button>
+              data-item-id="BP-STUDIO-001" data-item-name="Silver Plumeria Drop Earrings"
+              data-item-price="80.00" data-item-url="/shop.html"
+              data-item-image="images/Silver_plumeria_1.png">Add to Cart</button>
           </div>
         </div>
       </div>
 
-      <!-- Noir Pearl & Silver Necklace -->
+      <!-- Noir Pearl & Silver Statement Necklace (BP-STUDIO-002) -->
       <div class="showcase-set reveal" data-collection="pearl-crystal">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
-            <img src="images/silver_black_2.png" alt="Noir Pearl & Silver Statement Necklace — worn" class="active">
-            <img src="images/silver_black_1.png" alt="Noir Pearl & Silver Statement Necklace — product">
+            <img src="images/silver_black_2.png" alt="Noir Pearl &amp; Silver Statement Necklace — worn" class="active">
+            <img src="images/silver_black_1.png" alt="Noir Pearl &amp; Silver Statement Necklace — product">
             <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
             <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
           </div>
@@ -521,18 +518,14 @@
           <p class="showcase-price">$85</p>
           <div class="showcase-cta">
             <button class="snipcart-add-item btn btn-primary" data-item-max-quantity="1"
-              data-item-id="BP-STUDIO-002"
-              data-item-name="Noir Pearl & Silver Statement Necklace"
-              data-item-price="85.00"
-              data-item-url="/shop.html"
-              data-item-image="images/silver_black_1.png">
-              Add to Cart
-            </button>
+              data-item-id="BP-STUDIO-002" data-item-name="Noir Pearl &amp; Silver Statement Necklace"
+              data-item-price="85.00" data-item-url="/shop.html"
+              data-item-image="images/silver_black_1.png">Add to Cart</button>
           </div>
         </div>
       </div>
 
-      <!-- Blue Ombre Necklace -->
+      <!-- Blue Ombré Crystal Necklace (BP-STUDIO-003) -->
       <div class="showcase-set reveal" data-collection="sea-shore">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
@@ -548,27 +541,23 @@
         </div>
         <div class="showcase-info">
           <span class="showcase-label">Studio Series</span>
-          <h3 class="showcase-name">Blue Ombr&eacute; Crystal Necklace</h3>
+          <h3 class="showcase-name">Blue Ombré Crystal Necklace</h3>
           <p class="showcase-price">$55</p>
           <div class="showcase-cta">
             <button class="snipcart-add-item btn btn-primary" data-item-max-quantity="1"
-              data-item-id="BP-STUDIO-003"
-              data-item-name="Blue Ombré Crystal Necklace"
-              data-item-price="55.00"
-              data-item-url="/shop.html"
-              data-item-image="images/blue_bracelet_1.png">
-              Add to Cart
-            </button>
+              data-item-id="BP-STUDIO-003" data-item-name="Blue Ombré Crystal Necklace"
+              data-item-price="55.00" data-item-url="/shop.html"
+              data-item-image="images/blue_bracelet_1.png">Add to Cart</button>
           </div>
         </div>
       </div>
 
-      <!-- Blue Sodalite -->
+      <!-- Blue Sodalite & Pearl Necklace (BP-STUDIO-004) -->
       <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
-            <img src="images/blue_sodalite_2.png" alt="Blue Sodalite & Pearl Necklace — worn" class="active">
-            <img src="images/blue_sodalite_1.png" alt="Blue Sodalite & Pearl Necklace — product">
+            <img src="images/blue_sodalite_2.png" alt="Blue Sodalite &amp; Pearl Necklace — worn" class="active">
+            <img src="images/blue_sodalite_1.png" alt="Blue Sodalite &amp; Pearl Necklace — product">
             <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
             <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
           </div>
@@ -583,23 +572,19 @@
           <p class="showcase-price">$55</p>
           <div class="showcase-cta">
             <button class="snipcart-add-item btn btn-primary" data-item-max-quantity="1"
-              data-item-id="BP-STUDIO-004"
-              data-item-name="Blue Sodalite & Pearl Necklace"
-              data-item-price="55.00"
-              data-item-url="/shop.html"
-              data-item-image="images/blue_sodalite_1.png">
-              Add to Cart
-            </button>
+              data-item-id="BP-STUDIO-004" data-item-name="Blue Sodalite &amp; Pearl Necklace"
+              data-item-price="55.00" data-item-url="/shop.html"
+              data-item-image="images/blue_sodalite_1.png">Add to Cart</button>
           </div>
         </div>
       </div>
 
-      <!-- Lava Stone -->
+      <!-- Lava Stone & Gold Statement Necklace (BP-STUDIO-005) -->
       <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
-            <img src="images/LavaStone_2.png" alt="Lava Stone & Gold Statement Necklace — worn" class="active">
-            <img src="images/LavaStone_1.png" alt="Lava Stone & Gold Statement Necklace — product">
+            <img src="images/LavaStone_2.png" alt="Lava Stone &amp; Gold Statement Necklace — worn" class="active">
+            <img src="images/LavaStone_1.png" alt="Lava Stone &amp; Gold Statement Necklace — product">
             <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
             <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
           </div>
@@ -614,23 +599,19 @@
           <p class="showcase-price">$195</p>
           <div class="showcase-cta">
             <button class="snipcart-add-item btn btn-primary" data-item-max-quantity="1"
-              data-item-id="BP-STUDIO-005"
-              data-item-name="Lava Stone & Gold Statement Necklace"
-              data-item-price="195.00"
-              data-item-url="/shop.html"
-              data-item-image="images/LavaStone_1.png">
-              Add to Cart
-            </button>
+              data-item-id="BP-STUDIO-005" data-item-name="Lava Stone &amp; Gold Statement Necklace"
+              data-item-price="195.00" data-item-url="/shop.html"
+              data-item-image="images/LavaStone_1.png">Add to Cart</button>
           </div>
         </div>
       </div>
 
-      <!-- Jade -->
+      <!-- Jade & Gold Chain Necklace (BP-STUDIO-006) -->
       <div class="showcase-set reveal" data-collection="stone-earth">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
-            <img src="images/Jade_2.png" alt="Jade & Gold Chain Necklace — worn" class="active">
-            <img src="images/jade_1.png" alt="Jade & Gold Chain Necklace — product">
+            <img src="images/Jade_2.png" alt="Jade &amp; Gold Chain Necklace — worn" class="active">
+            <img src="images/jade_1.png" alt="Jade &amp; Gold Chain Necklace — product">
             <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
             <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
           </div>
@@ -645,23 +626,19 @@
           <p class="showcase-price">$50</p>
           <div class="showcase-cta">
             <button class="snipcart-add-item btn btn-primary" data-item-max-quantity="1"
-              data-item-id="BP-STUDIO-006"
-              data-item-name="Jade & Gold Chain Necklace"
-              data-item-price="50.00"
-              data-item-url="/shop.html"
-              data-item-image="images/jade_1.png">
-              Add to Cart
-            </button>
+              data-item-id="BP-STUDIO-006" data-item-name="Jade &amp; Gold Chain Necklace"
+              data-item-price="50.00" data-item-url="/shop.html"
+              data-item-image="images/jade_1.png">Add to Cart</button>
           </div>
         </div>
       </div>
 
-      <!-- Yellow & White -->
+      <!-- Honey & Frost Glass Necklace (BP-STUDIO-007) -->
       <div class="showcase-set reveal" data-collection="pearl-crystal">
         <div class="showcase-media">
           <div class="showcase-slider" data-slider>
-            <img src="images/yellow_white_1.png" alt="Honey & Frost Glass Necklace — worn" class="active">
-            <img src="images/yellow_white_2.png" alt="Honey & Frost Glass Necklace — product">
+            <img src="images/yellow_white_1.png" alt="Honey &amp; Frost Glass Necklace — worn" class="active">
+            <img src="images/yellow_white_2.png" alt="Honey &amp; Frost Glass Necklace — product">
             <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>
             <button class="slider-btn next" aria-label="Next">&rsaquo;</button>
           </div>
@@ -676,13 +653,9 @@
           <p class="showcase-price">$45</p>
           <div class="showcase-cta">
             <button class="snipcart-add-item btn btn-primary" data-item-max-quantity="1"
-              data-item-id="BP-STUDIO-007"
-              data-item-name="Honey & Frost Glass Necklace"
-              data-item-price="45.00"
-              data-item-url="/shop.html"
-              data-item-image="images/yellow_white_1.png">
-              Add to Cart
-            </button>
+              data-item-id="BP-STUDIO-007" data-item-name="Honey &amp; Frost Glass Necklace"
+              data-item-price="45.00" data-item-url="/shop.html"
+              data-item-image="images/yellow_white_1.png">Add to Cart</button>
           </div>
         </div>
       </div>
@@ -729,6 +702,8 @@
           </div>
         </div>
       </div>
+
+      <!-- END generated cards -->
 
     </div>
   </section>
