@@ -99,8 +99,11 @@ def card(p):
     else:
         lazy = ' loading="lazy"' if k == "featured" else ""
         second = "detail" if k == "featured" else "product"
-        imgs = p["images"]
-        worn, other = imgs[0], (imgs[1] if len(imgs) > 1 else imgs[0])
+        imgs = p.get("images") or [cart_img]
+        # Tolerate a piece with fewer than two images (fall back to the first /
+        # cart image) so one incomplete row can never break the whole rebuild.
+        worn = imgs[0] if imgs else cart_img
+        other = imgs[1] if len(imgs) > 1 else worn
         ai = (f'\n          <p class="ai-note">{AI_NOTE}</p>'
               if k == "featured" else "")
         media = (
@@ -118,8 +121,11 @@ def card(p):
             f'        </div>'
         )
 
+    # Name is owner-editable free text; neutralize anything that could close
+    # the HTML comment early (`-->`, stray `>`, `--`) so it can't corrupt the page.
+    comment_name = re.sub(r"-{2,}", "-", p["name"]).replace(">", "")
     return (
-        f'      <!-- {p["name"]} ({sku}) -->\n'
+        f'      <!-- {comment_name} ({sku}) -->\n'
         f'      <div class="showcase-set reveal" data-collection="{collection}"{tier_attr}>\n'
         f'{media}\n'
         f'{info}\n'
@@ -164,7 +170,8 @@ def main():
         count=1,
     )
 
-    SHOP.write_text(html, encoding="utf-8")
+    # LF explicitly so Windows and the Linux CI runner emit identical bytes.
+    SHOP.write_bytes(html.encode("utf-8"))
     print(f"Wrote {SHOP.relative_to(ROOT)} ({len(products)} cards)")
 
 

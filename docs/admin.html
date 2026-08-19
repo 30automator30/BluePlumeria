@@ -87,9 +87,25 @@
   .piece .meta{ display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
   .piece .pr{ color:var(--gold-deep); font-weight:600; font-variant-numeric:tabular-nums; }
   .piece .coll{ font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
-  .piece .toggle{ margin-top:10px; width:100%; font-size:.8rem; padding:8px; }
+  .piece .toggle{ flex:0 0 auto; font-size:.78rem; padding:8px 12px; white-space:nowrap; }
   .empty{ text-align:center; color:var(--muted); padding:40px 0; }
   .loading{ text-align:center; color:var(--muted); padding:60px 0; }
+
+  /* inline editors */
+  .fld{ display:block; margin-bottom:9px; }
+  .fld span{ display:block; font-size:.62rem; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:var(--muted); margin-bottom:4px; }
+  .fld input{ width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 10px; font:inherit; font-size:.9rem; background:var(--paper); color:var(--ink); }
+  .fld input:focus{ outline:none; border-color:var(--gold); }
+  .fld.price input{ font-variant-numeric:tabular-nums; }
+  .prow{ display:flex; gap:8px; align-items:flex-end; }
+  .prow .fld{ flex:1; margin-bottom:0; }
+  .save-row{ display:flex; align-items:center; gap:10px; margin-top:11px; }
+  .save-row .save{ font-size:.8rem; padding:8px 16px; }
+  .save-row .save:disabled{ opacity:.45; cursor:default; }
+  .pstat{ font-size:.78rem; color:var(--muted); }
+  .pstat.ok{ color:var(--good); } .pstat.bad{ color:var(--warn); }
+  .publish-note{ background:color-mix(in srgb,var(--gold) 10%,var(--card)); border:1px solid var(--border); border-radius:12px; padding:12px 16px; font-size:.85rem; color:var(--ink-soft); margin-bottom:18px; }
+  .publish-note b{ color:var(--ink); }
 </style>
 </head>
 <body>
@@ -131,10 +147,10 @@ const SB = createClient(
 
 const $ = (s) => document.querySelector(s);
 const money = (v) => "$" + Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "—";
 
-let ORDERS = [], PRODUCTS = [], activeTab = "overview", orderFilter = "all";
+let ORDERS = [], PRODUCTS = [], activeTab = "overview", orderFilter = "all", PRODUCTS_ERR = null;
 
 /* ---- auth ---- */
 async function boot() {
@@ -167,6 +183,7 @@ async function loadData() {
   ]);
   ORDERS = o.data || [];
   PRODUCTS = p.data || [];
+  PRODUCTS_ERR = p.error || null;
   if (o.error) console.error(o.error);
   if (p.error) console.error(p.error);
 }
@@ -259,32 +276,132 @@ function wireOrderChips() {
 }
 
 /* ---- inventory ---- */
+function invSubText() {
+  const a = PRODUCTS.filter((p) => p.available).length;
+  return `${a} available · ${PRODUCTS.length - a} sold · ${PRODUCTS.length} total. One-of-a-kind pieces flip to “sold” automatically when ordered.`;
+}
 function inventory() {
-  const avail = PRODUCTS.filter((p) => p.available).length;
+  if (PRODUCTS_ERR) {
+    return `<h2 class="h">Inventory</h2>
+      <div class="publish-note" style="border-color:var(--warn)">Couldn't load your catalog (${esc(PRODUCTS_ERR.message || "network error")}). Editing is disabled until it loads — refresh to retry. Nothing was changed.</div>`;
+  }
   const cards = PRODUCTS.map((p) => {
     const img = (p.images && p.images[0]) || p.cart_image || "";
-    return `<div class="piece">
+    return `<div class="piece" data-sku="${esc(p.sku)}">
       <div class="ph" style="background-image:url('${esc(img)}')"><span class="st"><span class="badge ${p.available ? "paid" : "test"}">${p.available ? "available" : "sold"}</span></span></div>
       <div class="b">
-        <div class="nm">${esc(p.name)}</div>
-        <div class="meta"><span class="coll">${esc(p.collection || "")}</span><span class="pr">${money(p.price)}</span></div>
-        <button class="btn btn-ghost toggle" data-sku="${esc(p.sku)}">${p.available ? "Mark sold" : "Mark available"}</button>
+        <label class="fld"><span>Name</span><input class="e" data-f="name" value="${esc(p.name)}"></label>
+        <label class="fld"><span>Label</span><input class="e" data-f="label" value="${esc(p.label || "")}"></label>
+        <div class="prow">
+          <label class="fld price"><span>Price ($)</span><input class="e" data-f="price" type="number" min="0.01" step="0.01" value="${esc(p.price)}"></label>
+          <button class="btn btn-ghost toggle">${p.available ? "Mark sold" : "Mark available"}</button>
+        </div>
+        <div class="save-row">
+          <button class="btn btn-gold save" disabled>Save</button>
+          <span class="pstat"></span>
+        </div>
       </div></div>`;
   }).join("");
   return `
     <h2 class="h">Inventory</h2>
-    <p class="sub">${avail} available · ${PRODUCTS.length - avail} sold · ${PRODUCTS.length} total. One-of-a-kind pieces flip to “sold” automatically when ordered.</p>
+    <p class="sub" id="inv-sub">${invSubText()}</p>
+    <div class="publish-note">Edits here save to your store's database. The live storefront <b>refreshes automatically within a few minutes</b> — no code needed. (Photos, collection, and order are still changed in the catalog file.)</div>
     <div class="inv">${cards || `<div class="empty">No products.</div>`}</div>`;
 }
+
 function wireInventory() {
-  document.querySelectorAll(".toggle").forEach((b) =>
-    b.addEventListener("click", async () => {
-      const sku = b.dataset.sku; const p = PRODUCTS.find((x) => x.sku === sku); if (!p) return;
-      b.disabled = true; b.textContent = "Saving…";
-      const { error } = await SB.from("products").update({ available: !p.available }).eq("sku", sku);
-      if (error) { b.disabled = false; b.textContent = "Error — retry"; console.error(error); return; }
-      p.available = !p.available; render();
-    }));
+  document.querySelectorAll(".piece").forEach((card) => {
+    const sku = card.dataset.sku;
+    const p = PRODUCTS.find((x) => x.sku === sku); if (!p) return;
+    const inputs = [...card.querySelectorAll("input.e")];
+    const saveBtn = card.querySelector(".save");
+    const stat = card.querySelector(".pstat");
+    const toggle = card.querySelector(".toggle");
+
+    // Which fields differ from the saved record (and are valid)?
+    const changedFields = () => {
+      const o = {};
+      inputs.forEach((i) => {
+        const f = i.dataset.f;
+        if (f === "price") {
+          const n = Number(i.value);
+          if (Number.isFinite(n) && n > 0 && n !== Number(p.price)) o.price = n;
+        } else {
+          const v = i.value.trim();
+          if (v !== String(p[f] ?? "").trim()) o[f] = v;
+        }
+      });
+      return o;
+    };
+    const priceInput = card.querySelector('input[data-f="price"]');
+    const nameInput = card.querySelector('input[data-f="name"]');
+    const invalidReason = () => {
+      const n = Number(priceInput.value);
+      if (!(Number.isFinite(n) && n > 0)) return "Price must be greater than 0";
+      if (!nameInput.value.trim()) return "Name can't be empty";
+      return null;
+    };
+    const refresh = () => {
+      const bad = invalidReason();
+      const dirty = Object.keys(changedFields()).length > 0;
+      saveBtn.disabled = !dirty || !!bad;
+      if (bad) { stat.textContent = bad; stat.className = "pstat bad"; }
+      else if (dirty) { stat.textContent = "Unsaved changes"; stat.className = "pstat"; }
+      else { stat.textContent = ""; stat.className = "pstat"; }
+    };
+
+    let saving = false;
+    const save = async () => {
+      if (saving || saveBtn.disabled || invalidReason()) return;  // guards Enter+click double-fire
+      const patch = changedFields();
+      if (!Object.keys(patch).length) return;
+      saving = true; saveBtn.disabled = true; saveBtn.textContent = "Saving…";
+      stat.textContent = ""; stat.className = "pstat";
+      // .select() so we can tell a real write from an RLS-filtered / no-match
+      // update — PostgREST returns 2xx with no error when it writes 0 rows.
+      const { data, error } = await SB.from("products").update(patch).eq("sku", sku)
+        .select("sku,name,label,price,available");
+      saving = false; saveBtn.textContent = "Save";
+      if (error) { stat.textContent = "Error — " + error.message; stat.className = "pstat bad"; console.error(error); refresh(); return; }
+      if (!data || data.length === 0) {
+        stat.textContent = "Not saved — sign in as the owner account"; stat.className = "pstat bad";
+        refresh(); return;
+      }
+      // Adopt the values the DB actually stored (e.g. price rounded to cents)
+      // and reflect them in the inputs, so the model, the fields, and the DB
+      // agree — no "Saved" over a value the DB doesn't hold.
+      Object.assign(p, data[0]);
+      inputs.forEach((i) => { i.value = String(data[0][i.dataset.f] ?? ""); });
+      stat.textContent = "Saved · live in a few min"; stat.className = "pstat ok";
+      saveBtn.disabled = true;
+    };
+
+    inputs.forEach((i) => {
+      i.addEventListener("input", refresh);
+      i.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); save(); } });
+    });
+    saveBtn.addEventListener("click", save);
+
+    toggle.addEventListener("click", async () => {
+      toggle.disabled = true; const prev = toggle.textContent; toggle.textContent = "Saving…";
+      const { data, error } = await SB.from("products")
+        .update({ available: !p.available }).eq("sku", sku).select("sku,available");
+      toggle.disabled = false;
+      if (error || !data || !data.length) {
+        toggle.textContent = prev;
+        stat.textContent = error ? ("Error — " + error.message) : "Not saved — sign in as the owner account";
+        stat.className = "pstat bad"; if (error) console.error(error); return;
+      }
+      // Update THIS card in place — a full render() would discard other cards' unsaved edits.
+      p.available = data[0].available;
+      toggle.textContent = p.available ? "Mark sold" : "Mark available";
+      const badge = card.querySelector(".badge");
+      badge.className = "badge " + (p.available ? "paid" : "test");
+      badge.textContent = p.available ? "available" : "sold";
+      const sub = document.getElementById("inv-sub");   // keep the header counts live
+      if (sub) sub.textContent = invSubText();
+    });
+  });
 }
 
 boot();

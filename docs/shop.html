@@ -92,15 +92,19 @@
 
   <!-- ══════════════════════════════════════════════════════════════════
        COLLECTION GRID — the cards between the BEGIN/END markers below are
-       GENERATED from catalog/products.json. Do NOT edit them by hand.
+       GENERATED. Do NOT edit them by hand.
 
-       TO CHANGE A PIECE (price, name, images, collection, etc.):
-         1. edit the piece in  catalog/products.json   (single source of truth)
-         2. run   python catalog/gen-shop.py    → rewrites these cards
-         3. run   python catalog/gen-seed.py    → refreshes the DB seed
+       PRICE / NAME / LABEL / AVAILABILITY → edit in the Owner Dashboard
+       (admin.html). It saves to Supabase and the "Publish store" GitHub
+       Action regenerates these cards automatically within a few minutes.
+
+       PHOTOS / COLLECTION / ORDER / ADDING or REMOVING a piece → edit
+       catalog/products.json, then run:  python catalog/gen-shop.py
+       and  python catalog/gen-seed.py   (see catalog/README.md).
+
        The filter tabs above show/hide by each card's data-collection value.
        "Sold" state is applied at runtime from Supabase by the script at the
-       bottom of this page — availability is not stored here.
+       bottom of this page.
        ══════════════════════════════════════════════════════════════════ -->
   <section class="showcase-section section-padding">
     <div class="container">

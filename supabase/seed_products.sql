@@ -27,7 +27,6 @@ values
   ('BP-N-014', 'Teal Aurora & Silver Sea-Charm Necklace', 55.00, 'sea-shore', 'everyday', 'Everyday', 1, '/shop.html', 'images/everyday/BP-N-014.jpg', '["images/everyday/BP-N-014.jpg"]'::jsonb, true),
   ('BP-N-002', 'Peridot & Aqua Glass Necklace', 45.00, 'pearl-crystal', 'everyday', 'Everyday', 1, '/shop.html', 'images/everyday/BP-N-002.jpg', '["images/everyday/BP-N-002.jpg"]'::jsonb, true)
 on conflict (sku) do update set
-  name = excluded.name, price = excluded.price, collection = excluded.collection,
-  tier = excluded.tier, label = excluded.label, max_quantity = excluded.max_quantity,
-  item_url = excluded.item_url, cart_image = excluded.cart_image,
-  images = excluded.images, available = excluded.available;
+  collection = excluded.collection, tier = excluded.tier,
+  max_quantity = excluded.max_quantity, item_url = excluded.item_url,
+  cart_image = excluded.cart_image, images = excluded.images;

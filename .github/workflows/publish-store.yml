@@ -1,0 +1,71 @@
+name: Publish store
+
+# Materialize the owner's admin edits (price / availability / name / label,
+# stored in Supabase) into the static storefront that Snipcart charges from.
+#
+# Flow: pull live state from Supabase -> overlay onto catalog/products.json ->
+# regenerate docs/shop.html + supabase/seed_products.sql -> commit only if
+# something changed -> GitHub Pages redeploys.
+#
+# The read uses the public anon key (products are world-readable), so this
+# needs no secrets beyond the built-in GITHUB_TOKEN.
+
+on:
+  # Every ~10 minutes. GitHub often delays scheduled runs on shared runners,
+  # so real latency is a few minutes to ~20; the manual trigger below is the
+  # instant path.
+  schedule:
+    - cron: "*/10 * * * *"
+  # "Run workflow" button in the Actions tab = publish now.
+  workflow_dispatch:
+
+# Never run two publishes at once; a superseded run is safe to cancel because
+# every run is a full rebuild from a fresh checkout (no cross-run state).
+concurrency:
+  group: publish-store
+  cancel-in-progress: true
+
+permissions:
+  contents: write   # push the regenerated files
+  pages: write      # force a Pages build as a fallback
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so `git pull --rebase` has a merge base
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Regenerate storefront from Supabase
+        run: |
+          python catalog/sync-from-supabase.py
+          python catalog/gen-shop.py
+          python catalog/gen-seed.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name  "blue-plumeria-bot"
+          git config user.email "bot@users.noreply.github.com"
+          if git diff --quiet -- catalog/products.json docs/shop.html supabase/seed_products.sql; then
+            echo "No changes — storefront already in sync."
+            exit 0
+          fi
+          git add catalog/products.json docs/shop.html supabase/seed_products.sql
+          git commit -m "Auto: publish catalog edits from admin"
+          # A human may have pushed while we ran; rebase before pushing.
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Force a Pages build (deterministic deploy)
+        # Keep the run green if this optional fallback fails, but let it annotate
+        # RED on the step so a persistently-stale deploy is discoverable (not
+        # double-silenced) — the admin promises edits go "live in a few minutes".
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds"

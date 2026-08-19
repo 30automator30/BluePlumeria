@@ -1,0 +1,7 @@
+# Pipeline files are regenerated on both Windows (local) and Linux (CI). Pin
+# LF so the two environments produce byte-identical output and the auto-publish
+# workflow never commits pure line-ending churn.
+catalog/products.json       text eol=lf
+docs/shop.html              text eol=lf
+supabase/seed_products.sql  text eol=lf
+catalog/*.py                text eol=lf

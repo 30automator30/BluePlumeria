@@ -42,14 +42,18 @@ sql = (
     "insert into public.products\n"
     "  (sku, name, price, collection, tier, label, max_quantity, item_url, cart_image, images, available)\n"
     "values\n" + ",\n".join(rows) + "\n"
+    # STRUCTURE-ONLY upsert. price / available / name / label are owner-editable
+    # in the admin and the DB is authoritative for them — re-applying an older
+    # seed must NOT revert an admin price change or resurrect a sold-out piece.
+    # New pieces still insert their full row (including the initial price/name).
     "on conflict (sku) do update set\n"
-    "  name = excluded.name, price = excluded.price, collection = excluded.collection,\n"
-    "  tier = excluded.tier, label = excluded.label, max_quantity = excluded.max_quantity,\n"
-    "  item_url = excluded.item_url, cart_image = excluded.cart_image,\n"
-    "  images = excluded.images, available = excluded.available;\n"
+    "  collection = excluded.collection, tier = excluded.tier,\n"
+    "  max_quantity = excluded.max_quantity, item_url = excluded.item_url,\n"
+    "  cart_image = excluded.cart_image, images = excluded.images;\n"
 )
 
 out = ROOT / "supabase" / "seed_products.sql"
 out.parent.mkdir(parents=True, exist_ok=True)
-out.write_text(sql, encoding="utf-8")
+# LF explicitly so Windows and the Linux CI runner emit identical bytes.
+out.write_bytes(sql.encode("utf-8"))
 print(f"Wrote {out.relative_to(ROOT)} ({len(products)} products)")
