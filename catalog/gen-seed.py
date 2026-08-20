@@ -2,9 +2,11 @@
 """
 Generate supabase/seed_products.sql from catalog/products.json.
 
-Idempotent: re-running the SQL upserts by SKU, so it's safe to apply
-any number of times as the catalog grows. products.json stays the
-single source of truth; this just projects it into the database.
+This is a BOOTSTRAP / disaster-recovery snapshot only. The DB is now the full
+source of truth for the catalog (owner adds items + edits everything in the
+admin), so the seed inserts NEW rows but does NOTHING on conflict — it must
+never overwrite live admin-owned data (price, availability, images, order…).
+Restores come from Supabase backups, not from re-applying this seed.
 
 Run:  python catalog/gen-seed.py
 """
@@ -33,23 +35,22 @@ for p in products:
             str(p.get("maxQuantity", 1)), q(p.get("itemUrl") or "/shop.html"),
             q(p.get("cartImage")), jsonb(p.get("images", [])),
             "true" if p.get("available", True) else "false",
+            "true" if p.get("aiNote") else "false",
+            str(p.get("position", "null")) if p.get("position") is not None else "null",
+            "true" if p.get("published", True) else "false",
         ]) + ")"
     )
 
 sql = (
     "-- Generated from catalog/products.json — do not edit by hand.\n"
-    "-- Regenerate with: python catalog/gen-seed.py\n\n"
+    "-- Regenerate with: python catalog/gen-seed.py\n"
+    "-- BOOTSTRAP ONLY: inserts new rows, DOES NOTHING on conflict. The DB is\n"
+    "-- the source of truth; this must never overwrite live admin-owned data.\n\n"
     "insert into public.products\n"
-    "  (sku, name, price, collection, tier, label, max_quantity, item_url, cart_image, images, available)\n"
+    "  (sku, name, price, collection, tier, label, max_quantity, item_url,\n"
+    "   cart_image, images, available, ai_note, position, published)\n"
     "values\n" + ",\n".join(rows) + "\n"
-    # STRUCTURE-ONLY upsert. price / available / name / label are owner-editable
-    # in the admin and the DB is authoritative for them — re-applying an older
-    # seed must NOT revert an admin price change or resurrect a sold-out piece.
-    # New pieces still insert their full row (including the initial price/name).
-    "on conflict (sku) do update set\n"
-    "  collection = excluded.collection, tier = excluded.tier,\n"
-    "  max_quantity = excluded.max_quantity, item_url = excluded.item_url,\n"
-    "  cart_image = excluded.cart_image, images = excluded.images;\n"
+    "on conflict (sku) do nothing;\n"
 )
 
 out = ROOT / "supabase" / "seed_products.sql"

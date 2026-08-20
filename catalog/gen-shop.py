@@ -2,22 +2,22 @@
 """
 Generate the product grid in docs/shop.html from catalog/products.json.
 
-products.json is the single source of truth. This script projects it into
-the storefront: it rewrites ONLY the cards between the BEGIN/END markers
-inside <section class="showcase-section">, leaving the head, nav, footer,
-Snipcart loader, and the live sold-out script untouched.
+products.json is a generated snapshot of the Supabase catalog (see
+sync-from-supabase.py). This script projects it into the storefront: it
+rewrites ONLY the cards between the BEGIN/END markers inside
+<section class="showcase-section">, leaving the head, nav, footer, Snipcart
+loader, and the live sold-out script untouched.
 
-Because Snipcart re-crawls the page and validates the cart price against
-the HTML it sees, the price baked here IS the price customers pay — so the
-storefront must always be regenerated after editing products.json.
+Because Snipcart re-crawls the page and validates the cart price against the
+HTML it sees, the price baked here IS the price customers pay.
 
-Card template is chosen per piece, entirely from existing fields:
-  * tier == "everyday"                    -> single-photo card (no slider)
-  * image path under images/featured/     -> slider + AI-model note + lazy
-  * otherwise (Studio pieces)             -> slider, no note, eager-loaded
+Each product carries everything the card needs — no path heuristics:
+  * images: [{ "url", "alt" }, ...]   (>=2 -> slider, <=1 -> single photo)
+  * aiNote: bool                       (show the "shown on an AI model" note + lazy-load)
+  * tier == "everyday"                 -> single-photo card, grouped under its own banner
+Only published + complete pieces reach products.json, so every entry renders.
 
 Run:  python catalog/gen-shop.py
-Then also refresh the DB seed:  python catalog/gen-seed.py
 """
 import json
 import re
@@ -38,7 +38,7 @@ EVERYDAY_DIVIDER = (
 
 
 def esc(s):
-    """Escape a text/attribute value for HTML. Unicode (—, é) is left
+    """Escape a text/attribute value for HTML. Unicode (—, é, ') is left
     literal — it renders identically and keeps the source readable."""
     return (str(s).replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;").replace('"', "&quot;"))
@@ -49,32 +49,26 @@ def price_display(price):
     return f"{int(price)}" if float(price) == int(price) else f"{price:.2f}"
 
 
-def kind(p):
-    if p.get("tier") == "everyday":
-        return "everyday"
-    imgs = p.get("images") or []
-    return "featured" if imgs and imgs[0].startswith("images/featured/") else "studio"
-
-
 def card(p):
     sku = p["sku"]
     name_html = esc(p["name"])
-    alt = esc(p["name"])
     label = esc(p.get("label") or "")
     collection = p.get("collection") or ""
     tier = p.get("tier") or "signature"
     tier_attr = ' data-tier="everyday"' if tier == "everyday" else ""
     maxq = p.get("maxQuantity", 1)
     item_url = p.get("itemUrl") or "/shop.html"
-    cart_img = p.get("cartImage") or (p["images"][0] if p.get("images") else "")
-    k = kind(p)
+    images = p.get("images") or []
+    cart_img = esc(p.get("cartImage") or (images[0]["url"] if images else ""))
+    ai_note = bool(p.get("aiNote"))
+    single = tier == "everyday" or len(images) <= 1
+    lazy = ' loading="lazy"' if (ai_note or tier == "everyday") else ""
 
-    # Cart button — identical across templates; this is the Snipcart contract.
     button = (
         f'          <div class="showcase-cta">\n'
         f'            <button class="snipcart-add-item btn btn-primary" data-item-max-quantity="{maxq}"\n'
-        f'              data-item-id="{sku}" data-item-name="{name_html}"\n'
-        f'              data-item-price="{float(p["price"]):.2f}" data-item-url="{item_url}"\n'
+        f'              data-item-id="{esc(sku)}" data-item-name="{name_html}"\n'
+        f'              data-item-price="{float(p["price"]):.2f}" data-item-url="{esc(item_url)}"\n'
         f'              data-item-image="{cart_img}">Add to Cart</button>\n'
         f'          </div>'
     )
@@ -87,46 +81,46 @@ def card(p):
         f'        </div>'
     )
 
-    if k == "everyday":
-        img = (p["images"][0] if p.get("images") else cart_img)
+    if single:
+        im = images[0] if images else {"url": p.get("cartImage") or "", "alt": p["name"]}
         media = (
             f'        <div class="showcase-media">\n'
             f'          <div class="showcase-slider">\n'
-            f'            <img src="{img}" alt="{alt}" class="active" loading="lazy">\n'
+            f'            <img src="{esc(im["url"])}" alt="{esc(im.get("alt") or "")}" class="active"{lazy}>\n'
             f'          </div>\n'
             f'        </div>'
         )
     else:
-        lazy = ' loading="lazy"' if k == "featured" else ""
-        second = "detail" if k == "featured" else "product"
-        imgs = p.get("images") or [cart_img]
-        # Tolerate a piece with fewer than two images (fall back to the first /
-        # cart image) so one incomplete row can never break the whole rebuild.
-        worn = imgs[0] if imgs else cart_img
-        other = imgs[1] if len(imgs) > 1 else worn
-        ai = (f'\n          <p class="ai-note">{AI_NOTE}</p>'
-              if k == "featured" else "")
+        slides = []
+        for i, im in enumerate(images):
+            active = ' class="active"' if i == 0 else ''
+            slides.append(
+                f'            <img src="{esc(im["url"])}" alt="{esc(im.get("alt") or "")}"{active}{lazy}>')
+        dots = "".join(
+            f'            <button class="slider-dot{" active" if i == 0 else ""}" '
+            f'aria-label="Slide {i + 1}"></button>\n'
+            for i in range(len(images)))
+        ai = (f'\n          <p class="ai-note">{AI_NOTE}</p>' if ai_note else "")
         media = (
             f'        <div class="showcase-media">\n'
             f'          <div class="showcase-slider" data-slider>\n'
-            f'            <img src="{worn}" alt="{alt} — worn" class="active"{lazy}>\n'
-            f'            <img src="{other}" alt="{alt} — {second}"{lazy}>\n'
+            + "\n".join(slides) + "\n"
             f'            <button class="slider-btn prev" aria-label="Previous">&lsaquo;</button>\n'
             f'            <button class="slider-btn next" aria-label="Next">&rsaquo;</button>\n'
             f'          </div>\n'
             f'          <div class="slider-dots">\n'
-            f'            <button class="slider-dot active" aria-label="Slide 1"></button>\n'
-            f'            <button class="slider-dot" aria-label="Slide 2"></button>\n'
+            f'{dots}'
             f'          </div>{ai}\n'
             f'        </div>'
         )
 
-    # Name is owner-editable free text; neutralize anything that could close
-    # the HTML comment early (`-->`, stray `>`, `--`) so it can't corrupt the page.
-    comment_name = re.sub(r"-{2,}", "-", p["name"]).replace(">", "")
+    # Name and SKU are owner-editable free text; neutralize anything that could
+    # close the HTML comment early (`-->`, stray `>`, `--`) so it can't corrupt
+    # the page. (SKU is also esc()'d in the attributes above.)
+    safe = lambda s: re.sub(r"-{2,}", "-", str(s)).replace(">", "")
     return (
-        f'      <!-- {comment_name} ({sku}) -->\n'
-        f'      <div class="showcase-set reveal" data-collection="{collection}"{tier_attr}>\n'
+        f'      <!-- {safe(p["name"])} ({safe(sku)}) -->\n'
+        f'      <div class="showcase-set reveal" data-collection="{esc(collection)}"{tier_attr}>\n'
         f'{media}\n'
         f'{info}\n'
         f'      </div>'
@@ -151,7 +145,6 @@ def main():
 
     html = SHOP.read_text(encoding="utf-8")
 
-    # Replace only the card region inside the showcase section's container.
     region = re.compile(
         r'(<section class="showcase-section[^"]*">\s*<div class="container">\n)'
         r'(?:.*?)'
@@ -162,7 +155,6 @@ def main():
         raise SystemExit("Could not locate the showcase-section card region in shop.html")
     html = region.sub(lambda m: m.group(1) + body + m.group(2), html, count=1)
 
-    # Keep the visible piece count in sync with the catalog.
     html = re.sub(
         r'(<span id="product-count">)\d+(</span>)',
         lambda m: f"{m.group(1)}{len(products)}{m.group(2)}",

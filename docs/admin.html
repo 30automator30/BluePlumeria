@@ -106,6 +106,45 @@
   .pstat.ok{ color:var(--good); } .pstat.bad{ color:var(--warn); }
   .publish-note{ background:color-mix(in srgb,var(--gold) 10%,var(--card)); border:1px solid var(--border); border-radius:12px; padding:12px 16px; font-size:.85rem; color:var(--ink-soft); margin-bottom:18px; }
   .publish-note b{ color:var(--ink); }
+
+  /* inventory groups + item cards */
+  .grp-h{ font-family:var(--serif); font-size:1.15rem; color:var(--ink); margin:22px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  .grp-h .tier{ font-family:var(--sans); font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-left:10px; }
+  .items{ display:flex; flex-direction:column; gap:14px; }
+  .item{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; display:grid; grid-template-columns:1fr; gap:14px; }
+  @media(min-width:760px){ .item{ grid-template-columns:minmax(0,320px) 1fr; } }
+  .item .col-r{ min-width:0; }
+  .row2{ display:flex; gap:10px; } .row2 .fld{ flex:1; margin-bottom:0; }
+  .fld select{ width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 10px; font:inherit; font-size:.9rem; background:var(--paper); color:var(--ink); }
+  .fld select:focus{ outline:none; border-color:var(--gold); }
+
+  .pill{ font-size:.66rem; font-weight:700; padding:3px 10px; border-radius:999px; white-space:nowrap; letter-spacing:.02em; }
+  .pill.live{ background:color-mix(in srgb,var(--good) 16%,transparent); color:var(--good); }
+  .pill.draft{ background:var(--sand); color:var(--muted); }
+  .pill.incomplete{ background:color-mix(in srgb,var(--warn) 16%,transparent); color:var(--warn); }
+  .item-head{ display:flex; align-items:center; gap:10px; }
+  .item-head .move{ margin-left:auto; display:flex; gap:4px; }
+  .icon-btn{ font:inherit; cursor:pointer; border:1px solid var(--border); background:var(--card); color:var(--ink); border-radius:8px; padding:5px 9px; line-height:1; }
+  .icon-btn:hover{ border-color:var(--gold); } .icon-btn:disabled{ opacity:.35; cursor:default; }
+
+  .thumbs{ display:flex; flex-wrap:wrap; gap:8px; }
+  .thumb{ position:relative; width:76px; height:76px; border-radius:10px; overflow:hidden; border:1px solid var(--border); background:var(--sand); }
+  .thumb.is-cart{ border-color:var(--gold); box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 45%,transparent); }
+  .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .thumb-ctl{ position:absolute; inset:auto 0 0 0; display:flex; justify-content:center; gap:2px; background:color-mix(in srgb,#000 55%,transparent); padding:2px; opacity:0; transition:.12s; }
+  .thumb:hover .thumb-ctl,.thumb:focus-within .thumb-ctl{ opacity:1; }
+  .thumb-ctl button{ font:inherit; font-size:.72rem; line-height:1; cursor:pointer; border:none; background:transparent; color:#fff; padding:2px 3px; }
+  .thumb-ctl button:disabled{ opacity:.4; cursor:default; }
+  .thumb.is-cart::after{ content:"★"; position:absolute; top:3px; left:5px; color:var(--gold); font-size:.8rem; text-shadow:0 1px 2px rgba(0,0,0,.6); }
+  .thumb.add{ display:grid; place-items:center; font-size:1.6rem; color:var(--muted); cursor:pointer; border-style:dashed; }
+  .thumb.add:hover{ border-color:var(--gold); color:var(--gold); }
+  .thumb.busy{ display:grid; place-items:center; font-size:.7rem; color:var(--muted); }
+
+  .actions{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:2px; }
+  .actions .btn{ font-size:.78rem; padding:8px 13px; }
+  .add-piece{ background:var(--card); border:1px dashed var(--border); border-radius:14px; padding:16px; margin-bottom:8px; }
+  .add-piece.open{ border-style:solid; }
+  .add-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:12px 0; } @media(max-width:560px){ .add-grid{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -276,131 +315,361 @@ function wireOrderChips() {
 }
 
 /* ---- inventory ---- */
-function invSubText() {
-  const a = PRODUCTS.filter((p) => p.available).length;
-  return `${a} available · ${PRODUCTS.length - a} sold · ${PRODUCTS.length} total. One-of-a-kind pieces flip to “sold” automatically when ordered.`;
+const COLLECTIONS = [["sea-shore", "Sea & Shore"], ["stone-earth", "Stone & Earth"], ["pearl-crystal", "Pearl & Crystal"], ["hand-woven", "Hand-Woven"]];
+const TIERS = [["signature", "Signature"], ["everyday", "Everyday"]];
+const BUCKET = "product-images";
+
+const imgsOf = (p) => Array.isArray(p.images) ? p.images : [];
+// Shared "complete" definition — MUST match catalog/sync-from-supabase.py.
+const isComplete = (p) => imgsOf(p).length >= 1 && String(p.name || "").trim() !== "" && Number(p.price) > 0;
+function statusOf(p) {
+  if (!p.published) return ["draft", "Draft"];
+  return isComplete(p) ? ["live", "Live"] : ["incomplete", "Published — needs photo & price"];
 }
+function invSubText() {
+  const live = PRODUCTS.filter((p) => p.published && isComplete(p)).length;
+  const draft = PRODUCTS.filter((p) => !p.published).length;
+  const avail = PRODUCTS.filter((p) => p.available).length;
+  return `${live} live · ${draft} draft · ${avail} available · ${PRODUCTS.length} total. New pieces stay drafts until you add a photo, set a price, and hit Publish.`;
+}
+const setStat = (el, msg, cls) => { if (el) { el.textContent = msg; el.className = "pstat" + (cls ? " " + cls : ""); } };
+
+// ---- images: downscale then upload/delete on Supabase Storage ----
+function downscale(file, max = 1600, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url0 = URL.createObjectURL(file);
+    img.onload = () => {
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (!w || !h) { URL.revokeObjectURL(url0); return reject(new Error("empty image")); }
+      if (Math.max(w, h) > max) { const s = max / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+      const c = document.createElement("canvas"); c.width = w; c.height = h;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);  // flatten transparency (JPEG has no alpha)
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url0);
+      c.toBlob((b) => b ? resolve(b) : reject(new Error("encode failed")), "image/jpeg", quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url0); reject(new Error("Couldn't read that image (HEIC isn't supported — use JPG or PNG)")); };
+    img.src = url0;
+  });
+}
+const keyFromUrl = (url) => { const m = /\/product-images\/(.+)$/.exec(url || ""); return m ? decodeURIComponent(m[1]) : null; };
+async function uploadPhoto(sku, file) {
+  const blob = await downscale(file);
+  const key = `${sku}/${Date.now()}.jpg`;                 // write-once key — never overwrite (dodges CDN staleness)
+  const up = await SB.storage.from(BUCKET).upload(key, blob, { contentType: "image/jpeg", upsert: false });
+  if (up.error) throw up.error;
+  return SB.storage.from(BUCKET).getPublicUrl(key).data.publicUrl;
+}
+// .select() so a 0-row / RLS-rejected write is caught (PostgREST returns 2xx, no error).
+async function patchProduct(sku, patch, cols = "sku") {
+  const { data, error } = await SB.from("products").update(patch).eq("sku", sku).select(cols);
+  if (error) return { ok: false, msg: "Error — " + error.message };
+  if (!data || !data.length) return { ok: false, msg: "Not saved — sign in as the owner account" };
+  return { ok: true, row: data[0] };
+}
+
 function inventory() {
   if (PRODUCTS_ERR) {
     return `<h2 class="h">Inventory</h2>
       <div class="publish-note" style="border-color:var(--warn)">Couldn't load your catalog (${esc(PRODUCTS_ERR.message || "network error")}). Editing is disabled until it loads — refresh to retry. Nothing was changed.</div>`;
   }
-  const cards = PRODUCTS.map((p) => {
-    const img = (p.images && p.images[0]) || p.cart_image || "";
-    return `<div class="piece" data-sku="${esc(p.sku)}">
-      <div class="ph" style="background-image:url('${esc(img)}')"><span class="st"><span class="badge ${p.available ? "paid" : "test"}">${p.available ? "available" : "sold"}</span></span></div>
-      <div class="b">
-        <label class="fld"><span>Name</span><input class="e" data-f="name" value="${esc(p.name)}"></label>
-        <label class="fld"><span>Label</span><input class="e" data-f="label" value="${esc(p.label || "")}"></label>
-        <div class="prow">
-          <label class="fld price"><span>Price ($)</span><input class="e" data-f="price" type="number" min="0.01" step="0.01" value="${esc(p.price)}"></label>
-          <button class="btn btn-ghost toggle">${p.available ? "Mark sold" : "Mark available"}</button>
-        </div>
-        <div class="save-row">
-          <button class="btn btn-gold save" disabled>Save</button>
-          <span class="pstat"></span>
-        </div>
-      </div></div>`;
-  }).join("");
+  const sorted = [...PRODUCTS].sort((a, b) => (a.position ?? 1e9) - (b.position ?? 1e9) || String(a.sku).localeCompare(b.sku));
+  const known = new Set();
+  const renderGroup = (items) => items.map((p, i) => itemCard(p, i === 0, i === items.length - 1)).join("");
+  let groups = "";
+  for (const [tk, tl] of TIERS) for (const [ck, cl] of COLLECTIONS) {
+    const items = sorted.filter((p) => (p.tier || "signature") === tk && p.collection === ck);
+    items.forEach((p) => known.add(p.sku));
+    if (!items.length) continue;
+    groups += `<div class="grp-h">${esc(cl)}<span class="tier">${esc(tl)}</span></div>
+      <div class="items" data-tier="${tk}" data-collection="${ck}">${renderGroup(items)}</div>`;
+  }
+  // Safety net: anything with an unexpected/blank collection or tier still shows
+  // (and stays editable) instead of silently vanishing from the admin.
+  const leftover = sorted.filter((p) => !known.has(p.sku));
+  if (leftover.length) {
+    groups += `<div class="grp-h">Uncategorized<span class="tier">Fix collection/tier</span></div>
+      <div class="items" data-tier="" data-collection="">${renderGroup(leftover)}</div>`;
+  }
   return `
     <h2 class="h">Inventory</h2>
     <p class="sub" id="inv-sub">${invSubText()}</p>
-    <div class="publish-note">Edits here save to your store's database. The live storefront <b>refreshes automatically within a few minutes</b> — no code needed. (Photos, collection, and order are still changed in the catalog file.)</div>
-    <div class="inv">${cards || `<div class="empty">No products.</div>`}</div>`;
+    <div class="publish-note">Edits save to your store's database and the storefront <b>refreshes automatically within a few minutes</b>. Add a piece, upload photos, then Publish to put it live.</div>
+    <div class="add-piece" id="addPiece">
+      <button class="btn btn-gold" id="addToggle">+ Add a piece</button>
+      <div id="addForm" style="display:none">
+        <div class="add-grid">
+          <label class="fld"><span>Name</span><input id="a-name"></label>
+          <label class="fld price"><span>Price ($)</span><input id="a-price" type="number" min="0.01" step="0.01"></label>
+          <label class="fld"><span>Collection</span><select id="a-collection">${COLLECTIONS.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select></label>
+          <label class="fld"><span>Tier</span><select id="a-tier">${TIERS.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select></label>
+          <label class="fld"><span>Label (optional)</span><input id="a-label" placeholder="e.g. Studio Series"></label>
+          <label class="fld"><span>SKU (optional)</span><input id="a-sku" placeholder="auto-generated"></label>
+        </div>
+        <div class="save-row"><button class="btn btn-gold" id="addSave">Create draft</button><button class="btn btn-ghost" id="addCancel">Cancel</button><span class="pstat" id="addStat"></span></div>
+      </div>
+    </div>
+    ${groups || `<div class="empty">No pieces yet — add your first above.</div>`}`;
+}
+
+function renderThumbs(p) {
+  const list = imgsOf(p).map((im, i) => `
+    <div class="thumb ${im.url === p.cart_image ? "is-cart" : ""}" data-i="${i}">
+      <img src="${esc(im.url)}" alt="">
+      <div class="thumb-ctl">
+        <button data-act="img-left" title="Move left" ${i === 0 ? "disabled" : ""}>◀</button>
+        <button data-act="img-star" title="Use as cart image">★</button>
+        <button data-act="img-right" title="Move right" ${i === imgsOf(p).length - 1 ? "disabled" : ""}>▶</button>
+        <button data-act="img-del" title="Delete photo">×</button>
+      </div>
+    </div>`).join("");
+  return list + `<label class="thumb add" title="Add photo"><span class="plus">+</span><input type="file" accept="image/jpeg,image/png,image/webp" hidden data-act="img-add"></label>`;
+}
+
+function itemCard(p, isFirst = false, isLast = false) {
+  const [sk, sl] = statusOf(p);
+  return `<div class="item" data-sku="${esc(p.sku)}">
+    <div class="col-l"><div class="thumbs">${renderThumbs(p)}</div></div>
+    <div class="col-r">
+      <div class="item-head">
+        <span class="pill st-pill ${sk}">${esc(sl)}</span>
+        <span class="pill sold-pill draft" style="${p.available ? "display:none" : ""}">Sold</span>
+        <span style="font-size:.72rem;color:var(--muted)">${esc(p.sku)}</span>
+        <span class="move"><button class="icon-btn" data-act="up" title="Move up" ${isFirst ? "disabled" : ""}>▲</button><button class="icon-btn" data-act="down" title="Move down" ${isLast ? "disabled" : ""}>▼</button></span>
+      </div>
+      <label class="fld"><span>Name</span><input class="e" data-f="name" value="${esc(p.name)}"></label>
+      <div class="row2">
+        <label class="fld"><span>Collection</span><select class="e" data-f="collection">${COLLECTIONS.map(([k, l]) => `<option value="${k}" ${p.collection === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
+        <label class="fld"><span>Tier</span><select class="e" data-f="tier">${TIERS.map(([k, l]) => `<option value="${k}" ${(p.tier || "signature") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
+      </div>
+      <div class="row2">
+        <label class="fld price"><span>Price ($)</span><input class="e" data-f="price" type="number" min="0.01" step="0.01" value="${esc(p.price)}"></label>
+        <label class="fld"><span>Label</span><input class="e" data-f="label" value="${esc(p.label || "")}"></label>
+      </div>
+      <div class="save-row"><button class="btn btn-gold save" disabled>Save</button><span class="pstat"></span></div>
+      <div class="actions">
+        <button class="btn btn-ghost pub">${p.published ? "Unpublish" : "Publish"}</button>
+        <button class="btn btn-ghost avail">${p.available ? "Mark sold" : "Mark available"}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function refreshStatus(card, p) {
+  const [sk, sl] = statusOf(p);
+  const pill = card.querySelector(".st-pill");
+  if (pill) { pill.className = "pill st-pill " + sk; pill.textContent = sl; }
+  const sub = document.getElementById("inv-sub"); if (sub) sub.textContent = invSubText();
 }
 
 function wireInventory() {
-  document.querySelectorAll(".piece").forEach((card) => {
-    const sku = card.dataset.sku;
-    const p = PRODUCTS.find((x) => x.sku === sku); if (!p) return;
-    const inputs = [...card.querySelectorAll("input.e")];
-    const saveBtn = card.querySelector(".save");
-    const stat = card.querySelector(".pstat");
-    const toggle = card.querySelector(".toggle");
+  // --- Add a piece ---
+  const addToggle = $("#addToggle"), addForm = $("#addForm"), addPiece = $("#addPiece");
+  if (addToggle) {
+    addToggle.addEventListener("click", () => {
+      const open = addForm.style.display === "none";
+      addForm.style.display = open ? "block" : "none";
+      addPiece.classList.toggle("open", open);
+      addToggle.textContent = open ? "Close" : "+ Add a piece";
+    });
+    $("#addCancel").addEventListener("click", () => { addForm.style.display = "none"; addPiece.classList.remove("open"); addToggle.textContent = "+ Add a piece"; });
+    const addSave = $("#addSave");
+    addSave.addEventListener("click", async () => {
+      const stat = $("#addStat");
+      const name = $("#a-name").value.trim(), price = Number($("#a-price").value);
+      const collection = $("#a-collection").value, tier = $("#a-tier").value;
+      const label = $("#a-label").value.trim();
+      let sku = $("#a-sku").value.trim();
+      if (!name) return setStat(stat, "Name is required", "bad");
+      if (!(Number.isFinite(price) && price > 0)) return setStat(stat, "Price must be greater than 0", "bad");
+      if (!sku) sku = "BP-" + Date.now().toString(36).toUpperCase();
+      // SKU is a Snipcart item-id, an HTML attribute value, and a Storage path
+      // key — keep it to safe characters.
+      if (!/^[A-Za-z0-9_-]{2,40}$/.test(sku)) return setStat(stat, "SKU: letters, numbers, - and _ only (2–40 chars)", "bad");
+      addSave.disabled = true; setStat(stat, "Creating…");
+      const row = { sku, name, price, collection, tier, label: label || null, images: [], cart_image: null, available: true, max_quantity: 1, item_url: "/shop.html", published: false };
+      const { data, error } = await SB.from("products").insert(row).select("*");
+      addSave.disabled = false;
+      if (error) return setStat(stat, error.code === "23505" ? "That SKU already exists" : "Error — " + error.message, "bad");
+      if (!data || !data.length) return setStat(stat, "Not saved — sign in as the owner account", "bad");
+      PRODUCTS.push(data[0]);
+      render();   // structural change — rebuild so the new draft lands in its group
+    });
+  }
 
-    // Which fields differ from the saved record (and are valid)?
-    const changedFields = () => {
-      const o = {};
-      inputs.forEach((i) => {
-        const f = i.dataset.f;
-        if (f === "price") {
-          const n = Number(i.value);
-          if (Number.isFinite(n) && n > 0 && n !== Number(p.price)) o.price = n;
-        } else {
-          const v = i.value.trim();
-          if (v !== String(p[f] ?? "").trim()) o[f] = v;
-        }
-      });
-      return o;
-    };
-    const priceInput = card.querySelector('input[data-f="price"]');
-    const nameInput = card.querySelector('input[data-f="name"]');
-    const invalidReason = () => {
-      const n = Number(priceInput.value);
-      if (!(Number.isFinite(n) && n > 0)) return "Price must be greater than 0";
-      if (!nameInput.value.trim()) return "Name can't be empty";
-      return null;
-    };
-    const refresh = () => {
-      const bad = invalidReason();
-      const dirty = Object.keys(changedFields()).length > 0;
-      saveBtn.disabled = !dirty || !!bad;
-      if (bad) { stat.textContent = bad; stat.className = "pstat bad"; }
-      else if (dirty) { stat.textContent = "Unsaved changes"; stat.className = "pstat"; }
-      else { stat.textContent = ""; stat.className = "pstat"; }
-    };
+  document.querySelectorAll(".item").forEach((card) => wireItem(card));
+}
 
-    let saving = false;
-    const save = async () => {
-      if (saving || saveBtn.disabled || invalidReason()) return;  // guards Enter+click double-fire
-      const patch = changedFields();
-      if (!Object.keys(patch).length) return;
-      saving = true; saveBtn.disabled = true; saveBtn.textContent = "Saving…";
-      stat.textContent = ""; stat.className = "pstat";
-      // .select() so we can tell a real write from an RLS-filtered / no-match
-      // update — PostgREST returns 2xx with no error when it writes 0 rows.
-      const { data, error } = await SB.from("products").update(patch).eq("sku", sku)
-        .select("sku,name,label,price,available");
-      saving = false; saveBtn.textContent = "Save";
-      if (error) { stat.textContent = "Error — " + error.message; stat.className = "pstat bad"; console.error(error); refresh(); return; }
-      if (!data || data.length === 0) {
-        stat.textContent = "Not saved — sign in as the owner account"; stat.className = "pstat bad";
-        refresh(); return;
-      }
-      // Adopt the values the DB actually stored (e.g. price rounded to cents)
-      // and reflect them in the inputs, so the model, the fields, and the DB
-      // agree — no "Saved" over a value the DB doesn't hold.
-      Object.assign(p, data[0]);
-      inputs.forEach((i) => { i.value = String(data[0][i.dataset.f] ?? ""); });
-      stat.textContent = "Saved · live in a few min"; stat.className = "pstat ok";
-      saveBtn.disabled = true;
-    };
+function wireItem(card) {
+  const sku = card.dataset.sku;
+  const p = PRODUCTS.find((x) => x.sku === sku); if (!p) return;
+  const inputs = [...card.querySelectorAll(".e")];
+  const saveBtn = card.querySelector(".save");
+  const stat = card.querySelector(".save-row .pstat");
+  const priceInput = card.querySelector('input[data-f="price"]');
+  const nameInput = card.querySelector('input[data-f="name"]');
 
+  // ---- field editing (name/label/price/collection/tier) ----
+  const changedFields = () => {
+    const o = {};
     inputs.forEach((i) => {
-      i.addEventListener("input", refresh);
-      i.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); save(); } });
+      const f = i.dataset.f;
+      if (f === "price") { const n = Number(i.value); if (Number.isFinite(n) && n > 0 && n !== Number(p.price)) o.price = n; }
+      else { const v = i.value.trim(); if (v !== String(p[f] ?? "").trim()) o[f] = v; }
     });
-    saveBtn.addEventListener("click", save);
+    return o;
+  };
+  const invalidReason = () => {
+    const n = Number(priceInput.value);
+    if (!(Number.isFinite(n) && n > 0)) return "Price must be greater than 0";
+    if (!nameInput.value.trim()) return "Name can't be empty";
+    return null;
+  };
+  const refresh = () => {
+    const bad = invalidReason(), dirty = Object.keys(changedFields()).length > 0;
+    saveBtn.disabled = !dirty || !!bad;
+    setStat(stat, bad || (dirty ? "Unsaved changes" : ""), bad ? "bad" : "");
+  };
+  let saving = false;
+  const save = async () => {
+    if (saving || saveBtn.disabled || invalidReason()) return;
+    const patch = changedFields(); if (!Object.keys(patch).length) return;
+    saving = true; saveBtn.disabled = true; saveBtn.textContent = "Saving…"; setStat(stat, "");
+    const r = await patchProduct(sku, patch, "sku,name,label,price,collection,tier");
+    saving = false; saveBtn.textContent = "Save";
+    if (!r.ok) { setStat(stat, r.msg, "bad"); refresh(); return; }
+    const moved = ("collection" in patch) || ("tier" in patch);
+    Object.assign(p, r.row);
+    // A collection/tier change moves the piece to a different group — rebuild so
+    // it lands there and the reorder arrows can't swap across stale groups.
+    if (moved) { render(); return; }
+    inputs.forEach((i) => { i.value = String(r.row[i.dataset.f] ?? ""); });
+    setStat(stat, "Saved · live in a few min", "ok"); saveBtn.disabled = true;
+    refreshStatus(card, p);
+  };
+  inputs.forEach((i) => {
+    i.addEventListener("input", refresh); i.addEventListener("change", refresh);
+    i.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); save(); } });
+  });
+  saveBtn.addEventListener("click", save);
 
-    toggle.addEventListener("click", async () => {
-      toggle.disabled = true; const prev = toggle.textContent; toggle.textContent = "Saving…";
-      const { data, error } = await SB.from("products")
-        .update({ available: !p.available }).eq("sku", sku).select("sku,available");
-      toggle.disabled = false;
-      if (error || !data || !data.length) {
-        toggle.textContent = prev;
-        stat.textContent = error ? ("Error — " + error.message) : "Not saved — sign in as the owner account";
-        stat.className = "pstat bad"; if (error) console.error(error); return;
-      }
-      // Update THIS card in place — a full render() would discard other cards' unsaved edits.
-      p.available = data[0].available;
-      toggle.textContent = p.available ? "Mark sold" : "Mark available";
-      const badge = card.querySelector(".badge");
-      badge.className = "badge " + (p.available ? "paid" : "test");
-      badge.textContent = p.available ? "available" : "sold";
-      const sub = document.getElementById("inv-sub");   // keep the header counts live
-      if (sub) sub.textContent = invSubText();
+  // ---- availability toggle ----
+  const availBtn = card.querySelector(".avail");
+  availBtn.addEventListener("click", async () => {
+    availBtn.disabled = true; const prev = availBtn.textContent; availBtn.textContent = "Saving…";
+    const r = await patchProduct(sku, { available: !p.available }, "sku,available");
+    availBtn.disabled = false;
+    if (!r.ok) { availBtn.textContent = prev; setStat(stat, r.msg, "bad"); return; }
+    p.available = r.row.available;
+    availBtn.textContent = p.available ? "Mark sold" : "Mark available";
+    const soldPill = card.querySelector(".sold-pill"); if (soldPill) soldPill.style.display = p.available ? "none" : "";
+    refreshStatus(card, p);
+  });
+
+  // ---- publish / unpublish ----
+  const pubBtn = card.querySelector(".pub");
+  let confirmingUnpub = false, unpubTimer = null;
+  pubBtn.addEventListener("click", async () => {
+    if (!p.published) {
+      if (!isComplete(p)) { setStat(stat, "Add a photo and a price (and Save) before publishing.", "bad"); return; }
+      pubBtn.disabled = true; pubBtn.textContent = "Publishing…";
+      const r = await patchProduct(sku, { published: true }, "sku,published");
+      pubBtn.disabled = false;
+      if (!r.ok) { pubBtn.textContent = "Publish"; setStat(stat, r.msg, "bad"); return; }
+      p.published = true; pubBtn.textContent = "Unpublish"; setStat(stat, "Published · live in a few min", "ok"); refreshStatus(card, p);
+      return;
+    }
+    // unpublish = takedown -> two-step confirm (no browser dialog)
+    if (!confirmingUnpub) {
+      confirmingUnpub = true; pubBtn.textContent = "Confirm remove?"; pubBtn.classList.add("btn-ghost");
+      setStat(stat, "This removes it from the live store.", "bad");
+      unpubTimer = setTimeout(() => { confirmingUnpub = false; pubBtn.textContent = "Unpublish"; setStat(stat, ""); }, 4000);
+      return;
+    }
+    clearTimeout(unpubTimer); confirmingUnpub = false;
+    pubBtn.disabled = true; pubBtn.textContent = "Removing…";
+    const r = await patchProduct(sku, { published: false }, "sku,published");
+    pubBtn.disabled = false;
+    if (!r.ok) { pubBtn.textContent = "Unpublish"; setStat(stat, r.msg, "bad"); return; }
+    p.published = false; pubBtn.textContent = "Publish"; setStat(stat, "Removed from store", "ok"); refreshStatus(card, p);
+  });
+
+  // ---- item reorder (within the collection group) ----
+  const groupSku = (dir) => {
+    const items = [...card.parentElement.querySelectorAll(":scope > .item")];
+    const idx = items.indexOf(card); const other = items[idx + dir];
+    return other ? other : null;
+  };
+  card.querySelectorAll(".move .icon-btn").forEach((btn) => btn.addEventListener("click", async () => {
+    const dir = btn.dataset.act === "up" ? -1 : 1;
+    const other = groupSku(dir); if (!other) return;
+    const otherSku = other.dataset.sku, op = PRODUCTS.find((x) => x.sku === otherSku);
+    btn.disabled = true;
+    const { data, error } = await SB.rpc("swap_positions", { sku_a: sku, sku_b: otherSku });
+    btn.disabled = false;
+    if (error) { setStat(stat, "Couldn't reorder — " + error.message, "bad"); return; }
+    if (!data) { setStat(stat, "Not saved — sign in as the owner account", "bad"); return; }  // RLS no-op returns 0 rows
+    const tmp = p.position; p.position = op.position; op.position = tmp;
+    if (dir === -1) card.parentElement.insertBefore(card, other);
+    else card.parentElement.insertBefore(other, card);
+    [card, other].forEach((c) => {
+      const items = [...c.parentElement.querySelectorAll(":scope > .item")]; const i = items.indexOf(c);
+      c.querySelector('[data-act="up"]').disabled = i === 0;
+      c.querySelector('[data-act="down"]').disabled = i === items.length - 1;
     });
+  }));
+
+  // ---- photo strip (delegated so it survives innerHTML re-renders) ----
+  const thumbsEl = card.querySelector(".thumbs");
+  const rerenderThumbs = () => { thumbsEl.innerHTML = renderThumbs(p); refreshStatus(card, p); };
+  thumbsEl.addEventListener("change", async (e) => {
+    const inp = e.target.closest('input[data-act="img-add"]'); if (!inp || !inp.files[0]) return;
+    const add = thumbsEl.querySelector(".thumb.add");
+    if (add.classList.contains("busy")) return;   // one upload at a time — avoid last-write-wins on images
+    const file = inp.files[0]; inp.value = "";
+    // Busy state via a class + the .plus span only — never touch the label's
+    // children (that would delete the hidden <input> and kill retry).
+    const plus = add.querySelector(".plus");
+    const busyOff = () => { add.classList.remove("busy"); if (plus) plus.textContent = "+"; };
+    add.classList.add("busy"); if (plus) plus.textContent = "…";
+    try {
+      const url = await uploadPhoto(sku, file);
+      const newImgs = [...imgsOf(p), { url, alt: p.name }];
+      const patch = { images: newImgs }; if (!p.cart_image) patch.cart_image = url;
+      const r = await patchProduct(sku, patch, "sku,images,cart_image");
+      if (!r.ok) { setStat(stat, r.msg, "bad"); busyOff(); return; }
+      p.images = r.row.images; p.cart_image = r.row.cart_image; rerenderThumbs();
+    } catch (err) { setStat(stat, err.message || "Upload failed", "bad"); busyOff(); }
+  });
+  thumbsEl.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-act]"); if (!btn) return;
+    const wrap = btn.closest(".thumb"); const i = Number(wrap.dataset.i); const act = btn.dataset.act;
+    const list = imgsOf(p).slice();
+    if (act === "img-star") {
+      const r = await patchProduct(sku, { cart_image: list[i].url }, "sku,cart_image");
+      if (!r.ok) return setStat(stat, r.msg, "bad");
+      p.cart_image = r.row.cart_image; rerenderThumbs(); return;
+    }
+    if (act === "img-left" || act === "img-right") {
+      const j = i + (act === "img-left" ? -1 : 1); if (j < 0 || j >= list.length) return;
+      [list[i], list[j]] = [list[j], list[i]];
+      const r = await patchProduct(sku, { images: list }, "sku,images");
+      if (!r.ok) return setStat(stat, r.msg, "bad");
+      p.images = r.row.images; rerenderThumbs(); return;
+    }
+    if (act === "img-del") {
+      const removed = list.splice(i, 1)[0];
+      const patch = { images: list };
+      if (removed.url === p.cart_image) patch.cart_image = list[0] ? list[0].url : null;
+      const r = await patchProduct(sku, patch, "sku,images,cart_image");
+      if (!r.ok) return setStat(stat, r.msg, "bad");
+      p.images = r.row.images; p.cart_image = r.row.cart_image;
+      const key = keyFromUrl(removed.url);
+      if (key) SB.storage.from(BUCKET).remove([key]);   // best-effort orphan cleanup
+      rerenderThumbs();
+    }
   });
 }
 
