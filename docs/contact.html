@@ -76,7 +76,7 @@
 
         <!-- Contact Form -->
         <div class="contact-form reveal">
-          <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" novalidate>
+          <form id="contact-form" novalidate>
             <label for="name">Name</label>
             <input type="text" id="name" name="name" required placeholder="Your name">
 
@@ -88,6 +88,10 @@
 
             <label for="message">Message</label>
             <textarea id="message" name="message" required placeholder="Tell us what you're looking for..."></textarea>
+
+            <!-- Honeypot: hidden from people, tempting to bots. Leave empty. -->
+            <input type="text" name="company" tabindex="-1" autocomplete="off"
+              aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
 
             <button type="submit" class="btn btn-primary">Send Message</button>
             <p class="form-status" role="status" aria-live="polite"></p>
@@ -170,5 +174,58 @@
   <script src="js/main.js"></script>
   <!-- AI receptionist (floating studio assistant) -->
   <script src="js/receptionist.js" defer></script>
+
+  <!-- Contact form → Supabase edge function (saves inquiry + emails the studio) -->
+  <script>
+  (function () {
+    var form = document.getElementById("contact-form");
+    if (!form) return;
+    var ENDPOINT = "https://ktjxrxchrxtmyvlfsyof.supabase.co/functions/v1/contact";
+    var KEY = "sb_publishable_8NSnU6lGLIt9GplZ-7hHUw_XvtDmX2s"; // public key
+    var status = form.querySelector(".form-status");
+    var btn = form.querySelector('button[type="submit"]');
+
+    function say(msg, ok) {
+      if (!status) return;
+      status.textContent = msg;
+      status.style.color = ok ? "#3a6b4f" : "#b23b3b";
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var payload = {
+        name: form.name.value.trim(),
+        email: form.email.value.trim(),
+        subject: form.subject.value.trim(),
+        message: form.message.value.trim(),
+        company: form.company ? form.company.value : "", // honeypot
+      };
+      if (!payload.email || !payload.message) {
+        say("Please add your email and a message.", false);
+        return;
+      }
+      btn.disabled = true;
+      say("Sending…", true);
+      fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: KEY, Authorization: "Bearer " + KEY },
+        body: JSON.stringify(payload),
+      })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          if (res.ok && res.d && res.d.ok) {
+            form.reset();
+            say("Thank you — your message is on its way. We'll be in touch soon.", true);
+          } else {
+            say((res.d && res.d.error) || "Something went wrong — please try again.", false);
+          }
+        })
+        .catch(function () {
+          say("Couldn't send just now — please email hello@blue-plumeria.com directly.", false);
+        })
+        .finally(function () { btn.disabled = false; });
+    });
+  })();
+  </script>
 </body>
 </html>

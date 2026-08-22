@@ -24,6 +24,13 @@ const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Email (Resend). Optional: if RESEND_API_KEY is unset, leads are still
+// saved — the notification/auto-reply is simply skipped.
+const RESEND_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ??
+  "Blue Plumeria <hello@blue-plumeria.com>";
+const OWNER_EMAIL = Deno.env.get("OWNER_EMAIL") ?? "desmitdesignz@gmail.com";
+
 // Fast + inexpensive, which is the right trade for a customer-facing
 // receptionist. Bump to "claude-sonnet-5" or "claude-opus-5" for more depth.
 const MODEL = "claude-haiku-4-5";
@@ -163,6 +170,45 @@ const TOOLS = [{
   },
 }];
 
+const esc = (s: string) =>
+  String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+
+// Send one email via Resend. Never throws — returns false on any problem
+// (incl. RESEND_API_KEY unset) so email issues can't break a lead capture.
+async function sendEmail(opts: {
+  to: string | string[];
+  subject: string;
+  html: string;
+  replyTo?: string;
+}): Promise<boolean> {
+  if (!RESEND_KEY) return false;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: Array.isArray(opts.to) ? opts.to : [opts.to],
+        subject: opts.subject,
+        html: opts.html,
+        ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+      }),
+    });
+    if (!res.ok) {
+      console.error("resend error", res.status, await res.text());
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("resend exception", e);
+    return false;
+  }
+}
+
 async function saveInquiry(
   input: Record<string, unknown>,
   transcript: string,
@@ -171,22 +217,57 @@ async function saveInquiry(
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return "That email doesn't look valid — could you double-check it?";
   }
+  const name = String(input.name ?? "").trim();
+  const message = String(input.message ?? "").trim();
+  const kind = ["question", "custom-order", "lead"].includes(String(input.kind))
+    ? String(input.kind)
+    : "lead";
+
   const res = await fetch(`${REST}/inquiries`, {
     method: "POST",
     headers: sbHeaders,
     body: JSON.stringify({
       source: "blueplumeria",
-      name: String(input.name ?? "").trim() || null,
+      name: name || null,
       email,
-      message: String(input.message ?? "").trim() || null,
-      kind: ["question", "custom-order", "lead"].includes(String(input.kind))
-        ? input.kind
-        : "lead",
+      message: message || null,
+      kind,
       status: "new",
       meta: { via: "ai-receptionist", transcript: transcript.slice(0, 4000) },
     }),
   });
   if (!res.ok) return "Sorry — I couldn't save that just now.";
+
+  // Fire the notifications (best-effort; a mail failure never blocks the save).
+  const who = name ? `${esc(name)} (${esc(email)})` : esc(email);
+  await sendEmail({
+    to: OWNER_EMAIL,
+    replyTo: email,
+    subject: `New ${kind} from the AI receptionist · Blue Plumeria`,
+    html: `
+      <div style="font-family:Georgia,serif;color:#2b2b2b;max-width:560px">
+        <h2 style="font-weight:normal;margin:0 0 12px">New ${esc(kind)} via the chat concierge</h2>
+        <p style="margin:0 0 6px"><strong>From:</strong> ${who}</p>
+        <p style="margin:14px 0 6px"><strong>What they want:</strong></p>
+        <p style="white-space:pre-wrap;margin:0;padding:12px 14px;background:#f6f4ef;border-radius:6px">${esc(message || "(see transcript)")}</p>
+        <p style="margin:14px 0 6px"><strong>Conversation:</strong></p>
+        <p style="white-space:pre-wrap;margin:0;padding:12px 14px;background:#f6f4ef;border-radius:6px;color:#555;font-size:13px">${esc(transcript.slice(0, 4000))}</p>
+        <p style="margin:16px 0 0;color:#888;font-size:13px">Reply to this email to respond directly to ${esc(email)}.</p>
+      </div>`,
+  });
+  await sendEmail({
+    to: email,
+    subject: "Thanks for reaching out — Blue Plumeria",
+    html: `
+      <div style="font-family:Georgia,serif;color:#2b2b2b;max-width:560px">
+        <p>Hi${name ? " " + esc(name.split(" ")[0]) : ""},</p>
+        <p>Thank you for reaching out to Blue Plumeria — the studio has your note
+        and will be in touch as soon as we can.</p>
+        <p>With gratitude,<br>Blue Plumeria</p>
+        <p style="color:#888;font-size:13px">Handcrafted in the USA · blue-plumeria.com</p>
+      </div>`,
+  });
+
   return "Saved — the studio will be in touch by email soon.";
 }
 
