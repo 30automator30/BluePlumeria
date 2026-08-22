@@ -1,16 +1,17 @@
 // ============================================================
 // Blue Plumeria — Snipcart order webhook (Supabase Edge Function)
 //
-// Dependency-free: no npm/esm imports (so it deploys cleanly from the
-// dashboard editor). Talks to the DB over Supabase's REST API with the
-// service-role key, which bypasses RLS.
+// Dependency-free (no npm/esm imports). Talks to the DB over Supabase's
+// REST API with the service-role key (bypasses RLS).
 //
 // On a completed order we:
 //   1) VERIFY the request is genuinely from Snipcart (validate its
 //      request-token against Snipcart's API with our SECRET key).
-//   2) Are IDEMPOTENT on the order token (retries can't duplicate).
-//   3) Record the order + line items.
-//   4) Mark one-of-a-kind pieces (max_quantity = 1) as sold.
+//   2) Record the order + line items + sell-through in ONE atomic
+//      transaction via the public.record_order() RPC — idempotent on the
+//      order token, so retries can't duplicate and a partial failure can't
+//      drop items or leave a sold one-of-a-kind still available.
+//   3) Fail closed: any error returns non-2xx so Snipcart safely retries.
 // We never see card data — Snipcart/Stripe handle payment.
 //
 // Secrets: SNIPCART_SECRET_API_KEY (set by owner).
@@ -20,6 +21,7 @@
 const SNIPCART_SECRET = Deno.env.get("SNIPCART_SECRET_API_KEY") ?? "";
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const FETCH_TIMEOUT_MS = Number(Deno.env.get("FETCH_TIMEOUT_MS") ?? "8000");
 
 const REST = `${SB_URL}/rest/v1`;
 const sbHeaders = {
@@ -34,50 +36,54 @@ const json = (obj: unknown, status = 200) =>
     headers: { "Content-Type": "application/json" },
   });
 
+// Fetch with a hard wall-clock timeout so a slow upstream can't hang the
+// invocation until the platform kills it.
+async function fetchT(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: ac.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ ok: true });
 
-  // 1) Verify authenticity with Snipcart.
-  const token = req.headers.get("x-snipcart-requesttoken");
-  if (!token) return json({ error: "missing request token" }, 401);
-  if (!SNIPCART_SECRET) return json({ error: "server not configured" }, 500);
+  try {
+    // 1) Verify authenticity with Snipcart.
+    const token = req.headers.get("x-snipcart-requesttoken");
+    if (!token) return json({ error: "missing request token" }, 401);
+    if (!SNIPCART_SECRET) return json({ error: "server not configured" }, 500);
 
-  const check = await fetch(
-    `https://app.snipcart.com/api/requestvalidation/${token}`,
-    {
-      headers: {
-        Accept: "application/json",
-        Authorization: "Basic " + btoa(`${SNIPCART_SECRET}:`),
+    const check = await fetchT(
+      `https://app.snipcart.com/api/requestvalidation/${encodeURIComponent(token)}`,
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: "Basic " + btoa(`${SNIPCART_SECRET}:`),
+        },
       },
-    },
-  );
-  if (!check.ok) return json({ error: "request validation failed" }, 401);
+    );
+    if (!check.ok) return json({ error: "request validation failed" }, 401);
 
-  const body = await req.json().catch(() => null);
-  if (!body) return json({ error: "bad payload" }, 400);
-  if (body.eventName !== "order.completed") {
-    return json({ ignored: body.eventName ?? "unknown" });
-  }
+    const body = await req.json().catch(() => null);
+    if (!body) return json({ error: "bad payload" }, 400);
+    if (body.eventName !== "order.completed") {
+      return json({ ignored: body.eventName ?? "unknown" });
+    }
 
-  const o = body.content ?? {};
-  const orderToken: string | undefined = o.token;
-  if (!orderToken) return json({ error: "no order token" }, 400);
+    const o = body.content ?? {};
+    const orderToken: string | undefined = o.token;
+    if (!orderToken) return json({ error: "no order token" }, 400);
 
-  // 2) Idempotency — skip if already recorded.
-  const dup = await fetch(
-    `${REST}/orders?snipcart_token=eq.${encodeURIComponent(orderToken)}&select=id&limit=1`,
-    { headers: sbHeaders },
-  );
-  const dupRows = await dup.json();
-  if (Array.isArray(dupRows) && dupRows.length) {
-    return json({ status: "already processed", id: dupRows[0].id });
-  }
-
-  // 3) Insert the order (return=representation gives us the new id).
-  const orderRes = await fetch(`${REST}/orders`, {
-    method: "POST",
-    headers: { ...sbHeaders, Prefer: "return=representation" },
-    body: JSON.stringify({
+    // 2) Build clean, pre-extracted payload for the atomic RPC.
+    const order = {
       snipcart_token: orderToken,
       invoice_number: o.invoiceNumber ?? null,
       email: o.email ?? null,
@@ -91,42 +97,31 @@ Deno.serve(async (req) => {
       status: body.mode === "Test" ? "test" : "paid",
       placed_at: o.completionDate ?? o.creationDate ?? new Date().toISOString(),
       raw: body,
-    }),
-  });
-  if (!orderRes.ok) {
-    return json({ error: "order insert failed", detail: await orderRes.text() }, 500);
-  }
-  const orderId = (await orderRes.json())[0]?.id;
+    };
+    const items = (o.items ?? []).map((it: Record<string, unknown>) => ({
+      sku: (it.id as string) ?? null,
+      name: (it.name as string) ?? null,
+      unit_price: (it.price as number) ?? null,
+      quantity: (it.quantity as number) ?? 1,
+      line_total: (it.totalPrice as number) ??
+        (it.price != null ? (it.price as number) * ((it.quantity as number) ?? 1) : null),
+    }));
+    const sold_skus = items.map((i: { sku: string | null }) => i.sku).filter(Boolean);
 
-  // 4) Insert line items.
-  const items = (o.items ?? []).map((it: Record<string, unknown>) => ({
-    order_id: orderId,
-    sku: (it.id as string) ?? null,
-    name: (it.name as string) ?? null,
-    unit_price: (it.price as number) ?? null,
-    quantity: (it.quantity as number) ?? 1,
-    line_total: (it.totalPrice as number) ??
-      (it.price != null ? (it.price as number) * ((it.quantity as number) ?? 1) : null),
-  }));
-  if (items.length) {
-    const itemsRes = await fetch(`${REST}/order_items`, {
+    // 3) One transaction: order + items + sell-through, idempotent on token.
+    const rpc = await fetchT(`${REST}/rpc/record_order`, {
       method: "POST",
       headers: sbHeaders,
-      body: JSON.stringify(items),
+      body: JSON.stringify({ p: { order, items, sold_skus } }),
     });
-    if (!itemsRes.ok) {
-      return json({ error: "items insert failed", detail: await itemsRes.text() }, 500);
+    if (!rpc.ok) {
+      // Fail closed — non-2xx makes Snipcart retry (the RPC is idempotent).
+      return json({ error: "record failed", detail: await rpc.text() }, 500);
     }
+    const result = await rpc.json(); // "recorded" | "duplicate"
+    return json({ status: result, order: orderToken, items: items.length });
+  } catch (e) {
+    console.error("snipcart-webhook error", e);
+    return json({ error: "webhook error" }, 500); // retryable
   }
-
-  // 5) Sell-through: one-of-a-kind pieces become unavailable.
-  const soldSkus = items.map((i) => i.sku).filter(Boolean) as string[];
-  if (soldSkus.length) {
-    await fetch(
-      `${REST}/products?max_quantity=eq.1&sku=in.(${soldSkus.map(encodeURIComponent).join(",")})`,
-      { method: "PATCH", headers: sbHeaders, body: JSON.stringify({ available: false }) },
-    );
-  }
-
-  return json({ status: "recorded", order: orderId, items: items.length });
 });

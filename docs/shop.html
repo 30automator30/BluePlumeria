@@ -767,24 +767,39 @@
   (function(){
     var URL="https://ktjxrxchrxtmyvlfsyof.supabase.co/rest/v1/products?select=sku,available";
     var KEY="sb_publishable_8NSnU6lGLIt9GplZ-7hHUw_XvtDmX2s";
-    function apply(){
-      fetch(URL,{headers:{apikey:KEY,Authorization:"Bearer "+KEY}})
-        .then(function(r){ return r.ok ? r.json() : null; })
-        .then(function(rows){
-          if(!rows) return;
-          var sold={}; rows.forEach(function(p){ if(!p.available) sold[p.sku]=1; });
-          document.querySelectorAll(".snipcart-add-item[data-item-id]").forEach(function(btn){
-            if(sold[btn.getAttribute("data-item-id")]){
-              var set=btn.closest(".showcase-set"); if(set) set.classList.add("sold");
-              btn.classList.remove("snipcart-add-item");   /* stops Snipcart from adding it */
-              btn.setAttribute("disabled","");
-              btn.textContent="Sold";
-            }
-          });
-        })
-        .catch(function(){ /* offline: leave the static page as-is */ });
+    function buttons(){ return document.querySelectorAll(".snipcart-add-item[data-item-id]"); }
+    function markSold(rows){
+      var sold={}; rows.forEach(function(p){ if(!p.available) sold[p.sku]=1; });
+      buttons().forEach(function(btn){
+        if(sold[btn.getAttribute("data-item-id")]){
+          var set=btn.closest(".showcase-set"); if(set) set.classList.add("sold");
+          btn.classList.remove("snipcart-add-item");   /* stops Snipcart from adding it */
+          btn.setAttribute("disabled","");
+          btn.textContent="Sold";
+        }
+      });
     }
-    if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",apply); else apply();
+    // Degrade SAFE: if we can't confirm availability, don't risk selling an
+    // already-sold one-of-a-kind. (To prefer availability over safety instead,
+    // replace this body with a no-op so buttons stay live.)
+    function degradeSafe(){
+      buttons().forEach(function(btn){
+        btn.classList.remove("snipcart-add-item");
+        btn.setAttribute("disabled","");
+        btn.textContent="Checking availability…";
+      });
+    }
+    function load(attempt){
+      fetch(URL,{headers:{apikey:KEY,Authorization:"Bearer "+KEY}})
+        .then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.json(); })
+        .then(function(rows){ if(!Array.isArray(rows)) throw new Error("bad rows"); markSold(rows); })
+        .catch(function(){
+          if(attempt<2){ setTimeout(function(){ load(attempt+1); }, 1200); }  /* transient? retry */
+          else { degradeSafe(); }
+        });
+    }
+    function start(){ load(0); }
+    if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start); else start();
   })();
   </script>
 </body>
