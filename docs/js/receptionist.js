@@ -17,8 +17,8 @@
   var KEY = "sb_publishable_8NSnU6lGLIt9GplZ-7hHUw_XvtDmX2s";
   var STORE_KEY = "bp_receptionist_v1";
   var GREETING =
-    "Hi! I'm the Blue Plumeria studio assistant. Ask me about a piece, our " +
-    "materials, or a custom order — I'm happy to help.";
+    "Hi! I'm Blue Plumeria's virtual studio assistant. Ask me about a piece, " +
+    "our materials, or a custom order — I'm happy to help.";
 
   /* ---- conversation state ---- */
   var messages = load();          // [{role, content}]
