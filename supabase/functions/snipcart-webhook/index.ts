@@ -106,7 +106,10 @@ Deno.serve(async (req) => {
       line_total: (it.totalPrice as number) ??
         (it.price != null ? (it.price as number) * ((it.quantity as number) ?? 1) : null),
     }));
-    const sold_skus = items.map((i: { sku: string | null }) => i.sku).filter(Boolean);
+    // Test-mode orders must not hide live inventory (Test/Live data can share SKUs).
+    const sold_skus = order.status === "test"
+      ? []
+      : items.map((i: { sku: string | null }) => i.sku).filter(Boolean);
 
     // 3) One transaction: order + items + sell-through, idempotent on token.
     const rpc = await fetchT(`${REST}/rpc/record_order`, {
