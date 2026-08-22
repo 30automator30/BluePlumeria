@@ -216,14 +216,16 @@
           if (res.ok && res.d && res.d.ok) {
             form.reset();
             say("Thank you — your message is on its way. We'll be in touch soon.", true);
+            btn.textContent = "Sent";        // stays disabled: no duplicate submits
           } else {
             say((res.d && res.d.error) || "Something went wrong — please try again.", false);
+            btn.disabled = false;
           }
         })
         .catch(function () {
           say("Couldn't send just now — please email hello@blue-plumeria.com directly.", false);
-        })
-        .finally(function () { btn.disabled = false; });
+          btn.disabled = false;
+        });
     });
   })();
   </script>

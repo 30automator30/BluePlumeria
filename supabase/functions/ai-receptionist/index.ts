@@ -47,10 +47,16 @@ const MAX_MESSAGES = 24;
 const MAX_CHARS_PER_MSG = 2000;
 const MAX_TOOL_HOPS = 3;
 
-// Ops guardrails: per-IP hourly cap, hard fetch timeout, catalog cache TTL.
-const RATE_LIMIT_PER_HOUR = Number(Deno.env.get("RATE_LIMIT_PER_HOUR") ?? "40");
-const FETCH_TIMEOUT_MS = Number(Deno.env.get("FETCH_TIMEOUT_MS") ?? "20000");
-const CATALOG_TTL_MS = Number(Deno.env.get("CATALOG_TTL_MS") ?? "60000");
+// Ops guardrails. posInt rejects malformed env (a NaN timeout would abort every
+// fetch instantly; a NaN cap would silently disable the limiter).
+function posInt(v: string | undefined, dflt: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : dflt;
+}
+const RATE_LIMIT_PER_HOUR = posInt(Deno.env.get("RATE_LIMIT_PER_HOUR"), 40);
+const GLOBAL_LIMIT_PER_HOUR = posInt(Deno.env.get("GLOBAL_LIMIT_PER_HOUR"), 600);
+const FETCH_TIMEOUT_MS = posInt(Deno.env.get("FETCH_TIMEOUT_MS"), 20000);
+const CATALOG_TTL_MS = posInt(Deno.env.get("CATALOG_TTL_MS"), 60000);
 
 const REST = `${SB_URL}/rest/v1`;
 const sbHeaders = {
@@ -112,7 +118,11 @@ async function loadCatalog(): Promise<string> {
     );
     if (!res.ok) return catalogCache?.data ?? "(catalog temporarily unavailable)";
     const rows = await res.json() as Array<Record<string, unknown>>;
-    if (!Array.isArray(rows) || !rows.length) return "(no published pieces)";
+    if (!Array.isArray(rows) || !rows.length) {
+      // A transient empty result (e.g. mid-publish) shouldn't make the model
+      // deny the whole collection — prefer the last good catalog if we have one.
+      return catalogCache?.data ?? "(no published pieces)";
+    }
     const out = rows.map((p) => {
       const price = p.price != null ? `$${Number(p.price).toFixed(0)}` : "price on request";
       const oneOfAKind = Number(p.max_quantity) === 1;
@@ -269,7 +279,7 @@ async function saveInquiry(
     ? String(input.kind)
     : "lead";
 
-  const res = await fetch(`${REST}/inquiries`, {
+  const res = await fetchT(`${REST}/inquiries`, {
     method: "POST",
     headers: sbHeaders,
     body: JSON.stringify({
@@ -281,8 +291,8 @@ async function saveInquiry(
       status: "new",
       meta: { via: "ai-receptionist", transcript: transcript.slice(0, 4000) },
     }),
-  });
-  if (!res.ok) return "Sorry — I couldn't save that just now.";
+  }, 5000).catch(() => null);
+  if (!res || !res.ok) return "Sorry — I couldn't save that just now.";
 
   // Fire the notifications (best-effort; a mail failure never blocks the save).
   const who = name ? `${esc(name)} (${esc(email)})` : esc(email);
@@ -340,34 +350,57 @@ async function callClaude(
 }
 
 function clientIp(req: Request): string {
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip") ?? "";
+  // Prefer platform-set headers; XFF is client-appendable, so use its LAST hop.
+  return req.headers.get("cf-connecting-ip") ??
+    req.headers.get("x-real-ip") ??
+    (req.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ?? "");
 }
 
-// Per-IP hourly cap, backed by public.receptionist_hits so it holds across
-// function instances. Fails OPEN — a limiter error never blocks a real visitor.
+// Count receptionist_hits rows for a PostgREST filter. Returns null on error so
+// the caller fails open AND logs it — a dead limiter must be visible, not silent.
+async function countHits(filter: string): Promise<number | null> {
+  const res = await fetchT(
+    `${REST}/receptionist_hits?${filter}&select=id`,
+    { headers: { ...sbHeaders, Prefer: "count=exact", Range: "0-0" } },
+    5000,
+  ).catch(() => null);
+  if (!res || !res.ok) {
+    console.error("rate: count query failed", res?.status ?? "network");
+    return null;
+  }
+  const cr = res.headers.get("content-range"); // "0-0/<total>" or "*/0"
+  const total = cr && cr.includes("/") ? Number(cr.split("/")[1]) : 0;
+  return Number.isFinite(total) ? total : 0;
+}
+
+// Global + per-IP hourly caps, backed by public.receptionist_hits so they hold
+// across instances. The GLOBAL cap is the real spend backstop — a per-IP cap on
+// an unauthenticated endpoint is defeatable by IP rotation. Fails OPEN, but any
+// count/insert failure is logged so a dead limiter shows up in function_logs.
 async function rateLimited(ip: string): Promise<boolean> {
-  if (!ip) return false;
-  const since = new Date(Date.now() - 3600_000).toISOString();
+  const sinceEnc = encodeURIComponent(new Date(Date.now() - 3600_000).toISOString());
   try {
-    const res = await fetchT(
-      `${REST}/receptionist_hits?ip=eq.${encodeURIComponent(ip)}` +
-        `&created_at=gte.${encodeURIComponent(since)}&select=id`,
-      { headers: { ...sbHeaders, Prefer: "count=exact", Range: "0-0" } },
-      5000,
-    );
-    const cr = res.headers.get("content-range"); // "0-0/<total>" or "*/0"
-    const total = cr && cr.includes("/") ? Number(cr.split("/")[1]) : 0;
-    if (Number.isFinite(total) && total >= RATE_LIMIT_PER_HOUR) return true;
-    await fetchT(`${REST}/receptionist_hits`, {
+    const globalN = await countHits(`created_at=gte.${sinceEnc}`);
+    if (globalN === null) return false; // limiter unavailable → fail open (logged)
+    if (globalN >= GLOBAL_LIMIT_PER_HOUR) {
+      console.error("rate: global cap reached", globalN);
+      return true;
+    }
+    if (ip) {
+      const ipN = await countHits(
+        `ip=eq.${encodeURIComponent(ip)}&created_at=gte.${sinceEnc}`,
+      );
+      if (ipN !== null && ipN >= RATE_LIMIT_PER_HOUR) return true;
+    }
+    const ins = await fetchT(`${REST}/receptionist_hits`, {
       method: "POST",
       headers: { ...sbHeaders, Prefer: "return=minimal" },
-      body: JSON.stringify({ ip }),
-    }, 5000);
+      body: JSON.stringify({ ip: ip || "unknown" }),
+    }, 5000).catch(() => null);
+    if (!ins || !ins.ok) console.error("rate: hit insert failed", ins?.status ?? "network");
     if (Math.random() < 0.02) {
-      const old = new Date(Date.now() - 7200_000).toISOString();
-      await fetchT(`${REST}/receptionist_hits?created_at=lt.${encodeURIComponent(old)}`, {
+      const old = encodeURIComponent(new Date(Date.now() - 7200_000).toISOString());
+      await fetchT(`${REST}/receptionist_hits?created_at=lt.${old}`, {
         method: "DELETE",
         headers: { ...sbHeaders, Prefer: "return=minimal" },
       }, 5000).catch(() => {});
@@ -482,9 +515,12 @@ Deno.serve(async (req) => {
       trace("done", { leadSaved, replyLen: reply.length });
       return json({ reply, leadSaved }, 200, cors);
     }
-    // Ran out of tool hops without a final answer.
+    // Ran out of tool hops without a final answer. Don't claim a save that
+    // didn't happen — route to a human if the lead wasn't captured.
     return json({
-      reply: "Thanks — I've noted that for the studio. Anything else I can help with?",
+      reply: leadSaved
+        ? "Thanks — I've noted that for the studio. Anything else I can help with?"
+        : "I'm having trouble wrapping that up — please email hello@blue-plumeria.com and the studio will help you directly.",
       leadSaved,
     }, 200, cors);
   } catch (e) {

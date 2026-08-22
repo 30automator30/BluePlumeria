@@ -71,12 +71,17 @@ system prompt and catalog. Caps: 24 messages, 2000 chars each, 800 output tokens
 - **Least privilege** — one tool only (`save_inquiry`), and it's additive
   (create an inquiry). No destructive/irreversible capability, so nothing needs
   a human-confirmation gate. If you add such a tool later, gate it.
-- **Rate limit** — per-IP hourly cap via `public.receptionist_hits`
-  (`RATE_LIMIT_PER_HOUR`, default 40). **Fails open** — a limiter error never
-  blocks a real visitor. Rows self-prune (>2h old) opportunistically.
+- **Rate limit** — **global** hourly cap (`GLOBAL_LIMIT_PER_HOUR`, default 600)
+  as the real spend backstop, plus a **per-IP** cap (`RATE_LIMIT_PER_HOUR`,
+  default 40), both via `public.receptionist_hits`. Per-IP is best-effort — an
+  unauthenticated endpoint can be rotated across IPs, which is why the global cap
+  exists. **Fails open**, but count/insert failures are `console.error`-logged so
+  a dead limiter shows up in `function_logs`. Rows self-prune (>2h) opportunistically.
+  The `contact` function shares the same table + global cap (own per-IP via
+  `CONTACT_RATE_LIMIT_PER_HOUR`, default 20).
 - **Wall-clock timeout** — every upstream call goes through `fetchT`
-  (`FETCH_TIMEOUT_MS`, default 20s; 5s for DB limiter) so a hung upstream fails
-  fast instead of riding the platform limit.
+  (`FETCH_TIMEOUT_MS`, default 20s; 5s for DB calls). Bounds time-to-response
+  (headers); a trickled response *body* still relies on the platform wall clock.
 - **Catalog cache** — `loadCatalog` caches per warm isolate (`CATALOG_TTL_MS`,
   default 60s), skipping the DB round-trip on most turns.
 - **Tracing** — every run logs `request → model (tokens) → tool → done/error`
@@ -92,7 +97,9 @@ system prompt and catalog. Caps: 24 messages, 2000 chars each, 800 output tokens
 | `RESEND_API_KEY` | — | Enables lead-notification + auto-reply emails (see [contact fn]). |
 | `OWNER_EMAIL` | desmitdesignz@gmail.com | Where lead notifications go. |
 | `FROM_EMAIL` | Blue Plumeria <hello@blue-plumeria.com> | Sender. |
-| `RATE_LIMIT_PER_HOUR` | 40 | Per-IP message cap. |
+| `RATE_LIMIT_PER_HOUR` | 40 | Per-IP hourly cap (receptionist). |
+| `GLOBAL_LIMIT_PER_HOUR` | 600 | All-IP hourly cap — the spend backstop (shared). |
+| `CONTACT_RATE_LIMIT_PER_HOUR` | 20 | Per-IP hourly cap for the contact form. |
 | `FETCH_TIMEOUT_MS` | 20000 | Upstream timeout. |
 | `CATALOG_TTL_MS` | 60000 | Catalog cache TTL. |
 

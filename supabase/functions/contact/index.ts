@@ -6,15 +6,19 @@
 //   1) emails the studio owner a notification (reply-to = the visitor),
 //   2) emails the visitor a warm auto-acknowledgement.
 // Both emails go through Resend. If RESEND_API_KEY isn't set yet, the
-// inquiry is STILL saved — email is skipped gracefully — so wiring up
-// Resend later is non-breaking.
+// inquiry is STILL saved — email is skipped gracefully.
 //
-// Dependency-free (raw fetch, no npm/esm imports) to match the other
-// functions and deploy cleanly from the dashboard editor. Talks to the DB
-// over the REST API with the service-role key (bypasses RLS).
+// Abuse controls (this endpoint sends branded email to an arbitrary address,
+// so it's throttled and never echoes visitor content back in the auto-reply):
+//   - global + per-IP hourly rate limit (shared public.receptionist_hits),
+//   - honeypot field, origin allowlist, hard fetch timeouts.
+//
+// Dependency-free (raw fetch). Talks to the DB over the REST API with the
+// service-role key (bypasses RLS).
 //
 // Secrets:  RESEND_API_KEY (required for email), optional OWNER_EMAIL,
-//           FROM_EMAIL, ALLOWED_ORIGINS.
+//           FROM_EMAIL, ALLOWED_ORIGINS, CONTACT_RATE_LIMIT_PER_HOUR,
+//           GLOBAL_LIMIT_PER_HOUR, FETCH_TIMEOUT_MS.
 // Injected: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 // Deploy with Verify JWT OFF (the public form sends no Supabase token).
 // ============================================================
@@ -29,6 +33,15 @@ const OWNER_EMAIL = Deno.env.get("OWNER_EMAIL") ?? "desmitdesignz@gmail.com";
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ??
   "https://blue-plumeria.com,https://www.blue-plumeria.com")
   .split(",").map((s) => s.trim()).filter(Boolean);
+
+// Reject malformed env (a NaN cap would silently disable the limiter).
+function posInt(v: string | undefined, dflt: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : dflt;
+}
+const RATE_LIMIT_PER_HOUR = posInt(Deno.env.get("CONTACT_RATE_LIMIT_PER_HOUR"), 20);
+const GLOBAL_LIMIT_PER_HOUR = posInt(Deno.env.get("GLOBAL_LIMIT_PER_HOUR"), 600);
+const FETCH_TIMEOUT_MS = posInt(Deno.env.get("FETCH_TIMEOUT_MS"), 20000);
 
 const REST = `${SB_URL}/rest/v1`;
 const sbHeaders = {
@@ -61,17 +74,82 @@ const esc = (s: string) =>
   String(s ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 
-// ── Resend: send one email. Returns false (never throws) so a mail
-//    failure can't break the form submission itself. ───────────────────
+// Fetch with a hard wall-clock timeout (fail fast instead of hanging).
+async function fetchT(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: ac.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function clientIp(req: Request): string {
+  // Prefer platform-set headers; XFF is client-appendable, so use its LAST hop.
+  return req.headers.get("cf-connecting-ip") ??
+    req.headers.get("x-real-ip") ??
+    (req.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ?? "");
+}
+
+async function countHits(filter: string): Promise<number | null> {
+  const res = await fetchT(
+    `${REST}/receptionist_hits?${filter}&select=id`,
+    { headers: { ...sbHeaders, Prefer: "count=exact", Range: "0-0" } },
+    5000,
+  ).catch(() => null);
+  if (!res || !res.ok) {
+    console.error("rate: count query failed", res?.status ?? "network");
+    return null;
+  }
+  const cr = res.headers.get("content-range"); // "0-0/<total>" or "*/0"
+  const total = cr && cr.includes("/") ? Number(cr.split("/")[1]) : 0;
+  return Number.isFinite(total) ? total : 0;
+}
+
+// Global + per-IP hourly caps (shared public.receptionist_hits). GLOBAL is the
+// real spend/abuse backstop; per-IP is best-effort. Fails OPEN; logs failures.
+async function rateLimited(ip: string): Promise<boolean> {
+  const sinceEnc = encodeURIComponent(new Date(Date.now() - 3600_000).toISOString());
+  try {
+    const globalN = await countHits(`created_at=gte.${sinceEnc}`);
+    if (globalN === null) return false;
+    if (globalN >= GLOBAL_LIMIT_PER_HOUR) {
+      console.error("rate: global cap reached", globalN);
+      return true;
+    }
+    if (ip) {
+      const ipN = await countHits(
+        `ip=eq.${encodeURIComponent(ip)}&created_at=gte.${sinceEnc}`,
+      );
+      if (ipN !== null && ipN >= RATE_LIMIT_PER_HOUR) return true;
+    }
+    const ins = await fetchT(`${REST}/receptionist_hits`, {
+      method: "POST",
+      headers: { ...sbHeaders, Prefer: "return=minimal" },
+      body: JSON.stringify({ ip: ip || "unknown" }),
+    }, 5000).catch(() => null);
+    if (!ins || !ins.ok) console.error("rate: hit insert failed", ins?.status ?? "network");
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+// Resend send. Never throws — returns false on any problem (incl. key unset).
 async function sendEmail(opts: {
   to: string | string[];
   subject: string;
   html: string;
   replyTo?: string;
 }): Promise<boolean> {
-  if (!RESEND_KEY) return false; // email not configured yet — skip
+  if (!RESEND_KEY) return false;
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetchT("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${RESEND_KEY}`,
@@ -86,7 +164,7 @@ async function sendEmail(opts: {
       }),
     });
     if (!res.ok) {
-      console.error("resend error", res.status, await res.text());
+      console.error("resend error", res.status);
       return false;
     }
     return true;
@@ -111,8 +189,7 @@ Deno.serve(async (req) => {
     return json({ error: "bad payload" }, 400, cors);
   }
 
-  // Honeypot: real users leave this hidden field empty. Bots fill it.
-  // Pretend success so the bot doesn't retry, but save/send nothing.
+  // Honeypot: real users leave this empty. Bots fill it. Pretend success.
   if (String((body as Record<string, unknown>).company ?? "").trim()) {
     return json({ ok: true }, 200, cors);
   }
@@ -129,8 +206,16 @@ Deno.serve(async (req) => {
     return json({ error: "Please include a message." }, 400, cors);
   }
 
+  // Throttle before doing any work — this endpoint sends branded email.
+  if (await rateLimited(clientIp(req))) {
+    return json({
+      error: "You've sent several messages recently. Please try again a bit later, " +
+        "or email hello@blue-plumeria.com directly.",
+    }, 429, cors);
+  }
+
   // 1) Save the inquiry (source of truth — must succeed).
-  const ins = await fetch(`${REST}/inquiries`, {
+  const ins = await fetchT(`${REST}/inquiries`, {
     method: "POST",
     headers: sbHeaders,
     body: JSON.stringify({
@@ -142,13 +227,14 @@ Deno.serve(async (req) => {
       status: "new",
       meta: { via: "contact-form", subject: subject || null },
     }),
-  });
-  if (!ins.ok) {
-    console.error("inquiry insert failed", ins.status, await ins.text());
+  }, 5000).catch(() => null);
+  if (!ins || !ins.ok) {
+    console.error("inquiry insert failed", ins?.status ?? "network");
     return json({ error: "Sorry — something went wrong. Please try again." }, 502, cors);
   }
 
-  // 2) Notify the studio (reply-to the visitor so a reply reaches them).
+  // 2) Notify the studio (reply-to the visitor so a reply reaches them). The
+  //    visitor's message only goes to the OWNER address, never echoed outward.
   const who = name ? `${esc(name)} (${esc(email)})` : esc(email);
   await sendEmail({
     to: OWNER_EMAIL,
@@ -165,7 +251,8 @@ Deno.serve(async (req) => {
       </div>`,
   });
 
-  // 3) Auto-acknowledge the visitor (best-effort).
+  // 3) Auto-acknowledge the visitor. Deliberately does NOT echo their message —
+  //    the address is attacker-controllable, so this must never carry content.
   await sendEmail({
     to: email,
     subject: "Thanks for reaching out — Blue Plumeria",
@@ -174,7 +261,6 @@ Deno.serve(async (req) => {
         <p>Hi${name ? " " + esc(name.split(" ")[0]) : ""},</p>
         <p>Thank you for reaching out to Blue Plumeria — your message came through
         and we'll get back to you as soon as we can.</p>
-        <p style="white-space:pre-wrap;margin:14px 0;padding:12px 14px;background:#f6f4ef;border-radius:6px;color:#555">${esc(message)}</p>
         <p>With gratitude,<br>Blue Plumeria</p>
         <p style="color:#888;font-size:13px">Handcrafted in the USA · blue-plumeria.com</p>
       </div>`,
