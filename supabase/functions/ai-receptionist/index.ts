@@ -296,6 +296,11 @@ async function saveInquiry(
 
   // Fire the notifications (best-effort; a mail failure never blocks the save).
   const who = name ? `${esc(name)} (${esc(email)})` : esc(email);
+  // Greet by first name only if it looks like a name — the visitor controls it,
+  // and a bare domain there would auto-link in some mail clients.
+  const firstName = /^[\p{L}][\p{L}'-]{0,39}$/u.test(name.split(" ")[0] || "")
+    ? name.split(" ")[0]
+    : "";
   await sendEmail({
     to: OWNER_EMAIL,
     replyTo: email,
@@ -316,7 +321,7 @@ async function saveInquiry(
     subject: "Thanks for reaching out — Blue Plumeria",
     html: `
       <div style="font-family:Georgia,serif;color:#2b2b2b;max-width:560px">
-        <p>Hi${name ? " " + esc(name.split(" ")[0]) : ""},</p>
+        <p>Hi${firstName ? " " + esc(firstName) : ""},</p>
         <p>Thank you for reaching out to Blue Plumeria — the studio has your note
         and will be in touch as soon as we can.</p>
         <p>With gratitude,<br>Blue Plumeria</p>
@@ -377,8 +382,12 @@ async function countHits(filter: string): Promise<number | null> {
 // across instances. The GLOBAL cap is the real spend backstop — a per-IP cap on
 // an unauthenticated endpoint is defeatable by IP rotation. Fails OPEN, but any
 // count/insert failure is logged so a dead limiter shows up in function_logs.
-async function rateLimited(ip: string): Promise<boolean> {
+async function rateLimited(ip: string, ns: string): Promise<boolean> {
   const sinceEnc = encodeURIComponent(new Date(Date.now() - 3600_000).toISOString());
+  // Namespace the per-IP key per endpoint so chat traffic doesn't spend the
+  // contact form's (tighter) budget. The global count is created_at-only, so it
+  // still sees every namespace as one shared spend backstop.
+  const key = `${ns}${ip || "unknown"}`;
   try {
     const globalN = await countHits(`created_at=gte.${sinceEnc}`);
     if (globalN === null) return false; // limiter unavailable → fail open (logged)
@@ -388,14 +397,14 @@ async function rateLimited(ip: string): Promise<boolean> {
     }
     if (ip) {
       const ipN = await countHits(
-        `ip=eq.${encodeURIComponent(ip)}&created_at=gte.${sinceEnc}`,
+        `ip=eq.${encodeURIComponent(key)}&created_at=gte.${sinceEnc}`,
       );
       if (ipN !== null && ipN >= RATE_LIMIT_PER_HOUR) return true;
     }
     const ins = await fetchT(`${REST}/receptionist_hits`, {
       method: "POST",
       headers: { ...sbHeaders, Prefer: "return=minimal" },
-      body: JSON.stringify({ ip: ip || "unknown" }),
+      body: JSON.stringify({ ip: key }),
     }, 5000).catch(() => null);
     if (!ins || !ins.ok) console.error("rate: hit insert failed", ins?.status ?? "network");
     if (Math.random() < 0.02) {
@@ -449,7 +458,7 @@ Deno.serve(async (req) => {
   }
 
   const ip = clientIp(req);
-  if (await rateLimited(ip)) {
+  if (await rateLimited(ip, "chat:")) {
     trace("rate_limited");
     return json({
       reply: "I'm getting a lot of questions right now — please email " +

@@ -113,8 +113,11 @@ async function countHits(filter: string): Promise<number | null> {
 
 // Global + per-IP hourly caps (shared public.receptionist_hits). GLOBAL is the
 // real spend/abuse backstop; per-IP is best-effort. Fails OPEN; logs failures.
-async function rateLimited(ip: string): Promise<boolean> {
+async function rateLimited(ip: string, ns: string): Promise<boolean> {
   const sinceEnc = encodeURIComponent(new Date(Date.now() - 3600_000).toISOString());
+  // Namespace the per-IP key per endpoint (see receptionist). Global count is
+  // created_at-only, so it stays a shared spend backstop across both functions.
+  const key = `${ns}${ip || "unknown"}`;
   try {
     const globalN = await countHits(`created_at=gte.${sinceEnc}`);
     if (globalN === null) return false;
@@ -124,16 +127,24 @@ async function rateLimited(ip: string): Promise<boolean> {
     }
     if (ip) {
       const ipN = await countHits(
-        `ip=eq.${encodeURIComponent(ip)}&created_at=gte.${sinceEnc}`,
+        `ip=eq.${encodeURIComponent(key)}&created_at=gte.${sinceEnc}`,
       );
       if (ipN !== null && ipN >= RATE_LIMIT_PER_HOUR) return true;
     }
     const ins = await fetchT(`${REST}/receptionist_hits`, {
       method: "POST",
       headers: { ...sbHeaders, Prefer: "return=minimal" },
-      body: JSON.stringify({ ip: ip || "unknown" }),
+      body: JSON.stringify({ ip: key }),
     }, 5000).catch(() => null);
     if (!ins || !ins.ok) console.error("rate: hit insert failed", ins?.status ?? "network");
+    // Both functions prune, so the shared table stays bounded even if one goes quiet.
+    if (Math.random() < 0.02) {
+      const old = encodeURIComponent(new Date(Date.now() - 7200_000).toISOString());
+      await fetchT(`${REST}/receptionist_hits?created_at=lt.${old}`, {
+        method: "DELETE",
+        headers: { ...sbHeaders, Prefer: "return=minimal" },
+      }, 5000).catch(() => {});
+    }
     return false;
   } catch {
     return false;
@@ -196,7 +207,7 @@ Deno.serve(async (req) => {
 
   const name = String((body as Record<string, unknown>).name ?? "").trim().slice(0, 200);
   const email = String((body as Record<string, unknown>).email ?? "").trim().slice(0, 200);
-  const subject = String((body as Record<string, unknown>).subject ?? "").trim().slice(0, 200);
+  const subject = String((body as Record<string, unknown>).subject ?? "").replace(/[\r\n]+/g, " ").trim().slice(0, 200);
   const message = String((body as Record<string, unknown>).message ?? "").trim().slice(0, 5000);
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -207,7 +218,7 @@ Deno.serve(async (req) => {
   }
 
   // Throttle before doing any work — this endpoint sends branded email.
-  if (await rateLimited(clientIp(req))) {
+  if (await rateLimited(clientIp(req), "contact:")) {
     return json({
       error: "You've sent several messages recently. Please try again a bit later, " +
         "or email hello@blue-plumeria.com directly.",
@@ -236,6 +247,10 @@ Deno.serve(async (req) => {
   // 2) Notify the studio (reply-to the visitor so a reply reaches them). The
   //    visitor's message only goes to the OWNER address, never echoed outward.
   const who = name ? `${esc(name)} (${esc(email)})` : esc(email);
+  // Greet by first name only if it looks like a name (visitor-controlled).
+  const firstName = /^[\p{L}][\p{L}'-]{0,39}$/u.test(name.split(" ")[0] || "")
+    ? name.split(" ")[0]
+    : "";
   await sendEmail({
     to: OWNER_EMAIL,
     replyTo: email,
@@ -258,7 +273,7 @@ Deno.serve(async (req) => {
     subject: "Thanks for reaching out — Blue Plumeria",
     html: `
       <div style="font-family:Georgia,serif;color:#2b2b2b;max-width:560px">
-        <p>Hi${name ? " " + esc(name.split(" ")[0]) : ""},</p>
+        <p>Hi${firstName ? " " + esc(firstName) : ""},</p>
         <p>Thank you for reaching out to Blue Plumeria — your message came through
         and we'll get back to you as soon as we can.</p>
         <p>With gratitude,<br>Blue Plumeria</p>
