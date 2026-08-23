@@ -62,6 +62,7 @@
   '.bp-rcp-msg{max-width:85%;padding:.6rem .85rem;border-radius:14px;font-size:.9rem;line-height:1.5;' +
     'font-weight:300;white-space:normal;word-wrap:break-word}' +
   '.bp-rcp-msg a{color:var(--gold-deep,#8C6D37);text-decoration:underline}' +
+  '.bp-rcp-msg strong{font-weight:600}.bp-rcp-msg code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85em;background:rgba(140,109,55,.1);padding:1px 5px;border-radius:4px}' +
   '.bp-rcp-msg.bot{align-self:flex-start;background:var(--paper,#FCFAF6);color:var(--ink,#1C1712);' +
     'border:1px solid var(--border,#E4DBCC);border-bottom-left-radius:4px}' +
   '.bp-rcp-msg.me{align-self:flex-end;background:var(--slate,#6E8CA6);color:#fff;border-bottom-right-radius:4px}' +
@@ -229,6 +230,8 @@
       return pre + '<a href="' + path + '">' + path + "</a>";
     });
     out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    out = out.replace(/__([^_\n]+)__/g, "<strong>$1</strong>");
+    out = out.replace(/`([^`\n]+)`/g, "<code>$1</code>");
     return out.replace(/\n/g, "<br>");
   }
 
