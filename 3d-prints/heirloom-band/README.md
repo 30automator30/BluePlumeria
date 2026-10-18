@@ -16,7 +16,7 @@ Resin (MSLA) ring for the Elegoo Saturn 4 Pro, in the style of hand-engraved Haw
 | `heirloom_band_US7.stl` | 7 | 17.32 mm |
 | `heirloom_band_US8.stl` | 8 | 18.13 mm |
 
-Each band uses about 0.55 mL of resin. All meshes are watertight single solids.
+Each band uses about 0.6 mL of resin. All meshes are watertight single solids.
 
 ## Other sizes / options
 

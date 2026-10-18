@@ -303,7 +303,8 @@ def decimate(mesh, tolerance):
         v = m.vertices.copy()
         v[twins] -= 0.001 * m.vertex_normals[twins]
         m = trimesh.Trimesh(v, m.faces, process=False)
-    return m
+    # simplification can leave a zero-volume speck of a few triangles
+    return max(m.split(only_watertight=False), key=lambda p: len(p.faces))
 
 
 def main():
