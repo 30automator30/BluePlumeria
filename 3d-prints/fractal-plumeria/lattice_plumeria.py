@@ -3,13 +3,14 @@
 
 Golden-ratio design, after the concept sheet:
 
-  main bloom  radius H/phi^3. Five pointed, curling plumeria petals, each a
-              solid rim around an openwork lattice that holds a nested
-              framed petal 1/phi its size, which holds a 1/phi^2 solid petal.
-              Inside sits a second whorl 1/phi the size, then a 1/phi^2
-              centre whorl and a bead: petals within petals at two scales.
-              The lattice cells are laid out on a golden-angle (Vogel)
-              spiral, so even the lace follows phi.
+  main bloom  radius H/phi^3. Five pointed plumeria petals shaped like
+              flames (swept, dipping, flicking up, twisting toward the tip),
+              each a soft rim around a flowing vein lattice that holds a
+              nested framed petal 1/phi its size, which holds a 1/phi^2
+              solid petal. Inside sits a second whorl 1/phi the size,
+              swirling the other way, then a 1/phi^2 centre whorl and a
+              bead. Fan veins follow the petal's flow; cross veins are
+              spaced by phi, so the cells shrink toward the tip.
   body        (printed as one part) broad twisting ribbons rising from the
               base as golden spirals, pinching at a neck at H/phi^2, then
               fanning out to a second bloom (1/phi of the main) and to small
@@ -48,65 +49,79 @@ PEG_R, PEG_H, FIT = 2.6, 7.0, 0.15
 
 # ------------------------------------------------------------ petal maths
 
-def vogel_seeds(n):
-    """n points in the unit disk on a golden-angle (sunflower) spiral."""
-    i = np.arange(n) + 0.5
-    r = np.sqrt(i / n)
-    a = i * GOLDEN_ANGLE
-    return np.column_stack([r * np.cos(a), r * np.sin(a)])
+def soft_band(d2, dz, half_w, half_t):
+    """Rounded cross-section: a 2D band (d2) swept to thickness (dz), with
+    its corners rounded so rims and veins read as smooth, moulded strokes."""
+    r = np.minimum(half_w, half_t) * 0.95
+    a, b = d2 + r, dz + r
+    return (np.sqrt(np.maximum(a, 0) ** 2 + np.maximum(b, 0) ** 2)
+            + np.minimum(np.maximum(a, b), 0) - r)
 
 
-class LatticePetal:
-    """Pointed plumeria petal: rim + Vogel lattice + nested framed copies.
+class FlowPetal:
+    """Pointed plumeria petal shaped like a flame: rim + flowing vein
+    lattice + nested framed copies.
 
-    The petal lives in its own frame: u runs from the claw (u=0) to the tip
-    (u=L), v across it, w off its face. The face is curved (cup across,
-    curl along, pinwheel twist), and the nested copies sit progressively
-    higher on it.
+    Petal frame: u from the claw (u=0) to the tip (u=L), v across, w off the
+    face. The centreline sweeps sideways (scimitar), the face rises, dips
+    and flicks up at the tip, rolls more on one edge than the other, and
+    twists harder toward the tip. Rims swell at the claw and taper to the
+    tip. The lattice is two families of veins: fan veins running with the
+    petal's flow, crossed by curving cross-veins whose spacing shrinks by
+    phi toward the tip.
     """
 
     def __init__(self, base, theta, elev, length, half_w, cup, curl, twist,
-                 nest=2, solid_core=True, scale_t=1.0):
+                 sweep=0.18, roll=0.35, nest=2, scale_t=1.0, seed=0):
+        rng = np.random.default_rng(seed)
+        jit = lambda a: 1 + a * rng.uniform(-1, 1)            # noqa: E731
         self.base = np.asarray(base, float)
+        elev = elev + np.radians(4) * rng.uniform(-1, 1)
         d = np.array([np.cos(theta) * np.cos(elev), np.sin(theta) * np.cos(elev),
                       np.sin(elev)])
         s = np.array([-np.sin(theta), np.cos(theta), 0.0])
         self.d, self.s, self.n = d, s, np.cross(d, s)
-        self.L, self.W = length, half_w
-        self.cup, self.curl, self.twist = cup, curl, twist
-        self.nest, self.solid_core, self.k = nest, solid_core, scale_t
-        # lattice seeds in a unit disk, mapped onto the petal per level
-        self.seeds = vogel_seeds(max(8, int(length * half_w / 9.0)))
+        self.L, self.W = length * jit(0.05), half_w * jit(0.05)
+        self.cup, self.curl, self.twist = cup, curl * jit(0.15), twist * jit(0.15)
+        self.sweep, self.roll = sweep * jit(0.2), roll
+        self.nest, self.k = nest, scale_t
 
-    # 2D outline: narrow claw, broad belly, pointed tip; f scales it about
-    # a claw point shifted du along the petal
     def width(self, t):
         return self.W * t ** 0.55 * (1 - t) ** 0.95 / 0.338
 
+    def centre(self, t):
+        """Sideways sweep of the centreline (scimitar curve)."""
+        return self.sweep * self.L * t ** 2
+
     def outline(self, u, v, f=1.0, du=0.0):
-        uu, vv = (u - du) / f, v / f
+        uu = (u - du) / f
         t = np.clip(uu / self.L, 0, 1)
+        vv = (v - self.centre(np.clip(u / self.L, 0, 1))) / f
         half = self.width(t) * np.where(vv > 0, 1.06, 0.94) + 1e-3
         return f * np.maximum(np.abs(vv) - half, np.maximum(-uu, uu - self.L))
 
-    def lattice(self, u, v, f, du):
-        """Distance to the Voronoi edges of the petal's seed spiral."""
-        L, W = self.L * f, self.W * f
-        sx = du + L * (0.52 + 0.46 * self.seeds[:, 0])
-        sy = W * 0.95 * self.seeds[:, 1]
-        d1 = np.full(u.shape, 1e9, np.float32)
-        d2 = np.full(u.shape, 1e9, np.float32)
-        for x0, y0 in zip(sx, sy):
-            dd = np.hypot(u - x0, v - y0)
-            d2 = np.where(dd < d1, d1, np.minimum(d2, dd))
-            d1 = np.minimum(d1, dd)
-        return (d2 - d1) / 2
+    def veins(self, u, v, f, du):
+        """Distance to the flowing vein lattice of one (scaled) petal."""
+        L = self.L * f
+        t = np.clip((u - du) / L, 1e-3, 1)
+        half = np.maximum(self.width(t) * f, 1e-3)
+        sv = (v - self.centre(np.clip(u / self.L, 0, 1))) / half   # -1..1 across
+        sv = sv + 0.07 * np.sin(2 * np.pi * 2.5 * t)               # a gentle wave
+        # fan veins: 5 lines across the petal (a Fibonacci count)
+        fan = np.abs(((sv + 1) * 2.5) % 1.0 - 0.5) / 2.5 * half
+        # cross veins: arcs bowed toward the tip, spaced by phi
+        bow = t + 0.16 * sv ** 2
+        k = np.log(np.clip(1 - bow, 1e-4, 1)) / np.log(1 / PHI)    # 1 - t = phi^-k
+        cross = np.abs(k - np.round(k)) * L * np.clip(1 - bow, 0.05, 1) * 0.48
+        return np.minimum(fan, cross)
 
     def mid(self, u, v):
         t = np.clip(u / self.L, 0, 1)
-        return (self.cup * self.W * (v / self.W) ** 2 * t
-                + self.curl * self.L * t ** 3 * 1.4              # tip flicks up
-                + self.twist * t * v)
+        vv = (v - self.centre(t)) / self.W
+        return (self.L * self.curl * (2.2 * t ** 3 - 1.0 * t ** 2)    # dip, then flick
+                + self.cup * self.W * vv ** 2 * t
+                + self.roll * self.W * vv ** 3 * t                    # one edge rolls
+                + self.twist * self.W * vv * t ** 2 * 2.0)            # twist grows
 
     def sdf(self, x, y, z):
         q = np.stack([x - self.base[0], y - self.base[1], z - self.base[2]])
@@ -115,71 +130,74 @@ class LatticePetal:
         w = np.tensordot(self.n, q, 1)
         h = self.mid(u, v)
         k = self.k
-
-        def slab(d2, lift, thick):
-            return np.maximum(d2, np.abs(w - h - lift) - thick / 2)
-
+        t = np.clip(u / self.L, 0, 1)
         out = np.full(u.shape, 1e9, np.float32)
-        hole = None
         for lvl in range(self.nest + 1):
             f = PHI ** -lvl
             du = self.L * 0.10 * lvl
             o = self.outline(u, v, f, du)
             lift = 0.55 * lvl * k
-            if lvl == self.nest and self.solid_core:
-                # innermost: a solid petal with a raised centre vein
-                vein = np.maximum(np.abs(v) - 0.35 * k, o + 0.8 * k)
-                out = np.minimum(out, slab(o, lift, RIM_T * k))
-                out = np.minimum(out, slab(vein, lift + 0.45 * k, RIM_T * k))
+            dz = lambda thick: np.abs(w - h - lift) - thick / 2      # noqa: E731
+            if lvl == self.nest:
+                # innermost: a soft solid petal with a raised centre vein
+                core_t = RIM_T * k * (1.15 - 0.5 * t)
+                out = smin(out, soft_band(o, dz(core_t), 5.0, core_t / 2), 0.4)
+                vein = np.maximum(np.abs(v - self.centre(t)) - 0.4 * k, o + 0.9 * k)
+                out = smin(out, soft_band(vein, np.abs(w - h - lift - 0.5 * k) - 0.6 * k,
+                                          0.4 * k, 0.6 * k), 0.3)
                 break
-            rim = np.maximum(o, -(o + RIM_W * k))
-            out = np.minimum(out, slab(rim, lift, RIM_T * k))
-            inner = o + RIM_W * k                          # inside the rim
+            rim_w = RIM_W * k * (1.35 - 0.6 * t)         # swells at the claw
+            rim_t = RIM_T * k * (1.2 - 0.45 * t)
+            rim = np.maximum(o, -(o + rim_w))
+            out = smin(out, soft_band(rim, dz(rim_t), rim_w / 2, rim_t / 2), 0.5)
+            inner = o + rim_w * 0.6
             if lvl < self.nest:
                 nxt = self.outline(u, v, PHI ** -(lvl + 1), self.L * 0.10 * (lvl + 1))
-                inner = np.maximum(inner, -(nxt - GAP * k))  # leave room
-            lat = np.maximum(inner, self.lattice(u, v, f, du) - STRUT_W * k / 2)
-            # struts sit a little below the rim so the frame reads
-            out = np.minimum(out, slab(np.maximum(lat, o + 0.2), lift - 0.3 * k,
-                                       STRUT_T * k))
+                inner = np.maximum(inner, -(nxt - GAP * k))
+            sw = STRUT_W * k * (1.2 - 0.4 * t)
+            strut = np.maximum(self.veins(u, v, f, du) - sw / 2, inner)
+            out = smin(out, soft_band(strut, np.abs(w - h - lift + 0.25 * k) - STRUT_T * k / 2,
+                                      sw / 2, STRUT_T * k / 2), 0.45)
             if lvl < self.nest:
-                # a stalk ties the nested copy to its frame at the claw
-                stalk = np.maximum(np.abs(v) - 0.9 * k,
-                                   np.maximum(o, u - (self.L * 0.10 * (lvl + 1)
-                                                      + 2.5 * k)))
-                out = np.minimum(out, slab(stalk, lift, RIM_T * k))
+                # the nested copy grows out of its frame at the claw
+                stalk = np.maximum(np.abs(v - self.centre(t)) - 1.0 * k,
+                                   np.maximum(o, u - (self.L * 0.10 * (lvl + 1) + 3.0 * k)))
+                out = smin(out, soft_band(stalk, dz(rim_t), 1.0 * k, rim_t / 2), 0.6)
         return out
 
-    def bbox(self, pad=2.5):
+    def bbox(self, pad=3.0):
         pts = []
-        for u in np.linspace(0, self.L, 20):
+        for u in np.linspace(0, self.L, 24):
             t = u / self.L
-            for v in np.linspace(-1.1, 1.1, 7) * self.width(t):
+            for vv in np.linspace(-1.1, 1.1, 7):
+                v = vv * self.width(t) + self.centre(t)
                 pts.append(self.base + u * self.d + v * self.s + self.mid(u, v) * self.n)
         pts = np.array(pts)
         return pts.min(0) - pad, pts.max(0) + pad
 
 
-def bloom_petals(R, scale_t=1.0, centre=(0, 0, 0)):
-    """Main bloom: 5 framed petals, a 1/phi whorl inside, a 1/phi^2 centre."""
+def bloom_petals(R, scale_t=1.0, centre=(0, 0, 0), seed=1):
+    """Main bloom: 5 flame petals, a 1/phi whorl inside, a 1/phi^2 centre.
+    Whorls alternate their sweep so the bloom swirls."""
     c = np.asarray(centre, float)
     petals = []
-    whorls = [  # length, elevation, nest depth, cup, curl, twist
-        (R, np.radians(12), 2, 0.30, 0.10, 0.22),
-        (R / PHI, np.radians(36), 1, 0.38, 0.14, 0.26),
-        (R / PHI ** 2, np.radians(62), 0, 0.45, 0.10, 0.30),
+    whorls = [  # length, elevation, nest depth, cup, curl, twist, sweep
+        (R, np.radians(16), 2, 0.30, 0.16, 0.20, 0.20),
+        (R / PHI, np.radians(40), 1, 0.40, 0.20, 0.26, -0.16),
+        (R / PHI ** 2, np.radians(64), 0, 0.50, 0.16, 0.30, 0.14),
     ]
-    for k, (L, elev, nest, cup, curl, twist) in enumerate(whorls):
+    for kw, (L, elev, nest, cup, curl, twist, sweep) in enumerate(whorls):
         W = L * 0.36
-        r0 = 3.0 * PHI ** -k + 0.8
-        rot = 0.3 + k * np.pi / 5                      # alternate the whorls
+        r0 = 3.0 * PHI ** -kw + 0.8
+        rot = 0.3 + kw * np.pi / 5
         for i in range(5):
             th = rot + 2 * np.pi * i / 5
-            off = 0.35 * W
+            off = 0.30 * W
             base = c + np.array([r0 * np.cos(th) - off * np.sin(th),
-                                 r0 * np.sin(th) + off * np.cos(th), 1.4 * k])
-            petals.append(LatticePetal(base, th, elev, L, W, cup, curl, twist,
-                                       nest=nest, scale_t=scale_t))
+                                 r0 * np.sin(th) + off * np.cos(th), 1.4 * kw])
+            petals.append(FlowPetal(base, th, elev, L, W, cup, curl, twist,
+                                    sweep=sweep, nest=nest, scale_t=scale_t,
+                                    seed=seed * 100 + kw * 10 + i))
     return petals
 
 
@@ -206,14 +224,14 @@ def add(vol, xs, ys, zs, lo, hi, fn, k=0.3, chunk=24):
 
 
 def build_bloom(voxel):
-    ext = BLOOM_R + 5
+    ext = BLOOM_R + 9
     xs = np.arange(-ext, ext, voxel, dtype=np.float32)
     ys = xs.copy()
-    zs = np.arange(-12.0, 32.0, voxel, dtype=np.float32)
+    zs = np.arange(-12.0, 40.0, voxel, dtype=np.float32)
     vol = np.full((len(xs), len(ys), len(zs)), 3.0, np.float32)
     for p in bloom_petals(BLOOM_R):
         lo, hi = p.bbox()
-        add(vol, xs, ys, zs, lo, hi, p.sdf, k=0.25)
+        add(vol, xs, ys, zs, lo, hi, p.sdf, k=0.6)
 
     # bead centre, calyx and keyed socket for the body's peg
     def bead(x, y, z):
