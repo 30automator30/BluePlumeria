@@ -134,9 +134,9 @@ def build_supports(contacts, occ, lo, floor_z, tip_r):
         col = occ[i, j, :max(k_top, 0)]
         solid_below = np.nonzero(col)[0]
         tip_len = 1.6
-        top = c[2] - 0.15                              # bite into the model
+        top = c[2] + 0.35                              # bite into the model
         if len(solid_below):                           # lands on the model
-            bottom = lo[2] + (solid_below[-1] + 1) * DZ + 0.15
+            bottom = lo[2] + (solid_below[-1] + 1) * DZ - 0.35   # bite into the model below
             on_model = True
         else:
             bottom = floor_z
@@ -211,6 +211,27 @@ def raft(feet, z0=0.0):
 
 # ------------------------------------------------------------------- parts
 
+def find_islands(full):
+    """Re-slice the supported part; return (x, y, z, area) of every region
+    (> 0.1 mm2, above the first 0.6 mm) with nothing under it."""
+    lo2, shape2 = grid_for(full)
+    occ2 = voxelize(full, lo2, shape2)
+    real = []
+    for k in range(int(0.6 / DZ) + 1, shape2[2]):
+        lab2, n2 = ndimage.label(occ2[:, :, k])
+        if not n2:
+            continue
+        idx = np.arange(1, n2 + 1)
+        hit = ndimage.maximum(occ2[:, :, k - 1], lab2, idx)
+        areas = ndimage.sum(occ2[:, :, k], lab2, idx) * XY * XY
+        cents = ndimage.center_of_mass(occ2[:, :, k], lab2, idx)
+        for c in np.nonzero((hit == 0) & (areas > 0.1))[0]:
+            ci, cj = cents[c]
+            real.append((lo2[0] + (ci + 0.5) * XY, lo2[1] + (cj + 0.5) * XY, k * DZ,
+                         float(areas[c])))
+    return real
+
+
 def prepare(mesh, name, outdir, on_raft, tip_r):
     t0 = time.time()
     m = to_manifold(mesh)
@@ -231,36 +252,24 @@ def prepare(mesh, name, outdir, on_raft, tip_r):
                                       np.full(len(uniq), int(lift / DZ) * DZ)])
         contacts = np.vstack([contacts, extra]) if len(contacts) else extra
     print(f"{name}: {islands} unsupported regions, {len(contacts)} contact points")
-    parts, feet, braces = build_supports(contacts, occ, lo, floor_z, tip_r)
-    if on_raft and feet:
-        parts.append(raft(feet))
-    sup = mf.Manifold.batch_boolean(parts, mf.OpType.Add)
-    full = mf.Manifold.batch_boolean([m, sup], mf.OpType.Add)
-    print(f"{name}: {len(parts)} support pieces, {braces} braces, "
-          f"model {m.volume() / 1000:.1f} mL + supports {(full.volume() - m.volume()) / 1000:.1f} mL"
-          f" ({time.time() - t0:.0f}s)")
-
-    # verify: re-slice everything and look for layers that start in mid-air
-    lo2, shape2 = grid_for(full)
-    occ2 = voxelize(full, lo2, shape2)
-    # true islands: components with nothing at all in the layer below
-    true_islands = 0
-    for k in range(1, shape2[2]):
-        lab2, n2 = ndimage.label(occ2[:, :, k])
-        if n2:
-            hit = ndimage.maximum(occ2[:, :, k - 1], lab2, np.arange(1, n2 + 1))
-            true_islands += int((hit == 0).sum())
-    print(f"{name}: verify -> {true_islands} floating islands")
-    if true_islands:
-        where = []
-        for k in range(1, shape2[2]):
-            lab2, n2 = ndimage.label(occ2[:, :, k])
-            if n2:
-                hit = ndimage.maximum(occ2[:, :, k - 1], lab2, np.arange(1, n2 + 1))
-                for c in np.nonzero(hit == 0)[0]:
-                    area = (lab2 == c + 1).sum() * XY * XY
-                    where.append((round(k * DZ, 1), round(area, 2)))
-        print(f"  islands (z mm, area mm2): {where[:15]}")
+    for attempt in range(1, 4):
+        parts, feet, braces = build_supports(contacts, occ, lo, floor_z, tip_r)
+        if on_raft and feet:
+            parts.append(raft(feet))
+        sup = mf.Manifold.batch_boolean(parts, mf.OpType.Add)
+        full = mf.Manifold.batch_boolean([m, sup], mf.OpType.Add)
+        print(f"{name}: pass {attempt}: {len(contacts)} supports, {braces} braces, "
+              f"model {m.volume() / 1000:.1f} mL + supports "
+              f"{(full.volume() - m.volume()) / 1000:.1f} mL ({time.time() - t0:.0f}s)")
+        real = find_islands(full)
+        print(f"{name}: verify -> {len(real)} floating islands "
+              f"{[(round(z, 1), round(a_, 2)) for _, _, z, a_ in real[:8]]}")
+        if not real:
+            break
+        # support each leftover island at its centre and try again
+        extra = np.array([[x, y, z] for x, y, z, _ in real])
+        contacts = np.vstack([contacts, extra])
+    true_islands = len(real)
     tm = to_trimesh(full)
     out = os.path.join(outdir, f"lattice_plumeria_{name}_supported.stl")
     tm.export(out)
