@@ -1,6 +1,6 @@
 # Hawaiian Openwork Plumeria Band
 
-Resin (MSLA) ring for the Elegoo Saturn 4 Pro: a pierced band where flowers, vines and curls stand as solid metal against through-cut voids.
+Resin (MSLA) ring for the Elegoo Saturn 4 Ultra: a pierced band where flowers, vines and curls stand as solid metal against through-cut voids.
 
 ![preview](preview_US7.png)
 
@@ -36,7 +36,7 @@ The layout lives in `compose()`. The script refuses to build a design with float
 
 `openwork_band_concept.py` holds the alternative concept-sheet version: sculpted surfaces, a narrower band, and an optional `--stone` 4-prong setting. It's kept for comparison.
 
-## Print settings (Saturn 4 Pro)
+## Print settings (Saturn 4 Ultra)
 
 - **Layer height:** 0.03 mm, or 0.02 mm for the finest vein lines.
 - **Orientation:** stand the band on edge, tilted about 30–45°, with the openwork front facing up and away from the plate. Put supports on the plain shank and inside edge, not on the vines.

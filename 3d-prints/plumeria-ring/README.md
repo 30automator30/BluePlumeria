@@ -1,6 +1,6 @@
 # Plumeria Ring: twisted three-vine band with edge rails
 
-Resin (MSLA) ring for the Elegoo Saturn 4 Pro.
+Resin (MSLA) ring for the Elegoo Saturn 4 Ultra.
 
 ![preview](preview_US7.png)
 
@@ -28,7 +28,7 @@ python3 render_preview.py plumeria_ring_US7.stl preview.png
 
 The design knobs are the constants at the top of `plumeria_ring.py`: vine thickness, twist count, flower size, and so on.
 
-## Print settings (Saturn 4 Pro)
+## Print settings (Saturn 4 Ultra)
 
 - **Layer height:** 0.03 mm. Jewelry detail benefits from thin layers.
 - **Orientation:** stand the ring on edge, finger hole facing sideways, with the flower tilted 30–45° up and away from the plate. Supports then land on the back rails and under the petals. Keep supports off the face of the flower and off the inside liner.

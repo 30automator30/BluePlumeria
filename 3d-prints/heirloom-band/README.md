@@ -1,6 +1,6 @@
 # Hawaiian Heirloom Band
 
-Resin (MSLA) ring for the Elegoo Saturn 4 Pro, in the style of hand-engraved Hawaiian heirloom jewelry.
+Resin (MSLA) ring for the Elegoo Saturn 4 Ultra, in the style of hand-engraved Hawaiian heirloom jewelry.
 
 ![preview](preview_US7.png)
 
@@ -30,7 +30,7 @@ python3 heirloom_band.py --size 7 --text "MAHALO"  # or --text "" for none
 
 The artwork is laid out in `draw_unit()` as plumeria, scroll, vine and leaves, so elements can be moved, resized or added there.
 
-## Print settings (Saturn 4 Pro)
+## Print settings (Saturn 4 Ultra)
 
 - **Layer height:** 0.03 mm, or 0.02 mm for the crispest hatching.
 - **Orientation:** stand the band upright on edge, tilted about 30–45°, with supports touching only the inside and one edge. Keep supports off the engraved outer face.
