@@ -303,35 +303,48 @@ def vortex(a0, r_start, k_max, sense, n=120):
 
 
 def ribbon_sdf(pts, widths, ref_fn, twist=0.0):
-    """Rounded flat band through pts. The broad face points along
-    ref_fn(p), the orientation is carried smoothly from point to point (no
-    flips), and the band slowly turns about itself by `twist` radians."""
+    """Rounded flat band through pts. A frame is carried smoothly along the
+    curve (each step follows the last, gently steered so the broad face
+    looks along ref_fn), then the band is turned evenly about itself by
+    `twist` radians over its length."""
     n = len(pts)
     tans = np.gradient(pts, axis=0)
     tans /= np.linalg.norm(tans, axis=1, keepdims=True) + 1e-9
-    wds = []
-    prev = None
+    wds = np.zeros((n, 3))
     for i in range(n):
-        ref = ref_fn(pts[i])
-        wd = np.cross(tans[i], ref)
-        if np.linalg.norm(wd) < 1e-6:
-            wd = prev if prev is not None else np.cross(tans[i], [1.0, 0, 0])
-        wd = wd / np.linalg.norm(wd)
-        if prev is not None:
-            # carry the frame along: stay close to the previous direction
-            wd = wd - (wd @ tans[i]) * tans[i]
+        target = np.cross(tans[i], ref_fn(pts[i]))
+        if np.linalg.norm(target) < 1e-6:
+            target = np.cross(tans[i], [1.0, 0, 0])
+        target /= np.linalg.norm(target)
+        if i == 0:
+            wd = target
+        else:
+            wd = wds[i - 1] - (wds[i - 1] @ tans[i]) * tans[i]    # transport
             wd /= np.linalg.norm(wd)
-            if wd @ prev < 0:
-                wd = -wd
-            wd = 0.6 * wd + 0.4 * (prev - (prev @ tans[i]) * tans[i])
+            if target @ wd < 0:
+                target = -target
+            wd = 0.85 * wd + 0.15 * target                       # steer gently
+            wd -= (wd @ tans[i]) * tans[i]
             wd /= np.linalg.norm(wd)
-        psi = twist / max(n - 1, 1)
-        if i:
-            wd = wd * np.cos(psi * i) + np.cross(tans[i], wd) * np.sin(psi * i)
-        prev = wd if not i else prev * 0 + wd
-        wds.append(wd)
+        wds[i] = wd
+    for i in range(n):                                            # even twist
+        psi = twist * i / max(n - 1, 1)
+        wds[i] = wds[i] * np.cos(psi) + np.cross(tans[i], wds[i]) * np.sin(psi)
     return [(pts[i], pts[i + 1], wds[i], wds[i + 1], widths[i] / 2, widths[i + 1] / 2)
             for i in range(n - 1)]
+
+
+def smooth_path(pts, widths, keep=0, passes=6, win=7):
+    """Round off kinks where path pieces join. The first `keep` points (a
+    ground curl) and the far end stay put."""
+    p, w = pts.copy(), widths.copy()
+    k = np.ones(win) / win
+    lo = max(1, keep)
+    for _ in range(passes):
+        for c in range(3):
+            sm = np.convolve(np.pad(p[:, c], win // 2, mode="edge"), k, mode="valid")
+            p[lo:-1, c] = sm[lo:-1]
+    return p, w
 
 
 def band_eval(segs, x, y, z):
@@ -357,92 +370,141 @@ def band_eval(segs, x, y, z):
         hw = h0 + t * (h1 - h0)
         db = soft_band(qw - hw, qn - RIB_T / 2, hw, RIB_T / 2)
         db = np.where(over > 0, np.sqrt(np.maximum(db, 0) ** 2 + over ** 2), db)
-        d = np.minimum(d, db)
+        d = smin(d, db, 0.5)          # melt neighbouring pieces: no seams
     return d
 
 
 def radial_ref(p):
+    """Which way a ribbon's broad face looks: outward from the stem, except
+    near the ground, where the roots lie flat (face up) and roll upright."""
     c = stem_axis(p[2])
     v = p - c
     v[2] = 0
-    return v if np.linalg.norm(v) > 1e-3 else np.array([1.0, 0, 0])
+    v = v / np.linalg.norm(v) if np.linalg.norm(v) > 1e-3 else np.array([1.0, 0, 0])
+    f = np.clip((p[2] - 2.5) / 7.0, 0, 1)
+    return (1 - f) * np.array([0, 0, 1.0]) + f * v
+
+
+N_RIBBONS = 8                            # Fibonacci
+
+
+def ground_curl(start, tangent, size, sense):
+    """A flat golden curl on the ground that runs into `start` along
+    `tangent` (returned in order: curl tip -> start)."""
+    t = np.array([tangent[0], tangent[1], 0.0])
+    t /= np.linalg.norm(t)
+    e2 = sense * np.cross([0, 0, 1.0], t)        # curl to one side
+    b = np.log(PHI) / (np.pi / 2)
+    ang = np.linspace(0, 2 * np.pi * 1.1, 80)
+    rad = size * np.exp(-b * ang)
+    centre = start - size * e2
+    pts = centre + (rad[:, None] * (np.cos(ang)[:, None] * e2
+                                    - np.sin(ang)[:, None] * t))
+    pts[:, 2] = RIB_T / 2 + (start[2] - RIB_T / 2) * np.exp(-ang)[:]  # settle down flat
+    return pts[::-1]
+
+
+def golden_curl(p, tan, r0, turns=1.1, n=70):
+    """Upright golden curl continuing from p along tan (curls upward)."""
+    tan = tan / np.linalg.norm(tan)
+    normal = np.cross(tan, [0, 0, 1.0])
+    if np.linalg.norm(normal) < 1e-6:
+        normal = np.array([1.0, 0, 0])
+    normal /= np.linalg.norm(normal)
+    e2 = np.cross(normal, tan)
+    b = np.log(PHI) / (np.pi / 2)
+    ang = np.linspace(0, 2 * np.pi * turns, n)[1:]
+    centre = p + r0 * e2
+    pts = centre - (r0 * np.exp(-b * ang))[:, None] * (np.cos(ang)[:, None] * e2
+                                                       - np.sin(ang)[:, None] * tan)
+    return pts, centre, normal
 
 
 def body_parts():
-    """Ribbon paths and the other elements of the body."""
+    """Ribbon paths, thin strands and flower placements of the body.
+
+    Eight ribbons rise from flat golden curls on the ground as a golden
+    vortex. Two braid loosely up the main stem, one carries the second
+    bloom, two sweep into curls holding flowers, and three peel away at
+    golden heights carrying a flower at the tip and another on a sprig.
+    """
     ribbons, tubes, flowers = [], [], []
     kmax = np.log(R0 * 0.82 / NECK_R) / np.log(PHI)
-    ends = []
-    for i in range(5):
-        pts, th_end = vortex(2 * np.pi * i / 5 + 0.4, R0 * 0.82, kmax, 1)
-        w = np.linspace(8.0, 4.4, len(pts))
-        ends.append((pts, w, th_end))
-    # above the neck
-    for i, (pts, w, th) in enumerate(ends):
-        p0 = pts[-1]
-        if i < 2:                       # braid up the main stem to the tip
+    roles = ["stem", "stem", "bloom2", "curl", "curl", "peel", "peel", "peel"]
+    order = [0, 4, 2, 6, 1, 3, 5, 7]                 # spread roles round the base
+    peel_k = iter([kmax / PHI ** 2, kmax / PHI, kmax / PHI ** 0.5])
+    for i in range(N_RIBBONS):
+        role = roles[order[i]]
+        a0 = 2 * np.pi * i / N_RIBBONS + 0.4
+        vpts, th_end = vortex(a0, R0 * 0.82, kmax, 1, n=120)
+        root = ground_curl(vpts[0], vpts[0] - vpts[1], 8.0 + 2.0 * (i % 3), 1 if i % 2 else -1)
+        w_root = np.linspace(1.6, 6.6, len(root)) ** 1.0
+        pts = np.vstack([root, vpts[1:]])
+        w = np.concatenate([w_root, np.linspace(6.6, 4.0, len(vpts) - 1)])
+
+        if role == "peel":
+            kp = next(peel_k)
+            cut = int(kp / kmax * (len(vpts) - 1))
+            pts = np.vstack([root, vpts[1:cut + 1]])
+            w = w[:len(pts)]
+            p0 = pts[-1]
+            tan = pts[-1] - pts[-2]
+            tan /= np.linalg.norm(tan)
+            out = np.array([p0[0], p0[1], 0.0])
+            out /= np.linalg.norm(out)
+            tip = p0 + out * 13.0 + np.array([0, 0, 15.0])
+            arc = bezier(p0, p0 + tan * 6 + [0, 0, 2], tip - out * 2 - [0, 0, 6], tip, n=45)[1:]
+            pts = np.vstack([pts, arc])
+            w = np.concatenate([w, np.linspace(w[-1], 2.6, len(arc))])
+            axis = (tip - arc[-6]) / np.linalg.norm(tip - arc[-6]) + np.array([0, 0, 0.6])
+            flowers.append((tip + 1.5 * axis / np.linalg.norm(axis), axis, 0))
+            # a sprig off the arc carries a second, smaller flower
+            m = arc[len(arc) // 2]
+            side = np.cross(out, [0, 0, 1.0])
+            sp_tip = m + out * 6.0 + side * (5.0 if i % 2 else -5.0) + np.array([0, 0, 4.0])
+            sprig = bezier(m, m + out * 2 + [0, 0, 1], sp_tip - [0, 0, 2.5], sp_tip, n=24)
+            ribbons.append((sprig, np.linspace(2.8, 2.2, len(sprig)), np.pi * 0.5, 0))
+            sp_axis = (sp_tip - sprig[-5]) / np.linalg.norm(sp_tip - sprig[-5]) + [0, 0, 0.5]
+            flowers.append((sp_tip + 1.2 * sp_axis / np.linalg.norm(sp_axis), sp_axis, 2))
+        elif role == "stem":                     # a loose braid up the stem
             s = np.linspace(0, 1, 90)[1:]
             z = NECK_Z + (TIP[2] - 3.0 - NECK_Z) * s
             c = stem_axis(z)
-            rr = NECK_R + (3.3 - NECK_R) * np.clip(s / 0.2, 0, 1)
-            ang = th + 2 * np.pi * 1.3 * s
+            rr = NECK_R + (4.6 - NECK_R) * np.clip(s / 0.2, 0, 1)
+            ang = th_end + 2 * np.pi * 0.7 * s
             up = c + np.column_stack([rr * np.cos(ang), rr * np.sin(ang), np.zeros_like(s)])
             pts = np.vstack([pts, up])
-            w = np.concatenate([w, np.linspace(4.4, 3.4, len(s))])
-        elif i == 2:                    # out to the second bloom
-            dirn = np.array([np.cos(th), np.sin(th), 0.0])
+            w = np.concatenate([w, np.linspace(4.0, 4.6, len(s))])
+        elif role == "bloom2":
+            p0 = pts[-1]
+            dirn = np.array([np.cos(th_end), np.sin(th_end), 0.0])
             up = bezier(p0, p0 + 9 * dirn + [0, 0, 6], BLOOM2_C - 9 * BLOOM2_AXIS + [-4, 0, 0],
                         BLOOM2_C - 1.5 * BLOOM2_AXIS)[1:]
             pts = np.vstack([pts, up])
-            w = np.concatenate([w, np.linspace(4.4, 3.4, len(up))])
-        else:                           # sweep out into a golden curl
-            side = np.array([np.cos(th), np.sin(th), 0.0])
-            reach = p0 + side * 16 + np.array([0, 0, 22 + 6 * (i - 3)])
+            w = np.concatenate([w, np.linspace(4.0, 3.6, len(up))])
+        else:                                    # sweep out into a golden curl
+            p0 = pts[-1]
+            side = np.array([np.cos(th_end), np.sin(th_end), 0.0])
+            j = len([f for f in flowers if f[2] == 1])
+            reach = p0 + side * 16 + np.array([0, 0, 22 + 6 * j])
             arc = bezier(p0, p0 + side * 6 + [0, 0, 10], reach - side * 4 - [0, 0, 2], reach)[1:]
-            tan = arc[-1] - arc[-2]
-            tan /= np.linalg.norm(tan)
-            normal = np.cross(tan, [0, 0, 1.0])
-            normal /= np.linalg.norm(normal)
-            b = np.log(PHI) / (np.pi / 2)
-            ang = np.linspace(0, 2 * np.pi * 1.1, 70)[1:]
-            r0 = 8.5 - 1.5 * (i - 3)
-            e2 = np.cross(normal, tan)
-            centre = arc[-1] + r0 * e2
-            curl = centre - (r0 * np.exp(-b * ang))[:, None] * (np.cos(ang)[:, None] * e2
-                                                              - np.sin(ang)[:, None] * tan)
+            curl, centre, normal = golden_curl(arc[-1], arc[-1] - arc[-2], 8.5 - 1.5 * j)
             pts = np.vstack([pts, arc, curl])
-            w = np.concatenate([w, np.linspace(4.4, 3.8, len(arc)),
+            w = np.concatenate([w, np.linspace(4.0, 3.8, len(arc)),
                                 np.linspace(3.8, 2.4, len(curl))])
-            # a flower in the eye of the curl, tied to the curl's inner end
             flowers.append((centre, normal, 1))
             tubes.append((np.vstack([curl[-1], centre]), np.array([1.0, 1.0])))
-        ribbons.append((pts, w, np.pi * (0.6 + 0.3 * i)))
+        ribbons.append((pts, w, np.pi * (0.5 + 0.25 * (i % 3)), len(root) - 3))
+
     # lattice core: 8 + 5 thin strands wound the other way inside the ribbons
     for count, sense in ((8, -1), (5, 1)):
         for i in range(count):
-            pts, _ = vortex(2 * np.pi * i / count, R0 * 0.66, kmax, sense, n=100)
-            tubes.append((pts, np.linspace(0.95, 0.75, len(pts))))
-    # core column
+            spts, _ = vortex(2 * np.pi * i / count, R0 * 0.62, kmax, sense, n=100)
+            tubes.append((spts, np.linspace(0.95, 0.75, len(spts))))
+    # core column (hidden inside the vortex and braid)
     z = np.linspace(1.0, TIP[2] - 4.0, 60)
     rad = np.where(z < NECK_Z, NECK_R - 1.5 + 2.5 * (1 - z / NECK_Z) ** 2, 2.6)
     tubes.append((stem_axis(z), rad))
-    # small flowers spiralling up at the golden angle
-    for j in range(8):
-        zf = 12 + 70 * (j / 7) ** 1.1
-        a = 1.1 + j * GOLDEN_ANGLE
-        if zf < NECK_Z:              # vortex envelope radius at this height
-            q = (zf - 1.8) / (NECK_Z - 1.8) * (1 - PHI ** (-2 * kmax))
-            env = R0 * 0.82 * PHI ** (np.log(1 - q) / (2 * np.log(PHI)))
-        else:
-            env = NECK_R
-        out = np.array([np.cos(a), np.sin(a), 0.0])
-        c = stem_axis(zf)
-        root = c + out * 1.5         # starts inside the core: always attached
-        pos = c + out * (env + 6.5) + np.array([0, 0, 3.0])
-        stem = bezier(root, root + out * (env * 0.6), pos - out * 3 - [0, 0, 1.5], pos, n=24)
-        tubes.append((stem, np.linspace(1.0, 0.85, len(stem))))
-        axis = out + np.array([0, 0, 0.9])
-        flowers.append((pos, axis / np.linalg.norm(axis), 0 if j % 2 == 0 else 2))
     return ribbons, tubes, flowers
 
 
@@ -507,11 +569,12 @@ def build_body(voxel):
     # soft, flat-bottomed foot
     def foot(x, y, z):
         rr = np.sqrt(x ** 2 + y ** 2)
-        d = soft_band(rr - (R0 - 4.0), np.abs(z - 1.9) - 1.9, 6.0, 1.9)
+        d = soft_band(rr - R0 * 0.62, np.abs(z - 1.5) - 1.5, 5.0, 1.5)
         return np.maximum(d, -z)
     add(vol, xs, ys, zs, (-R0, -R0, -1), (R0, R0, 5), foot, k=0)
 
-    for pts, w, twist in ribbons:
+    for pts, w, twist, keep in ribbons:
+        pts, w = smooth_path(pts, w, keep)
         segs = ribbon_sdf(pts, w, radial_ref, twist)
         for k0 in range(0, len(segs), 8):
             chunk = segs[k0:k0 + 8]
