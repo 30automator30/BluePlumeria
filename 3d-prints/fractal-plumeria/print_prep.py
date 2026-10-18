@@ -142,7 +142,7 @@ def build_supports(contacts, occ, lo, floor_z, tip_r):
             bottom = floor_z
             on_model = False
         h = top - bottom
-        if h < 2.0:
+        if h < 0.3:
             continue
         r = shaft_radius(h)
         tl = min(tip_len, h / 3)
