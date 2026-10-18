@@ -42,12 +42,12 @@ def view(mesh, R, px=520, span=32.0, near_z=None):
 
 mesh = trimesh.load(sys.argv[1]); out = sys.argv[2]
 views = [
-    ("Top (flower)", rot("x", 0.0), None),
+    ("Top", rot("x", 0.0), None),
     ("3/4 view", rot("y", 0.5) @ rot("x", 0.75), None),
     ("Side", rot("z", np.pi/2) @ rot("y", -np.pi/2), None),
     ("Front (finger axis)", rot("x", -np.pi/2), None),
-    ("Back (twisted vines)", rot("x", np.pi), None),
-    ("Inside back (ALOHA)", rot("x", 0.0), 0.0),
+    ("Back", rot("x", np.pi), None),
+    ("Inside back", rot("x", 0.0), 0.0),
 ]
 fig, axs = plt.subplots(2, 3, figsize=(15, 10))
 for a, (t, R, nz) in zip(axs.ravel(), views):

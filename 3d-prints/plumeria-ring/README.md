@@ -19,7 +19,7 @@ Each ring uses about 0.85 mL of resin. All meshes are watertight.
 ## Other sizes / options
 
 ```bash
-pip install numpy scipy scikit-image trimesh fast-simplification matplotlib
+pip install numpy scipy scikit-image trimesh manifold3d matplotlib
 python3 plumeria_ring.py --size 6.5            # any US size, halves OK
 python3 plumeria_ring.py --size 7 --text "MAHALO"
 python3 plumeria_ring.py --size 7 --text ""    # no engraving

@@ -2,7 +2,7 @@
 """Hawaiian plumeria ring generator (resin / MSLA printing).
 
 Builds the ring as a signed distance field (SDF), meshes it with marching
-cubes, decimates, and writes a watertight binary STL.
+cubes, simplifies, and writes a watertight binary STL.
 
 Design
   * Top:       large 5-petal plumeria, petals cupped with gently up-turned
@@ -16,7 +16,7 @@ Axes (mm): the finger runs along Y, the flower faces +Z.
 
 Usage
   python3 plumeria_ring.py --size 7
-  python3 plumeria_ring.py --size 6.5 --voxel 0.06 --faces 600000
+  python3 plumeria_ring.py --size 6.5 --voxel 0.05
   python3 plumeria_ring.py --size 7 --text ""   # no inner engraving
 """
 
@@ -250,15 +250,15 @@ class Ring:
 
 # ------------------------------------------------------------------ meshing
 
-def build_mesh(ring, voxel):
+def build_mesh(ring, voxel, y_half=MAIN_R + 0.8, z_top=None, pad=2.5):
     from skimage.measure import marching_cubes
     import trimesh
 
-    ext = ring.rout + 2.5
+    ext = ring.rout + pad
+    z_top = ring.rout + 3.8 if z_top is None else z_top
     xs = np.arange(-ext, ext + voxel, voxel, dtype=np.float32)
-    ys = np.arange(-MAIN_R - 0.8, MAIN_R + 0.8 + voxel, voxel, dtype=np.float32)
-    zs = np.arange(-(ring.rout + 0.6), ring.rout + 3.8 + voxel, voxel,
-                   dtype=np.float32)
+    ys = np.arange(-y_half, y_half + voxel, voxel, dtype=np.float32)
+    zs = np.arange(-(ring.rout + 0.6), z_top + voxel, voxel, dtype=np.float32)
     print(f"grid {len(xs)} x {len(ys)} x {len(zs)} = {len(xs)*len(ys)*len(zs)/1e6:.1f}M voxels")
 
     vol = np.empty((len(xs), len(ys), len(zs)), np.float32)
@@ -279,23 +279,31 @@ def build_mesh(ring, voxel):
     return max(parts, key=lambda m: len(m.faces))
 
 
-def decimate(mesh, target_faces):
-    """Reduce triangle count, keeping the result watertight."""
-    import fast_simplification
+def decimate(mesh, tolerance):
+    """Simplify within `tolerance` mm while keeping the mesh a closed solid.
+
+    Manifold's simplifier keeps topology intact, but can leave two distinct
+    vertices at the same spot where thin features touch; STL stores no
+    topology, so those would fuse on reload. Nudge such twins apart by 1 um
+    along their own normals so the saved STL stays watertight.
+    """
+    import manifold3d
     import trimesh
 
-    while len(mesh.faces) > target_faces:
-        v, f = fast_simplification.simplify(
-            mesh.vertices, mesh.faces, 1 - target_faces / len(mesh.faces))
-        out = trimesh.Trimesh(v, f, process=True)
-        out.update_faces(out.nondegenerate_faces())
-        out.remove_unreferenced_vertices()
-        trimesh.repair.fix_normals(out)
-        if out.is_watertight and out.is_winding_consistent:
-            return out
-        target_faces = int(target_faces * 1.25)   # back off and retry
-        print(f"  decimation not watertight, retrying at {target_faces} faces")
-    return mesh
+    solid = manifold3d.Manifold(manifold3d.Mesh(
+        vert_properties=np.asarray(mesh.vertices, np.float32),
+        tri_verts=np.asarray(mesh.faces, np.uint32)))
+    out = solid.simplify(tolerance).to_mesh()
+    m = trimesh.Trimesh(out.vert_properties[:, :3].astype(np.float64),
+                        out.tri_verts, process=False)
+    _, idx, counts = np.unique(np.round(m.vertices, 6), axis=0,
+                               return_inverse=True, return_counts=True)
+    twins = counts[idx.ravel()] > 1
+    if twins.any():
+        v = m.vertices.copy()
+        v[twins] -= 0.001 * m.vertex_normals[twins]
+        m = trimesh.Trimesh(v, m.faces, process=False)
+    return m
 
 
 def main():
@@ -303,7 +311,8 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--size", type=float, default=7.0, help="US ring size")
     ap.add_argument("--voxel", type=float, default=0.06, help="mesh resolution, mm")
-    ap.add_argument("--faces", type=int, default=500_000, help="target triangle count")
+    ap.add_argument("--tolerance", type=float, default=0.004,
+                    help="max simplification deviation, mm")
     ap.add_argument("--text", default="ALOHA", help='inner engraving ("" for none)')
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
@@ -312,7 +321,7 @@ def main():
     print(f"US size {args.size}: inner diameter {2*ring.ri:.2f} mm")
     mesh = build_mesh(ring, args.voxel)
     print(f"marching cubes: {len(mesh.faces)} faces, watertight={mesh.is_watertight}")
-    mesh = decimate(mesh, args.faces)
+    mesh = decimate(mesh, args.tolerance)
     print(f"final: {len(mesh.faces)} faces, watertight={mesh.is_watertight}, "
           f"volume={mesh.volume/1000:.3f} mL, bounds={np.round(mesh.extents, 2)} mm")
     out = args.out or f"plumeria_ring_US{args.size:g}.stl"
