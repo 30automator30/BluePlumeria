@@ -5,7 +5,7 @@ A wide band in the style of hand-engraved Hawaiian heirloom jewelry:
 raised plumerias, curling wave scrolls and hatched leaves stand proud of a
 recessed, stippled background, and every open space is filled with small
 curls, leaves and engraver's sweeps; each element is bevelled toward its
-engraved outlines, and the band's edges are scalloped to follow the design.
+engraved outlines, and both edges are scalloped.
 
 The motif is drawn as a 2D relief height map on the unrolled band
 (s = arc length, y = across the band), wrapped onto the ring as a signed
@@ -22,8 +22,7 @@ import os
 import sys
 
 import numpy as np
-from scipy.ndimage import (binary_dilation, distance_transform_edt,
-                           gaussian_filter, gaussian_filter1d)
+from scipy.ndimage import binary_dilation, distance_transform_edt, gaussian_filter
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", "plumeria-ring"))
@@ -36,6 +35,7 @@ RELIEF = 0.40              # background depth below the design
 DOME = 0.20                # bevel height of each raised element
 GROOVE = 0.06              # half width of engraved lines
 TEXT_HEIGHT, TEXT_DEPTH = 1.6, 0.25
+SCALLOP_PITCH, SCALLOP_DEPTH = 2.6, 0.45   # edge scallop spacing and notch depth
 
 
 def smax(a, b, k):
@@ -200,12 +200,14 @@ class Motif:
         h = np.where(self.raised, h, -RELIEF - 0.03 * stip)
         h = gaussian_filter(h, 0.8)
 
-        # scalloped edges: the band edge rises to meet design touching it
+        # scalloped edges: a row of shallow arcs along each edge, with the
+        # top and bottom rows offset half a scallop
+        n = max(1, round(self.unit / SCALLOP_PITCH))
+
         def edge_profile(sign):
-            band = (sign * self.Y > self.hw - 0.9) & (sign * self.Y < self.hw + 0.3)
-            occ = (self.raised & band).any(axis=1).astype(float)
-            occ = gaussian_filter1d(occ, 0.5 / RES, mode="wrap")
-            return self.hw - 0.45 + 0.45 * np.clip(occ * 1.6, 0, 1)
+            f = (self.s / (self.unit / n) + (0.5 if sign < 0 else 0.0)) % 1.0
+            arc = np.sqrt(np.clip(1 - (2 * f - 1) ** 2, 0, 1))
+            return self.hw - SCALLOP_DEPTH * (1 - arc) ** 0.8
 
         return h, edge_profile(1), edge_profile(-1)
 

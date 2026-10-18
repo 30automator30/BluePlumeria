@@ -7,7 +7,7 @@ Resin (MSLA) ring for the Elegoo Saturn 4 Pro, in the style of hand-engraved Haw
 - **8 mm wide band.** The design repeats three times around the ring: a raised plumeria, a curling ocean-wave scroll with combed hatching, and a hatched vine with a spray of leaves.
 - **No bare spots.** Every open space is filled automatically with small wave curls, leaves tucked behind the main motifs, and crescent sweeps, the way traditional heirloom engraving covers the whole band.
 - **Engraved look.** Each raised element is bevelled down toward its engraved outlines. The background is recessed 0.4 mm and has a stippled, matte texture, so the design catches the light.
-- **Scalloped edges** that rise to meet the design where it touches the edge, like hand-cut heirloom bands.
+- **Scalloped edges:** a row of shallow arcs about 2.6 mm long along each edge, with the top and bottom rows offset half a scallop. `SCALLOP_PITCH` and `SCALLOP_DEPTH` at the top of the script control the size.
 - **Comfort-fit inside**, with **ALOHA** engraved at the back.
 
 | File | US size | Inner diameter |
