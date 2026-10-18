@@ -8,7 +8,8 @@ Design
   * Top:       large 5-petal plumeria, petals cupped with gently up-turned
                edges and tips, pinwheel overlap, tight swirled throat.
   * Band:      three vines twisted together like a rope, with small leaves
-               budding off the vines on each shoulder.
+               budding off the vines on each shoulder, framed by a solid
+               rail along each edge.
   * Inside:    a smooth comfort liner engraved with "ALOHA" at the back.
 
 Axes (mm): the finger runs along Y, the flower faces +Z.
@@ -26,7 +27,8 @@ import numpy as np
 
 # ---------------------------------------------------------------- parameters
 
-LINER_T, LINER_HW = 0.6, 1.15   # inner comfort liner: wall thickness, half width
+LINER_T = 0.6                   # inner comfort liner wall thickness
+RAIL_HW, RAIL_GAP = 0.42, 0.12  # solid edge rails: half thickness, gap to vines
 VINE_R = 0.62                   # radius of each of the three vines
 VINE_ORBIT_R, VINE_ORBIT_Y = 0.55, 0.95  # twist ellipse (radial, along finger)
 VINE_TWISTS = 9                 # full twists around the ring
@@ -180,14 +182,25 @@ class Ring:
         r = np.sqrt(x * x + z * z)
         phi = np.arctan2(x, z)                  # 0 at top, +-pi at back
 
+        # vines (and the rails framing them) fan out a little under the flower
+        spread = 1.0 + 0.35 * np.exp(-(phi / 0.7) ** 2)
+        rail_y = VINE_ORBIT_Y * spread + VINE_R + RAIL_GAP + RAIL_HW
+
         # smooth comfort liner (holds the engraving, keeps the inside comfy)
         qr = np.abs(r - (ri + LINER_T / 2)) - (LINER_T / 2 - 0.25)
-        qy = np.abs(y) - (LINER_HW - 0.25)
+        qy = np.abs(y) - (rail_y - 0.25)
         d = (np.sqrt(np.maximum(qr, 0) ** 2 + np.maximum(qy, 0) ** 2)
              + np.minimum(np.maximum(qr, qy), 0) - 0.25)
 
-        # three twisted vines; they fan out a little wider under the flower
-        spread = 1.0 + 0.35 * np.exp(-(phi / 0.7) ** 2)
+        # solid rounded rails along both edges, just below the vine crests
+        rail_t = self.rout - ri - 0.2
+        qr = np.abs(r - (ri + rail_t / 2)) - (rail_t / 2 - 0.35)
+        qy = np.abs(np.abs(y) - rail_y) - (RAIL_HW - 0.35)
+        rail = (np.sqrt(np.maximum(qr, 0) ** 2 + np.maximum(qy, 0) ** 2)
+                + np.minimum(np.maximum(qr, qy), 0) - 0.35)
+        d = smin(d, rail, 0.1)
+
+        # three twisted vines between the rails
         for k in range(3):
             psi = VINE_TWISTS * phi + 2 * np.pi * k / 3
             cr = rc + VINE_ORBIT_R * np.cos(psi)
@@ -199,12 +212,12 @@ class Ring:
         s = np.abs(phi) * self.rout
         n = r - self.rout + 0.25
         for (s0, y0, ang, ln, hw) in [
-            (5.4, 0.9, 0.75, 2.8, 0.75),
-            (6.3, -0.9, -0.80, 2.6, 0.70),
-            (12.6, 0.8, 0.70, 2.5, 0.65),
-            (13.6, -0.8, -0.75, 2.4, 0.62),
-            (16.5, 0.7, 0.70, 2.2, 0.58),
-            (17.3, -0.7, -0.70, 2.0, 0.55),
+            (5.2, 0.4, 0.40, 2.8, 0.70),
+            (6.2, -0.4, -0.42, 2.6, 0.66),
+            (12.6, 0.35, 0.36, 2.5, 0.60),
+            (13.6, -0.35, -0.38, 2.4, 0.58),
+            (16.5, 0.3, 0.34, 2.2, 0.55),
+            (17.3, -0.3, -0.34, 2.0, 0.52),
         ]:
             d = smin(d, leaf(s, y, n, s0, y0, ang, ln, hw, 0.45), 0.15)
 
