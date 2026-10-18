@@ -7,10 +7,12 @@ Two parts that join with a keyed peg:
          golden-angle spiral of 29 smaller plumeria petals that shrink
          toward the centre and rise from open, to cupped, to a curled bud:
          petals within petals. Every petal keeps the pinwheel twist.
-  stem   A gently S-curved stem rising from a hollow domed base. Tendrils
-         branch off it and curl into golden (logarithmic) spirals, and
-         each tendril throws off a smaller counter-curling spiral: the
-         same recursion as the bloom.
+  stem   Earth -> vortex -> explosion. Thirteen root spirals sweep across
+         an open, flat base to a hub; from it 8 + 5 counter-wound strands
+         climb as a vortex that narrows and twists faster as it rises; at
+         the neck 13 strands burst outward under the bloom and curl into
+         fractal tendrils (golden spirals that sprout smaller
+         counter-curling spirals, three levels deep).
 
 Each part is a signed distance field meshed with marching cubes, then
 simplified to a watertight STL. Units are mm; +Z is up as displayed.
@@ -199,14 +201,45 @@ def bloom_sdf_into(vol, xs, ys, zs):
 
 
 # ------------------------------------------------------------------- stem
+#
+# Earth -> vortex -> explosion. Root spirals sweep inward across a flat,
+# open base to a hub; from it two counter-wound sets of strands (8 and 5,
+# a Fibonacci pair) climb as a vortex that narrows and twists faster as
+# it rises, concentrating at a neck; above the neck 13 strands burst
+# outward under the bloom and curl into fractal tendrils.
 
-STEM_TOP = 92.0          # height of the stem tip (bloom sits on it)
-TILT = np.radians(25)    # stem tip leans forward so the bloom faces you
-BASE_R, BASE_H, BASE_WALL = 26.0, 11.0, 2.4
+# Golden proportions (all lengths mm). The sculpture is H tall; its
+# narrowest point (the neck) sits at H/phi. Below it the vortex contracts,
+# above it the burst expands: each quarter turn the strands' radius scales
+# by phi and their rise by phi^2, which gives a flared, trumpet outline.
+H_TOTAL = 122.0
+NECK_Z = H_TOTAL / PHI                   # 75.4: vortex : burst = phi : 1
+BASE_R = 27.0                            # R0
+NECK_R = BASE_R / PHI ** 4               # 3.9
+VORTEX_QT = 4.0                          # quarter turns, base -> neck
+BURST_QT = 4.5                           # quarter turns, neck -> bloom (R0*sqrt(phi))
+BLOOM_H = 24.6                           # bloom height above its foot
+STEM_TOP = H_TOTAL - BLOOM_H             # the bloom's foot sits here
+TILT = 0.0                               # rises straight up
+STRAND_MIN = 0.6                         # thinnest tendril radius
+
+
+def vortex_z(k):
+    """Height after k quarter turns up the vortex (rise / phi^2 each)."""
+    dz0 = NECK_Z * (1 - PHI ** -2) / (1 - PHI ** (-2 * VORTEX_QT))
+    return dz0 * (1 - PHI ** (-2 * k)) / (1 - PHI ** -2)
+
+
+def burst_z(k):
+    """Height after k quarter turns up from the neck (rise * phi^2 each)."""
+    top = H_TOTAL - NECK_Z
+    a = top * (PHI ** 2 - 1) / (PHI ** (2 * BURST_QT) - 1)
+    return NECK_Z + a * (PHI ** (2 * k) - 1) / (PHI ** 2 - 1)
 
 
 def log_spiral(origin, start_dir, up, r0, turns, sense, n=90):
-    """Golden spiral curling in a tilted plane; returns points and radii."""
+    """Golden spiral curling in the plane normal to `up`; starts at
+    `origin` heading along `start_dir`."""
     b = np.log(PHI) / (np.pi / 2)            # grows by phi each quarter turn
     th = np.linspace(0, 2 * np.pi * turns, n)
     rad = r0 * np.exp(-b * th)               # curls inward
@@ -214,42 +247,89 @@ def log_spiral(origin, start_dir, up, r0, turns, sense, n=90):
     e2 = np.cross(up, e1)
     e2 /= np.linalg.norm(e2)
     centre = origin + r0 * sense * e2
-    pts = (centre[None] - rad[:, None] * sense * (np.cos(th)[:, None] * e2[None]
-                                               - np.sin(th)[:, None] * sense * e1[None]))
-    return pts
+    return (centre[None] - rad[:, None] * sense * (np.cos(th)[:, None] * e2[None]
+                                                - np.sin(th)[:, None] * sense * e1[None]))
+
+
+def tendril(chains, origin, direction, normal, size, sense, r0, depth):
+    """A golden-spiral tendril that sprouts two smaller, counter-curling
+    tendrils of its own, `depth` levels deep."""
+    pts = log_spiral(origin, direction, normal, size, 1.15, sense, n=int(40 + 8 * size))
+    rr = np.linspace(r0, max(STRAND_MIN, r0 * 0.5), len(pts))
+    chains.append((pts, rr))
+    if depth > 1:
+        for f, flip in ((0.22, 1), (0.48, -1)):
+            i = int(f * (len(pts) - 1))
+            tan = pts[i + 1] - pts[i]
+            tan /= np.linalg.norm(tan)
+            side = flip * np.cross(normal, tan)
+            tendril(chains, pts[i], side + 0.3 * tan, tan, size / PHI ** 2,
+                    -sense, max(STRAND_MIN, rr[i] * 0.8), depth - 1)
+
+
+def helix(r_of_s, th_of_s, z0, z1, n=160):
+    s = np.linspace(0, 1, n)
+    r, th = r_of_s(s), th_of_s(s)
+    return np.column_stack([r * np.cos(th), r * np.sin(th), z0 + (z1 - z0) * s])
+
+
+def tip_point():
+    return np.array([0.0, 0.0, STEM_TOP])
 
 
 def stem_parts():
-    """Main stem polyline plus spiral tendrils (two levels)."""
-    t = np.linspace(0, 1, 60)
-    z0 = BASE_H - 2
-    stem = np.column_stack([6.0 * np.sin(np.pi * t * 1.1) * (1 - t) ** 0.3,
-                            2.5 * np.sin(2 * np.pi * t),
-                            z0 + (STEM_TOP - z0) * t])
-    stem[-8:, :2] *= np.linspace(1, 0, 8)[:, None]      # finish over centre
-    # lean the top third forward (-y) so the tip leaves at angle TILT
-    zs_ = z0 + (STEM_TOP - z0) * 0.65
-    sb = np.clip((stem[:, 2] - zs_) / (STEM_TOP - zs_), 0, 1)
-    stem[:, 1] -= np.tan(TILT) * (STEM_TOP - zs_) * sb ** 2 / 2
-    stem_r = 3.3 - 1.0 * t
-    tendrils = []
-    for j, (h, size) in enumerate([(0.24, 20.0), (0.44, 16.0), (0.62, 12.0)]):
-        i = int(h * (len(t) - 1))
-        p = stem[i]
-        az = 0.6 + j * GOLDEN_ANGLE
-        out = np.array([np.cos(az), np.sin(az), 0.55])
-        up = np.array([-np.sin(az), np.cos(az), 0.25])
-        sense = 1 if j % 2 == 0 else -1
-        pts = log_spiral(p, out, up / np.linalg.norm(up), size, 1.2, sense)
-        rr = np.linspace(stem_r[i] * 0.55, 0.62, len(pts))
-        tendrils.append((pts, rr))
-        # second level: a smaller counter-curling spiral off the tendril
-        q = pts[len(pts) // 4]
-        tan = pts[len(pts) // 4 + 1] - q
-        sub = log_spiral(q, np.cross(tan, up) + 0.4 * up, tan / np.linalg.norm(tan),
-                         size / PHI ** 1.6, 1.0, -sense, n=60)
-        tendrils.append((sub, np.linspace(rr[len(pts) // 4] * 0.75, 0.55, len(sub))))
-    return stem, stem_r, tendrils
+    """All tube chains (points, radii) making up the stem part."""
+    chains = []
+    # roots: 13 golden spirals sweeping inward across the ground, from the
+    # outer ring to the hub (radius / phi each quarter turn)
+    kr = np.log(BASE_R / 7.0) / np.log(PHI)
+    for i in range(13):
+        k = np.linspace(0, kr, 60)
+        r = (BASE_R - 1.0) * PHI ** -k
+        th = 2 * np.pi * i / 13 + k * np.pi / 2
+        pts = np.column_stack([r * np.cos(th), r * np.sin(th), np.full_like(k, 1.25)])
+        chains.append((pts, np.full(len(k), 1.25)))
+    # the 8 + 5 strands: up the vortex, through the neck, out into the burst
+    burst_ends = []
+    for count, sense, phase in ((8, 1, 0.0), (5, -1, np.pi / 5)):
+        for i in range(count):
+            a0 = phase + 2 * np.pi * i / count
+            kv = np.linspace(0, VORTEX_QT, 140)
+            kb = np.linspace(0, BURST_QT * 0.86, 80)[1:]    # stop under the petals
+            r = np.concatenate([(BASE_R - 1.0) * PHI ** -kv, NECK_R * PHI ** kb])
+            z = np.concatenate([1.2 + (vortex_z(kv) - 1.2 * kv / VORTEX_QT), burst_z(kb)])
+            kk = np.concatenate([kv, VORTEX_QT + kb])
+            th = a0 + sense * kk * np.pi / 2
+            pts = np.column_stack([r * np.cos(th), r * np.sin(th), z])
+            # thick at the root, slimmest at the neck, filling out again
+            rad = np.concatenate([np.linspace(1.3, 0.8, len(kv)),
+                                  np.linspace(0.8, 1.05, len(kb))])
+            chains.append((pts, rad))
+            burst_ends.append((pts, rad, sense))
+    # core: solid column up the middle, carrying the joint peg
+    z = np.linspace(1.0, STEM_TOP - 3.2, 40)        # the collar caps it
+    rad = np.where(z < NECK_Z, NECK_R - 0.6 + 1.6 * (1 - z / NECK_Z) ** 2, NECK_R - 1.1)
+    chains.append((np.column_stack([np.zeros_like(z), np.zeros_like(z), z]), rad))
+    # every burst strand ends in a fractal tendril (3 or 2 levels)
+    for j, (pts, rad, sense) in enumerate(burst_ends):
+        out = pts[-1] - pts[-2]
+        out /= np.linalg.norm(out)
+        radial = np.array([pts[-1][0], pts[-1][1], 0.0])
+        radial /= np.linalg.norm(radial)
+        normal = np.cross(radial, [0, 0, 1.0])
+        # curl outward and down, like falling sparks, clear of the petals
+        tendril(chains, pts[-1], radial + 0.5 * np.array([0, 0, 1.0]), normal,
+                4.0 + 1.3 * (j % 3), -1, rad[-1], 3 if j % 2 == 0 else 2)
+    # and a few flung off the vortex on the way up, at golden heights
+    for j, kq in enumerate([1.0, 1.0 + 1 / PHI, 2.0 + 1 / PHI]):
+        pts, rad = chains[13 + 3 * j]
+        i = int(kq / VORTEX_QT * 139)
+        p = pts[i]
+        radial = np.array([p[0], p[1], 0.0])
+        radial /= np.linalg.norm(radial)
+        tendril(chains, p, radial + np.array([0, 0, 0.5]), np.cross(radial, [0, 0, 1.0]),
+                9.0 / PHI ** j, 1 if j % 2 else -1, rad[i] * 0.9, 3)
+    return chains
 
 
 def _sub(xs, ys, zs, lo, hi):
@@ -268,15 +348,30 @@ def tip_frame(x, y, z, tip):
 
 
 def stem_sdf_into(vol, xs, ys, zs):
-    stem, stem_r, tendrils = stem_parts()
-    for pts, rr, k in [(stem, stem_r, 0.0)] + [(p, r, 0.6) for p, r in tendrils]:
-        pad = rr.max() + 1.0
-        sl, (x, y, z) = _sub(xs, ys, zs, pts.min(0) - pad, pts.max(0) + pad)
-        d = np.minimum(capsule_chain(x, y, z, pts, rr), 3.0)
-        vol[sl] = smin(vol[sl], d, k) if k else np.minimum(vol[sl], d)
+    for pts, rr in stem_parts():
+        # evaluate long chains in short runs, each inside its own box
+        for k in range(0, len(pts) - 1, 10):
+            seg, rad = pts[k:k + 11], rr[k:k + 11]
+            pad = rad.max() + 0.8
+            sl, (x, y, z) = _sub(xs, ys, zs, seg.min(0) - pad, seg.max(0) + pad)
+            if x.size == 0:
+                continue
+            d = np.minimum(capsule_chain(x, y, z, seg, rad), 3.0)
+            vol[sl] = smin(vol[sl], d, 0.35)
+
+    # solid outer ring and hub tie the roots into a flat, stable foot
+    sl, (x, y, z) = _sub(xs, ys, zs, np.array([-BASE_R - 1, -BASE_R - 1, -1]),
+                         np.array([BASE_R + 1, BASE_R + 1, 6]))
+    rr = np.sqrt(x ** 2 + y ** 2)
+    ring = np.sqrt(np.maximum(np.abs(rr - (BASE_R - 1.6)) - 0.4, 0) ** 2
+                   + (z - 1.3) ** 2) - 1.3
+    hub = np.maximum(rr - 7.2, np.abs(z - 1.6) - 1.6)
+    foot = smin(ring, hub, 0.5)
+    vol[sl] = smin(vol[sl], np.minimum(foot, 3.0), 0.6)
+    vol[sl] = np.maximum(vol[sl], -z)                    # flat underside
 
     # sepal collar under the bloom, and the keyed peg, along the tilted tip
-    tip = stem[-1]
+    tip = tip_point()
     sl, (x, y, z) = _sub(xs, ys, zs, tip - 9, tip + 9)
     lx, ly, lz = tip_frame(x, y, z, tip)
     rr = np.sqrt(lx ** 2 + ly ** 2)
@@ -285,27 +380,6 @@ def stem_sdf_into(vol, xs, ys, zs):
     vol[sl] = smin(vol[sl], collar, 0.8)
     vol[sl] = np.minimum(vol[sl], keyed_cylinder(lx, ly, lz, PEG_R, -0.5, PEG_H))
 
-    # hollow domed base, open underneath (no trapped resin), with five
-    # leaf ridges spiralling up it
-    sl, (x, y, z) = _sub(xs, ys, zs, np.array([-BASE_R - 1, -BASE_R - 1, -1]),
-                         np.array([BASE_R + 1, BASE_R + 1, BASE_H + 2]))
-    rr = np.sqrt(x ** 2 + y ** 2)
-    dome = np.sqrt(rr ** 2 + (z * BASE_R / BASE_H) ** 2) * BASE_H / BASE_R - BASE_H
-    dome = np.maximum(dome, -z)
-    hi = BASE_H - BASE_WALL
-    ri = BASE_R - BASE_WALL                     # keeps a solid rim at the foot
-    inner = np.sqrt(rr ** 2 + (z * ri / hi) ** 2) * hi / ri - hi
-    shell = np.maximum(dome, -inner)
-    ang = np.arctan2(y, x)
-    for i in range(5):
-        a0 = i * 2 * np.pi / 5
-        da = np.angle(np.exp(1j * (ang - a0 - 1.1 * (1 - rr / BASE_R))))
-        w = 0.30 * np.clip(np.sin(np.pi * np.clip(rr / BASE_R, 0, 1)), 0, 1) ** 0.7 + 0.02
-        ridge = np.maximum(np.abs(da) * rr - w * rr, dome - 0.8)
-        ridge = np.maximum(np.maximum(ridge, -dome - 0.3), rr - (BASE_R - 2.5))
-        shell = smin(shell, ridge, 0.4)
-    vol[sl] = smin(vol[sl], np.minimum(shell, 3.0), 2.0)
-
 
 # ---------------------------------------------------------------- meshing
 
@@ -313,6 +387,7 @@ def mesh_volume(vol, voxel, origin):
     from skimage.measure import marching_cubes
     import trimesh
     vol = np.pad(vol, 1, constant_values=1.0)
+    vol[vol == 0] = 1e-6          # exact zeros make coincident, unjoined vertices
     verts, faces, _, _ = marching_cubes(vol, 0.0, spacing=(voxel,) * 3)
     verts += np.asarray(origin) - voxel
     mesh = trimesh.Trimesh(verts, faces, process=False)
@@ -333,8 +408,7 @@ def build(part, voxel):
         vol = np.full((len(xs), len(ys), len(zs)), 3.0, np.float32)
         bloom_sdf_into(vol, xs, ys, zs)
     else:
-        stem, _, tendrils = stem_parts()
-        pts = np.vstack([stem] + [p for p, _ in tendrils])
+        pts = np.vstack([p for p, _ in stem_parts()])
         lo = np.minimum(pts.min(0) - 3, [-BASE_R - 1, -BASE_R - 1, -0.5])
         hi = np.maximum(pts.max(0) + 3, [BASE_R + 1, BASE_R + 1, STEM_TOP + PEG_H + 1])
         xs = np.arange(lo[0], hi[0], voxel, dtype=np.float32)
