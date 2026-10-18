@@ -33,11 +33,11 @@ from plumeria_ring import (build_mesh, decimate, petal_shape,  # noqa: E402
 from heirloom_band import DOME, GROOVE, RES, Motif, smax  # noqa: E402
 
 WALL = 1.45                       # band thickness
-HW_FRONT, HW_BACK = 5.0, 2.6      # half width at the front / back
-TAPER = 15.0                      # how quickly the band narrows (mm of arc)
-RAIL = 0.85                       # solid edge rail width
-OW_END = 20.5                     # openwork spans |s| < OW_END around the front
-END_BAR = 0.9                     # solid bar closing each end of the openwork
+HW_FRONT, HW_BACK = 3.5, 2.75    # half width: 7 mm at the centre flower
+TAPER = 14.3                      # ... easing to 6 mm where the openwork ends
+RAIL = 0.6                        # slim edge rails
+OW_END = 15.0                     # 30 mm decorative section, |s| < OW_END
+VINE = 0.72                       # vine thickness
 TEXT_HEIGHT, TEXT_DEPTH = 1.5, 0.25
 
 
@@ -66,6 +66,7 @@ class Openwork(Motif):
         super().__init__(circ, HW_FRONT)
         self.circ = circ
         self.Ss = (self.S + circ / 2) % circ - circ / 2    # signed arc length
+        self.bump = np.zeros(self.S.shape)                  # extra relief, mm
 
     def stroke(self, pts, w0, w1, curl=None):
         """Tapered sweep through `pts`, optionally ending in a curling wave.
@@ -114,8 +115,9 @@ class Openwork(Motif):
         vis = self.paint(m)
         self.groove |= g & vis
 
-    def flower(self, s0, y0, radius, rot):
-        """Plumeria with engraved rays on each petal and a domed centre."""
+    def flower(self, s0, y0, radius, rot, bead=False):
+        """Plumeria with engraved rays on each petal and a domed centre
+        (a raised bead centre if `bead`)."""
         k = radius / 7.5
         x, y = (self.Ss - s0) / k, (self.Y - y0) / k
         petals = []
@@ -136,34 +138,44 @@ class Openwork(Motif):
         rr = np.hypot(x, y)
         self.paint(rr < 1.6)
         self.groove |= np.abs(rr - 1.6) < GROOVE / k
+        if bead:
+            self.bump = np.maximum(self.bump, 0.35 * radius / 2.0
+                                   * np.sqrt(np.clip(1 - (rr / 1.5) ** 2, 0, 1)))
 
 
 def compose(circ):
+    """Front section laid out after the flat-layout sheet (30 x 6 mm)."""
     m = Openwork(circ)
     hw = half_width(m.Ss)
     band = np.abs(m.Y) < hw
-    field = (np.abs(m.Y) < hw - RAIL) & (np.abs(m.Ss) < OW_END - END_BAR)
-    m.paint(band & ~field & (np.abs(m.Ss) >= OW_END - END_BAR))   # plain back
+    field = (np.abs(m.Y) < hw - RAIL) & (np.abs(m.Ss) < OW_END)
+    m.paint(band & (np.abs(m.Ss) >= OW_END))                       # plain shank
     m.paint(band & (np.abs(m.Y) >= hw - RAIL))                      # rails
 
     for sg in (1, -1):                       # mirror-image sides
         def P(*pts):
             return [(sg * s, y) for s, y in pts]
-        # lower sweep: out of the flower, dipping to the rail, rising to a wave
-        m.stroke(P((2.5, -2.0), (5.8, -3.0), (8.8, -1.9), (10.2, 0.3)),
-                 1.35, 1.0, curl=(1.1, 1.2, sg))
-        # upper sweep along the top rail, rolling over into a wave
-        m.stroke(P((3.0, 2.5), (6.5, 2.85), (11.0, 2.35), (13.4, 0.8)),
-                 1.3, 0.95, curl=(0.9, 1.15, -sg))
-        # leaf blade sweeping from the flower toward the lower wave
-        m.stroke(P((3.8, 0.4), (6.0, 1.1), (8.0, 0.8), (9.0, 0.1)), 1.5, 0.25)
-        # blade rising off the lower sweep, echoing the one above
-        m.stroke(P((5.2, -2.7), (6.6, -1.6), (7.6, -1.1)), 1.0, 0.25)
-        # side plumeria bridging the rails, with a curl tucked behind it
-        m.stroke(P((14.0, -2.6), (15.0, -1.0), (14.6, 0.4)), 1.05, 0.8,
-                 curl=(0.6, 1.0, sg))
-        m.flower(sg * 17.4, 0.1, 2.45, 0.3 if sg > 0 else 0.3 + np.pi / 5)
-    m.flower(0.0, 0.0, 4.55, np.pi / 2)
+        # long vine arcing out along the top rail and dropping to the curls
+        m.stroke(P((1.6, 2.1), (4.2, 2.75), (6.8, 2.6), (8.1, 1.8), (8.3, 0.8)),
+                 VINE, VINE * 0.85, curl=(0.62, 1.05, sg))
+        # S-vine: out of the flower, dipping low, rolling up into a big curl
+        m.stroke(P((2.4, -0.4), (4.2, -1.3), (5.9, -1.0), (7.0, 0.2), (6.6, 1.25)),
+                 VINE, VINE * 0.9, curl=(0.72, 1.35, sg))
+        # lower vine along the bottom rail, ending in the second small curl
+        m.stroke(P((1.8, -2.1), (5.0, -2.6), (7.4, -2.4), (8.7, -1.8), (9.0, -1.1)),
+                 VINE, VINE * 0.8, curl=(0.55, 1.05, -sg))
+        # veined leaf resting on the lower vine
+        m.leaf(sg * 4.2, -2.1, 0.45 if sg > 0 else np.pi - 0.45, 2.5, 0.68)
+        # crossing vines just before the shank
+        m.stroke(P((13.0, 2.6), (13.9, 0.8), (14.4, -1.2), (15.1, -2.6)), VINE * 0.85,
+                 VINE * 0.85)
+        m.stroke(P((13.0, -2.6), (13.9, -0.8), (14.4, 1.2), (15.1, 2.6)), VINE * 0.85,
+                 VINE * 0.85)
+        # stems holding the side flower to the upper and lower vines
+        m.stroke(P((7.6, 2.55), (9.6, 2.0), (11.0, 1.0)), VINE * 0.8, VINE * 0.8)
+        m.stroke(P((7.9, -2.4), (9.8, -1.9), (11.0, -0.9)), VINE * 0.8, VINE * 0.8)
+        m.flower(sg * 11.75, 0.1, 1.6, 0.3 if sg > 0 else 0.3 + np.pi / 5, bead=True)
+    m.flower(0.0, 0.0, 2.9, np.pi / 2, bead=True)
     m.solid = m.raised & band
     return m
 
@@ -211,7 +223,7 @@ class OpenworkBand:
         body = solid & ~cut
         edt = distance_transform_edt(body) * RES
         h = np.where(body, DOME * np.clip(edt / 0.35, 0, 1) ** 0.7 - DOME, -DOME - 0.12)
-        self.h = gaussian_filter(np.where(solid, h, 0.0), 0.8)
+        self.h = gaussian_filter(np.where(solid, h + m.bump, 0.0), 0.8)
         self.text = text_sdf_2d(text, TEXT_HEIGHT)
 
     def sample(self, arr, s, y):
@@ -253,7 +265,7 @@ def main():
     band = OpenworkBand(args.size, args.text)
     print(f"US size {args.size}: inner diameter {2*band.ri:.2f} mm")
     mesh = build_mesh(band, args.voxel, y_half=HW_FRONT + 0.4,
-                      z_top=band.ro + 0.4, pad=0.4)
+                      z_top=band.ro + 0.8, pad=0.4)
     print(f"marching cubes: {len(mesh.faces)} faces, watertight={mesh.is_watertight}")
     mesh = decimate(mesh, args.tolerance)
     print(f"final: {len(mesh.faces)} faces, watertight={mesh.is_watertight}, "
