@@ -18,9 +18,11 @@ Golden-ratio design, after the concept sheet:
               inside the ribbons form the lattice core.
 
 Printability: the body prints straight on the plate with no supports. Its
-base is cut flat, and plan_stems() grows S-curved stems (at most ~50 degrees
-from vertical, branching like a vine) up to anything that would otherwise
-start in mid-air, re-checking layer by layer until nothing is left. The main
+base is cut flat. Two question-mark curls sweep up from the body and roll
+over under the second bloom and the left flower, then plan_stems() grows
+S-curved stems (at most ~50 degrees from vertical, branching off the curls
+like a vine) up to anything else that would start in mid-air, re-checking
+layer by layer until nothing is left. The main
 bloom's rims and veins are bold, and every vein runs into a frame, so the
 lattice has no loose ends to snap when its supports come off.
 
@@ -626,8 +628,56 @@ def stems_for(islands, vol, voxel, origin):
     return stems
 
 
+def support_curl(crown, d, R, vol, voxel, origin, rad=(2.2, 1.0), n=90):
+    """A question-mark stem: it rises from the body, sweeps up on the
+    outer side and rolls over into a golden curl whose crown sits under
+    `crown`. d is the outward (horizontal) direction of the sweep."""
+    from scipy import ndimage as ndi
+    d = np.array([d[0], d[1], 0.0]) / np.hypot(d[0], d[1])
+    up = np.array([0, 0, 1.0])
+    b = np.log(PHI) / (np.pi / 2)
+    C = crown - R * np.exp(-b * np.pi / 2) * up
+    th = np.linspace(0, 2 * np.pi * 1.05, n)
+    r = R * np.exp(-b * th)
+    spiral = C + r[:, None] * (np.cos(th)[:, None] * d + np.sin(th)[:, None] * up)
+    s0 = spiral[0]
+    S = vol < 0
+    surf = np.argwhere(S & ~ndi.binary_erosion(S)) * voxel + np.asarray(origin)
+    drop = s0[2] - surf[:, 2]
+    off = surf[:, :2] - s0[:2]
+    horiz = np.linalg.norm(off, axis=1)
+    inward = -(off @ d[:2])                     # root sits in toward the body
+    ok = (drop > 25) & (surf[:, 2] > 6) & (horiz < 0.62 * drop) & (inward > 0.3 * drop)
+    i = np.argmin(np.where(ok, drop, 1e9))     # highest root that still sweeps
+    root = surf[i] - 0.8 * d - [0, 0, 0.4]
+    h = s0[2] - root[2]
+    shaft = bezier(root, root + [0, 0, 0.45 * h], s0 - 0.45 * h * up, s0, n=40)
+    path = np.vstack([shaft, spiral[1:]])
+    radii = np.concatenate([np.linspace(rad[0], rad[0] * 0.85, len(shaft)),
+                            np.linspace(rad[0] * 0.85, rad[1], len(spiral) - 1)])
+    print(f"  support curl: root {np.round(root, 1)}, crown {np.round(crown, 1)}")
+    return path, radii
+
+
+def curls_for(islands, vol, voxel, origin):
+    """The two question-mark curls: one under the second bloom (right) and
+    one under the outermost small flower on the left."""
+    out = []
+    near = [p for p in islands if np.linalg.norm(p - BLOOM2_C) < BLOOM_R / PHI + 6]
+    if near:
+        P = np.array(near)
+        c = P[:, :2].mean(0)
+        close = P[np.linalg.norm(P[:, :2] - c, axis=1) < 8]
+        z = (close if len(close) else P)[:, 2].min()
+        out.append(support_curl(np.array([c[0], c[1], z - 0.3]), c, 13.0, vol, voxel, origin))
+    pos = min((f[0] for f in body_parts()[2]), key=lambda q: q[0])
+    out.append(support_curl(pos - [0, 0, 1.6], pos[:2], 9.0, vol, voxel, origin, rad=(1.9, 0.9)))
+    return out
+
+
 def plan_stems(voxel=0.3, passes=8):
-    """Grow stems until the body prints with no islands (coarse grid)."""
+    """Grow stems until the body prints with no islands (coarse grid).
+    Two question-mark curls go in first, then single stems for what is left."""
     stems = []
     for i in range(passes):
         vol, origin = build_body(voxel, stems, quiet=True)
@@ -635,6 +685,9 @@ def plan_stems(voxel=0.3, passes=8):
         print(f"  stem pass {i + 1}: {len(isl)} island(s), {len(stems)} stem(s)")
         if not isl:
             break
+        if i == 0:                  # the curls first; stems then branch off them
+            stems += curls_for(isl, vol, voxel, origin)
+            continue
         stems += stems_for(isl, vol, voxel, origin)
     return stems
 
