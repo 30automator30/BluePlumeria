@@ -83,6 +83,19 @@ What did work, and is worth keeping:
 
 If the generator gets revisited: branch supports like a tree, and only support true islands plus overhangs steeper than ~60° (not 45°).
 
+## 5b. Designing support-free (the gyroid pendant)
+
+The better answer to supports is a design that doesn't need them. `gyroid-pendant/` prints upright with **0 floating islands** and only a breakaway foot.
+
+- **Gyroids hold themselves up.** A minimal surface has no local low points, so gyroid lace never starts in mid-air.
+- **Cutting creates islands, though.** Wherever the flat front or back face slices a gyroid wall that slopes *down toward* the face, the wall's lowest point sits on the face with nothing beneath it (21 of them on the first pendant). Two fixes, in order:
+  1. A 0.15 mm erode-then-dilate removes hair-thin slivers.
+  2. An automatic repair loop re-slices the part and adds a 0.36 mm, 45° micro-fillet from each remaining island down to the nearest lace below, then repeats.
+- **The outline has low points too.** Every downward-pointing lobe of the silhouette is an island. Do a fast 2D scan over rotations to pick the one with the fewest low points (84° left only the two bottom tips), then neck each low point to a single breakaway foot.
+- **Use pointed arches for loops.** A round bail has a flat top inside; a teardrop with a 45° roof doesn't.
+- **Re-check after every mesh change.** Simplifying to a smaller file brought back one island that a micro-fillet had fixed, so the verification has to run *after* the final simplification.
+- **Separate noise from geometry.** Single-pixel "islands" at the checker's resolution are slicing noise. Count only regions of at least 0.01 mm² with nothing within 50 µm below.
+
 ## 6. Checking CHITUBOX .ctb files
 
 Claude can read encrypted CHITUBOX `.ctb` files: settings, preview image and every layer. The decryption scheme is the one documented in the open-source UVtools project (AES-CBC settings block, per-layer XOR plus RLE). Workflow:
@@ -108,4 +121,5 @@ Writing `.ctb` files from scratch is possible (use a CHITUBOX file as the templa
 | Twisted vine plumeria ring | `plumeria-ring/` | `plumeria_ring.py` (also shared helpers: `build_mesh`, `decimate`, `render_preview.py`) |
 | Heirloom band | `heirloom-band/` | `heirloom_band.py` |
 | Openwork band | `openwork-band/` | `openwork_band.py` (approved), `openwork_band_concept.py` (alternative) |
+| Self-supporting gyroid pendant | `gyroid-pendant/` | `gyroid_pendant.py` (island repair loop + verification) |
 | Fractal lattice sculpture | `fractal-plumeria/` | `lattice_plumeria.py` (bloom + body), `fractal_plumeria.py` (earlier concept), `print_prep.py` (orientation + supports + verification) |
