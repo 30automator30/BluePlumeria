@@ -17,6 +17,13 @@ Golden-ratio design, after the concept sheet:
               flowers that spiral up at the golden angle. Thin 8 + 5 strands
               inside the ribbons form the lattice core.
 
+Printability: the body prints straight on the plate with no supports. Its
+base is cut flat, and plan_stems() grows S-curved stems (at most ~50 degrees
+from vertical, branching like a vine) up to anything that would otherwise
+start in mid-air, re-checking layer by layer until nothing is left. The main
+bloom's rims and veins are bold, and every vein runs into a frame, so the
+lattice has no loose ends to snap when its supports come off.
+
 The main bloom fits the body on a keyed peg. Every part is a signed
 distance field, meshed with marching cubes into a watertight STL.
 
@@ -41,9 +48,8 @@ from plumeria_ring import decimate, smin  # noqa: E402
 
 H = 160.0                       # overall height
 BLOOM_R = H / PHI ** 3          # 37.8: main petal length
-RIM_W, RIM_T = 1.7, 1.9         # petal rim: width, thickness
-STRUT_W, STRUT_T = 0.9, 1.25    # lattice struts: width, thickness
-GAP = 1.1                       # void between a frame and what it holds
+RIM_W, RIM_T = 2.4, 2.3         # petal rim: width, thickness (bold, so it survives supports)
+STRUT_W, STRUT_T = 1.25, 1.5    # lattice struts: width, thickness
 PEG_R, PEG_H, FIT = 2.6, 7.0, 0.15
 
 
@@ -152,8 +158,9 @@ class FlowPetal:
             out = smin(out, soft_band(rim, dz(rim_t), rim_w / 2, rim_t / 2), 0.5)
             inner = o + rim_w * 0.6
             if lvl < self.nest:
+                # veins run on into the nested frame's rim, so no vein ends loose
                 nxt = self.outline(u, v, PHI ** -(lvl + 1), self.L * 0.10 * (lvl + 1))
-                inner = np.maximum(inner, -(nxt - GAP * k))
+                inner = np.maximum(inner, -(nxt + 0.5 * RIM_W * k * (1.35 - 0.6 * t)))
             sw = STRUT_W * k * (1.2 - 0.4 * t)
             strut = np.maximum(self.veins(u, v, f, du) - sw / 2, inner)
             out = smin(out, soft_band(strut, np.abs(w - h - lift + 0.25 * k) - STRUT_T * k / 2,
@@ -267,6 +274,8 @@ TIP_AXIS = np.array([0.0, -np.sin(TIP_TILT), np.cos(TIP_TILT)])
 BLOOM2_C = np.array([27.0, 12.0, 80.0])  # second bloom calyx
 BLOOM2_AXIS = np.array([0.62, 0.25, 0.74])
 RIB_T = 2.4                              # ribbon thickness
+BASE_CUT = 0.6                           # flat seat: the base prints straight on the plate
+STEM_R = (1.4, 0.9)                      # self-supporting stems: radius at foot, at tip
 
 
 def frame_from_axis(axis):
@@ -555,7 +564,83 @@ def add_flower(vol, xs, ys, zs, petals, frame, R, bead_r, calyx_r):
     add(vol, xs, ys, zs, wlo, whi, heart, k=0.8)
 
 
-def build_body(voxel):
+def stem_path(top, foot, n=24):
+    """S-curved stem rising from `foot` to `top`, leaving and arriving
+    vertically, so it never leans more than about 45 degrees."""
+    h = top[2] - foot[2]
+    return bezier(foot, foot + [0, 0, 0.42 * h], top - [0, 0, 0.42 * h], top, n=n)
+
+
+def find_islands(vol, voxel, origin):
+    """Lowest point of each part that would start printing in mid-air
+    (nothing within one voxel on the layer below), merged when close."""
+    from scipy import ndimage as ndi
+    S = vol < 0
+    k0 = int(np.ceil((BASE_CUT - origin[2]) / voxel)) + 2   # first layer sits on the plate
+    found = []
+    for k in range(k0, S.shape[2]):
+        lab, n = ndi.label(S[:, :, k])
+        if not n:
+            continue
+        near = ndi.binary_dilation(S[:, :, k - 1])
+        hit = ndi.maximum(near, lab, np.arange(1, n + 1))
+        for j in np.nonzero(hit == 0)[0] + 1:
+            ii, jj = np.nonzero(lab == j)
+            c = np.argmin((ii - ii.mean()) ** 2 + (jj - jj.mean()) ** 2)
+            found.append(np.array([ii[c], jj[c], k]) * voxel + origin)
+    merged = []
+    for p in sorted(found, key=lambda q: q[2]):
+        if all(np.linalg.norm(p - m) > 4.0 for m in merged):
+            merged.append(p)
+    return merged
+
+
+def stems_for(islands, vol, voxel, origin):
+    """A stem for each island, from the nearest solid below that it can
+    reach without leaning past ~50 degrees (the plate, for the base).
+    Stems may grow from earlier stems, so they branch like a vine."""
+    from scipy import ndimage as ndi
+    S = vol < 0
+    surf = S & ~ndi.binary_erosion(S)
+    pts = np.argwhere(surf) * voxel + np.asarray(origin)
+    stems = []
+    for p in sorted(islands, key=lambda q: -q[2]):     # highest first: the trunk
+        top = p + [0, 0, 0.5]                      # bite into the island
+        drop = top[2] - pts[:, 2]
+        horiz = np.linalg.norm(pts[:, :2] - top[:2], axis=1)
+        ok = (drop > 2.0) & (horiz < 0.7 * drop)
+        cands = [(top[2] - BASE_CUT + 1.0, np.array([top[0], top[1], BASE_CUT - 1.0]))] \
+            if top[2] < 15 else []
+        if ok.any():
+            d = np.sqrt(drop[ok] ** 2 + horiz[ok] ** 2)
+            i = np.argmin(d)
+            cands.append((d[i], pts[ok][i] - [0, 0, 0.6]))
+        if not cands:
+            print(f"  no stem target for island at {np.round(p, 1)}")
+            continue
+        foot = min(cands, key=lambda c: c[0])[1]
+        path = stem_path(top, foot)
+        stems.append((path, np.linspace(*STEM_R, len(path))))
+        # later stems may branch off this one (below its top few mm)
+        pts = np.vstack([pts, path[path[:, 2] < top[2] - 4.0] + [0, 0, 0.6]])
+    return stems
+
+
+def plan_stems(voxel=0.3, passes=8):
+    """Grow stems until the body prints with no islands (coarse grid)."""
+    stems = []
+    for i in range(passes):
+        vol, origin = build_body(voxel, stems, quiet=True)
+        isl = find_islands(vol, voxel, origin)
+        print(f"  stem pass {i + 1}: {len(isl)} island(s), {len(stems)} stem(s)")
+        if not isl:
+            break
+        stems += stems_for(isl, vol, voxel, origin)
+    return stems
+
+
+def build_body(voxel, stems=(), quiet=False):
+    say = (lambda *a: None) if quiet else print
     ribbons, tubes, flowers = body_parts()
     reach = BLOOM_R / PHI + 4                    # second bloom's petals
     lo = np.minimum([-R0 - 3, -R0 - 3, -0.6], BLOOM2_C - reach)
@@ -582,7 +667,7 @@ def build_body(voxel):
             pad = max(s_[4] for s_ in chunk) + RIB_T + 1.0
             add(vol, xs, ys, zs, P.min(0) - pad, P.max(0) + pad,
                 lambda x, y, z, c=chunk: band_eval(c, x, y, z), k=0.8)
-    print(f"  ribbons {time.time() - t0:.0f}s")
+    say(f"  ribbons {time.time() - t0:.0f}s")
 
     for pts, rr in tubes:
         for k0 in range(0, len(pts) - 1, 10):
@@ -590,19 +675,24 @@ def build_body(voxel):
             pad = rad.max() + 1.0
             add(vol, xs, ys, zs, seg.min(0) - pad, seg.max(0) + pad,
                 lambda x, y, z, s_=seg, r_=rad: capsule_chain(x, y, z, s_, r_), k=0.6)
-    print(f"  lattice + stems {time.time() - t0:.0f}s")
+    say(f"  lattice + stems {time.time() - t0:.0f}s")
 
     # second bloom: the main bloom at 1/phi, on the third ribbon
     e1, e2, a = frame_from_axis(BLOOM2_AXIS)
     frame2 = (BLOOM2_C, e1, e2, a)
     add_flower(vol, xs, ys, zs, bloom_petals(BLOOM_R / PHI, seed=7), frame2,
                BLOOM_R / PHI, 2.0, 4.6)
-    print(f"  second bloom {time.time() - t0:.0f}s")
+    say(f"  second bloom {time.time() - t0:.0f}s")
 
     for pos, axis, cls in flowers:
         petals, frame, R = small_flower(pos, axis, cls)
         add_flower(vol, xs, ys, zs, petals, frame, R, 1.1, 1.9)
-    print(f"  small flowers {time.time() - t0:.0f}s")
+    say(f"  small flowers {time.time() - t0:.0f}s")
+
+    # stems that hold up whatever would otherwise start in mid-air
+    for pts, rr in stems:
+        add(vol, xs, ys, zs, pts.min(0) - 2.5, pts.max(0) + 2.5,
+            lambda x, y, z, s_=pts, r_=rr: capsule_chain(x, y, z, s_, r_), k=0.8)
 
     # collar and keyed peg for the main bloom
     e1, e2, a = frame_from_axis(TIP_AXIS)
@@ -619,6 +709,7 @@ def build_body(voxel):
         lx, ly, lz = to_local(ftip, x, y, z)
         return keyed_cylinder(lx, ly, lz, PEG_R, -0.5, PEG_H)
     add(vol, xs, ys, zs, TIP - 10, TIP + 10, peg, k=0)
+    vol = np.maximum(vol, (BASE_CUT - zs)[None, None, :])     # flat seat
     return vol, (xs[0], ys[0], zs[0])
 
 
@@ -631,7 +722,10 @@ def main():
     args = ap.parse_args()
     for part in (["bloom", "body"] if args.part == "both" else [args.part]):
         t0 = time.time()
-        vol, origin = build_bloom(args.voxel) if part == "bloom" else build_body(args.voxel)
+        if part == "bloom":
+            vol, origin = build_bloom(args.voxel)
+        else:
+            vol, origin = build_body(args.voxel, plan_stems())
         print(f"{part}: grid {vol.shape}, sdf {time.time() - t0:.0f}s")
         mesh = decimate(mesh_volume(vol, args.voxel, origin), 0.006)
         print(f"{part}: {len(mesh.faces)} faces, watertight={mesh.is_watertight}, "
