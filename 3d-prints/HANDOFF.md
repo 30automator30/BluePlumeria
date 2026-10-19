@@ -50,5 +50,7 @@ You're continuing 3D-print design work for **Blue Plumeria** (Amy's jewelry busi
 
 **Possible next steps Amy has discussed:**
 - metal-ready test prints and fit checks
+- casting through a local shop: print in castable resin (or send the shop the STLs if they print), rebuild rings with `--fit 0.8`, and add a sprue stub where the shop wants it
+- learning plating first on resin prints (cheapest way in); mask the ring interior, or plan for the 0.1–0.3 mm the plating adds
 - support-free earrings and a suncatcher using the gyroid approach
 - polishing the lattice sculpture: lattice in the small flowers, a denser upper middle
