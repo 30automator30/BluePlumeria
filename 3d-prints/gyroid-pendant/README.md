@@ -1,12 +1,16 @@
 # Self-Supporting Gyroid Plumeria Pendant
 
+**v2 (current):** pointed, swept pinwheel petals; 2.6 mm thick so more of the lace is see-through; 34 × 41 mm, about 1.1 mL. Verified with **0 floating islands** after 10 auto-placed micro-fillets: `gyroid_plumeria_pendant_v2_40mm.stl`.
+
+**v1:** round petals, 3.6 mm thick (`gyroid_plumeria_pendant_v1_40mm.stl`, `preview_v1.png`). Regenerate it with `--style round --thick 3.6 --rot 84`.
+
 A 34 × 42 mm resin pendant for the Elegoo Saturn 4 Ultra, **designed to print without supports**. It prints standing upright, exactly as it hangs.
 
 ![preview](preview.png)
 
 ## Why it needs no supports
 - **Gyroid lace:** the petals are filled with a gyroid. It's a minimal surface, so it has no local low points: every layer grows out of the one below. The lace is graded finer toward the center (cell size 2.3 to 3.6 mm), and every petal carries an identical copy for five-fold symmetry.
-- **Rotation:** the flower is rotated 84° so the only low points of the outline are the two bottom petal tips.
+- **Rotation:** the script searches every rotation and picks the one with the fewest low points (only the two bottom petal tips), a tip straight up for the bail, and level bottom tips. For v2 the bottom tips are within 0.3 mm of each other.
 - **Teardrop bail:** a pointed arch whose top never overhangs flat.
 - **Opening:** a 0.15 mm erode-then-dilate removes hair-thin slivers where the flat front and back faces graze a gyroid wall.
 - **Micro-fillets:** 21 tiny 45° struts (0.36 mm) sit under the face edges where a gyroid wall slopes down toward the face. The script finds them by re-slicing and adds them automatically.
