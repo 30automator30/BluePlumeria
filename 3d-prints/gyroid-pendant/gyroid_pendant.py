@@ -84,7 +84,7 @@ class Pendant:
             lab, n = ndimage.label(inside[:, k])
             if n:
                 hit = ndimage.maximum(inside[:, k - 1], lab, np.arange(1, n + 1))
-                for c in np.nonzero((hit == 0) & (area >= 0.01))[0]:
+                for c in np.nonzero(hit == 0)[0]:
                     xs_ = np.nonzero(lab == c + 1)[0]
                     self.low_points.append((float(self.g[int(xs_.mean())]), float(self.g[k])))
 
