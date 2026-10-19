@@ -56,7 +56,7 @@ All designs here were built in Python as **signed distance fields**, meshed with
 - **Nothing can float.** Every openwork design checks connectivity and refuses to build, or reports, if any piece is detached. Three small flowers once floated free; the check caught it.
 - **Hollow bases must drain:** leave them open underneath, or there will be trapped resin and suction cups.
 - **Two-part sculptures need a keyed peg** (a flat on the peg stops rotation) and 0.15 mm clearance per side. Verify the parts don't collide with a boolean intersection; it should come out at 0.00 mm³.
-- **Ring size:** inner diameter (mm) = 11.63 + 0.8128 × US size. Resin shrinks slightly; print one size first and adjust by ¼–½ size.
+- **Ring size:** inner diameter (mm) = 11.63 + 0.8128 × US size, **plus a 0.5 mm fit allowance**. Test prints in Elegoo standard resin came out small (a US 8 measured about 7.25–7.5), so the generators add `FIT_ALLOWANCE = 0.5` mm (`--fit`). For silver casting use about 0.8 mm.
 
 ## 4. Bugs that cost time (check these first)
 
@@ -95,6 +95,14 @@ The better answer to supports is a design that doesn't need them. `gyroid-pendan
 - **Use pointed arches for loops.** A round bail has a flat top inside; a teardrop with a 45° roof doesn't.
 - **Re-check after every mesh change.** Simplifying to a smaller file brought back one island that a micro-fillet had fixed, so the verification has to run *after* the final simplification.
 - **Separate noise from geometry.** Single-pixel "islands" at the checker's resolution are slicing noise. Count only regions of at least 0.01 mm² with nothing within 50 µm below.
+
+## 5c. Support removal broke the first prints
+
+Every first-round print broke while supports were removed. The support contacts (0.5 mm) were nearly as thick as the vines (0.6–0.7 mm), and standard resin is brittle once fully cured. Fixes:
+- **Contact size:** contact diameter ≤ ⅓ of the feature it touches (about 0.25 mm).
+- **Support placement:** only on sturdy areas.
+- **Removal:** remove supports before the final cure, on a warmed print, with flush cutters; never snap.
+- **Resin:** tough/ABS-like for wearing; castable for metal. Each generator's `--metal` option builds thicker-wire, deeper-engraving versions for casting and plating.
 
 ## 6. Checking CHITUBOX .ctb files
 

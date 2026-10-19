@@ -260,10 +260,15 @@ def main():
     ap.add_argument("--tolerance", type=float, default=0.004,
                     help="max simplification deviation, mm")
     ap.add_argument("--text", default="ALOHA", help='inner engraving ("" for none)')
+    ap.add_argument("--fit", type=float, default=0.5,
+                    help="mm added to the inner diameter to offset resin shrinkage "
+                         "(0.5 matched test prints; add ~0.3 more for casting in silver)")
     ap.add_argument("--metal", action="store_true",
                     help="for casting or electroplating: thicker wires, deeper engravings")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
+    import plumeria_ring as _pr
+    _pr.FIT_ALLOWANCE = args.fit
     if args.metal:
         global VINE, RAIL, GROOVE, ENGRAVE, TEXT_DEPTH
         VINE, RAIL, GROOVE, ENGRAVE, TEXT_DEPTH = 1.0, 0.85, 0.09, 0.28, 0.40

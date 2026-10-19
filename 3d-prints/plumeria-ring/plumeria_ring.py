@@ -41,8 +41,17 @@ TEXT_HEIGHT, TEXT_DEPTH = 1.2, 0.25
 MAIN_PETAL_T, SIDE_PETAL_T = (1.15, 0.8), (0.75, 0.6)  # (base, tip) mm
 
 
+# Printed rings came out undersized on the Saturn 4 Ultra with Elegoo standard
+# resin (a US 8 measured about 7.25-7.5, i.e. ~0.5 mm small in diameter):
+# resin shrinks as it cures and the bore picks up a little extra cured resin.
+# Every ring's inner diameter is opened by this allowance; override with --fit.
+FIT_ALLOWANCE = 0.5      # mm added to the inner diameter
+
+
 def us_size_to_inner_diameter(size):
-    return 11.63 + 0.8128 * size
+    """Inner diameter to model for a US ring size, including FIT_ALLOWANCE."""
+    import plumeria_ring as _pr                      # read the live setting
+    return 11.63 + 0.8128 * size + _pr.FIT_ALLOWANCE
 
 
 # ------------------------------------------------------------------ helpers
@@ -316,10 +325,15 @@ def main():
     ap.add_argument("--tolerance", type=float, default=0.004,
                     help="max simplification deviation, mm")
     ap.add_argument("--text", default="ALOHA", help='inner engraving ("" for none)')
+    ap.add_argument("--fit", type=float, default=0.5,
+                    help="mm added to the inner diameter to offset resin shrinkage "
+                         "(0.5 matched test prints; add ~0.3 more for casting in silver)")
     ap.add_argument("--metal", action="store_true",
                     help="for casting or electroplating: thicker wires, deeper engravings")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
+    import plumeria_ring as _pr
+    _pr.FIT_ALLOWANCE = args.fit
     if args.metal:
         global TEXT_DEPTH, MAIN_PETAL_T, SIDE_PETAL_T
         TEXT_DEPTH = 0.40
