@@ -158,6 +158,15 @@
     <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
     <button class="btn btn-gold" type="submit" id="loginBtn">Sign in</button>
     <p class="err" id="loginErr"></p>
+    <p class="sub" style="margin:14px 0 0"><a href="#" id="forgot" style="color:inherit">Forgot password?</a></p>
+  </form>
+  <!-- An invite or reset link lands here: choose a password, then straight into the dashboard. -->
+  <form class="login-card" id="pwForm" style="display:none">
+    <div class="brand">Blue Plumeria<small>Owner Dashboard</small></div>
+    <p class="sub" id="pwSub">Choose a password for your owner account.</p>
+    <div class="field"><label for="newpw">New password</label><input id="newpw" type="password" autocomplete="new-password" minlength="8" required></div>
+    <button class="btn btn-gold" type="submit" id="pwBtn">Save password</button>
+    <p class="err" id="pwErr"></p>
   </form>
 </section>
 
@@ -179,6 +188,12 @@
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Read before the client consumes the link: an invite or password-reset link
+// (#…&type=invite|recovery) must set a password before opening the dashboard.
+const LINK_TYPE = new URLSearchParams(location.hash.slice(1)).get("type");
+const LINK_ERROR = new URLSearchParams(location.hash.slice(1)).get("error_description");
+const ADMIN_URL = "https://blue-plumeria.com/admin.html";
+
 const SB = createClient(
   "https://ktjxrxchrxtmyvlfsyof.supabase.co",
   "sb_publishable_8NSnU6lGLIt9GplZ-7hHUw_XvtDmX2s",
@@ -194,9 +209,24 @@ let ORDERS = [], PRODUCTS = [], activeTab = "overview", orderFilter = "all", PRO
 /* ---- auth ---- */
 async function boot() {
   const { data: { session } } = await SB.auth.getSession();
-  if (session) showApp(session); else showLogin();
+  if (session && (LINK_TYPE === "invite" || LINK_TYPE === "recovery")) return showSetPassword(LINK_TYPE);
+  if (session) return showApp(session);
+  showLogin();
+  if (LINK_ERROR) $("#loginErr").textContent = "That link has expired or was already used. Use “Forgot password?” to get a new one.";
 }
-function showLogin() { $("#login").style.display = "grid"; $("#app").style.display = "none"; }
+function showLogin() {
+  $("#login").style.display = "grid"; $("#app").style.display = "none";
+  $("#loginForm").style.display = ""; $("#pwForm").style.display = "none";
+}
+function showSetPassword(type) {
+  history.replaceState(null, "", location.pathname); // drop the token from the address bar
+  $("#login").style.display = "grid"; $("#app").style.display = "none";
+  $("#loginForm").style.display = "none"; $("#pwForm").style.display = "";
+  $("#pwSub").textContent = type === "invite"
+    ? "Welcome! Choose a password for your owner account."
+    : "Choose a new password.";
+  $("#newpw").focus();
+}
 async function showApp(session) {
   $("#login").style.display = "none";
   $("#app").style.display = "block";
@@ -213,6 +243,25 @@ $("#loginForm").addEventListener("submit", async (e) => {
   showApp(data.session);
 });
 $("#signout").addEventListener("click", async () => { await SB.auth.signOut(); showLogin(); });
+$("#pwForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const pw = $("#newpw").value;
+  if (pw.length < 8) { $("#pwErr").textContent = "Use at least 8 characters."; return; }
+  $("#pwErr").textContent = ""; $("#pwBtn").disabled = true; $("#pwBtn").textContent = "Saving…";
+  const { error } = await SB.auth.updateUser({ password: pw });
+  $("#pwBtn").disabled = false; $("#pwBtn").textContent = "Save password";
+  if (error) { $("#pwErr").textContent = error.message; return; }
+  const { data: { session } } = await SB.auth.getSession();
+  if (session) showApp(session); else showLogin();
+});
+$("#forgot").addEventListener("click", async (e) => {
+  e.preventDefault();
+  const email = $("#email").value.trim();
+  if (!email) { $("#loginErr").textContent = "Type your email above, then tap “Forgot password?”."; $("#email").focus(); return; }
+  // Same answer whether or not the address has an account.
+  await SB.auth.resetPasswordForEmail(email, { redirectTo: ADMIN_URL }).catch(() => {});
+  $("#loginErr").textContent = "If that email has an owner account, a reset link is on its way.";
+});
 
 /* ---- data ---- */
 async function loadData() {
