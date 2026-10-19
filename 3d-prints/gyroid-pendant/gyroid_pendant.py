@@ -40,12 +40,71 @@ RES2 = 0.02          # 2D raster resolution for the outline, mm
 
 
 class Pendant:
-    def __init__(self, size=40.0, thick=3.6, rot=84.0, wall=0.55):
+    def __init__(self, size=40.0, thick=2.6, rot=None, wall=0.55, style="pointed"):
         self.R = size / 2 * 0.86             # petal length (flower ~size wide)
         self.T = thick
-        self.rot = np.radians(rot)           # direction of the top petal
+        self.style = style
         self.wall = wall
+        if rot is None:
+            rot = self.best_rotation()
+        self.rot = np.radians(rot)           # direction of the top petal
+        self.rot_deg = rot
         self._outline()
+
+    # ------------------------------------------------------- petal outline
+    def petal_masks(self, rot, X, Z):
+        """Label map of the five pinwheel petals (0 = outside)."""
+        R = self.R
+        label = np.zeros(X.shape, np.int16)
+        for i in range(5):
+            th = rot + 2 * np.pi * i / 5
+            dx, dz = np.cos(th), np.sin(th)
+            if self.style == "round":
+                off = 0.10 * R
+                px, pz = X + off * dz, Z - off * dx
+                u, v = px * dx + pz * dz, -px * dz + pz * dx
+                t = np.clip(u / R, 0, 1)
+                w = 0.36 * R * petal_shape(t) * np.where(v > 0, 1.1, 0.9)
+            else:
+                # pointed plumeria petal: narrow claw, broad belly, sharp
+                # tip; the centreline sweeps sideways (pinwheel twist)
+                off = 0.14 * R
+                px, pz = X + off * dz, Z - off * dx
+                u, v = px * dx + pz * dz, -px * dz + pz * dx
+                t = np.clip(u / R, 0, 1)
+                v = v - 0.16 * R * t ** 2                     # sweep
+                w = 0.29 * R * t ** 0.6 * (1 - t) ** 0.8 / 0.36
+                w = w * np.where(v > 0, 1.12, 0.88)
+            m = (np.abs(v) < w) & (u > 0) & (u < R)
+            label[m] = i + 1                                  # each over the last
+        return label
+
+    def best_rotation(self, res=0.08):
+        """Choose the rotation that leaves the fewest low points, puts a
+        petal tip straight up for the bail and keeps the bottom tips level."""
+        ext = self.R + 1.5
+        g = np.arange(-ext, ext, res)
+        X, Z = np.meshgrid(g, g, indexing="ij")
+        best = None
+        for deg in np.arange(0, 72, 1.0):
+            inside = self.petal_masks(np.radians(deg), X, Z) > 0
+            inside |= np.hypot(X, Z) < 0.2 * self.R
+            lows = []
+            for k in range(1, inside.shape[1]):
+                lab, n = ndimage.label(inside[:, k])
+                if n:
+                    hit = ndimage.maximum(inside[:, k - 1], lab, np.arange(1, n + 1))
+                    lows += [g[k]] * int((hit == 0).sum())
+            cols = np.nonzero(inside.any(axis=1))[0]
+            topk = max(np.nonzero(inside[c])[0].max() for c in cols)
+            top_x = g[np.nonzero(inside[:, topk])[0]].mean()
+            spread = (max(lows) - min(lows)) if lows else 0
+            score = 10 * len(lows) + abs(top_x) + 0.5 * spread
+            if best is None or score < best[0]:
+                best = (score, deg, len(lows), top_x, spread)
+        print(f"rotation {best[1]:.0f} deg: {best[2]} low points, top tip at x={best[3]:+.2f} mm, "
+              f"bottom tips within {best[4]:.2f} mm")
+        return float(best[1])
 
     # ------------------------------------------------------------ 2D maps
     def _outline(self):
@@ -53,20 +112,11 @@ class Pendant:
         ext = R + 1.5
         self.g = np.arange(-ext, ext, RES2)
         X, Z = np.meshgrid(self.g, self.g, indexing="ij")
-        label = np.zeros(X.shape, np.int16)          # 0 = outside, 1..5 petal
-        L = R
-        for i in range(5):
-            th = self.rot + 2 * np.pi * i / 5
-            dx, dz = np.cos(th), np.sin(th)
-            off = 0.10 * R                              # pinwheel offset
-            px, pz = X + off * dz, Z - off * dx
-            u, v = px * dx + pz * dz, -px * dz + pz * dx
-            t = np.clip(u / L, 0, 1)
-            w = 0.36 * R * petal_shape(t) * np.where(v > 0, 1.1, 0.9)
-            m = (np.abs(v) < w) & (u > 0) & (u < L)
-            label[m] = i + 1                            # pinwheel: each over the last
+        label = self.petal_masks(self.rot, X, Z)
         hub = np.hypot(X, Z) < 0.2 * R
-        self.top_z = float(Z[(label > 0) | hub].max()) - 0.4
+        solid = (label > 0) | hub
+        self.top_z = float(Z[solid].max()) - 0.4
+        self.top_x = float(X[solid & (Z >= Z[solid].max() - 0.05)].mean())
         label[hub & (label == 0)] = 1
         inside = label > 0
         self.sd = (ndimage.distance_transform_edt(~inside)
@@ -137,8 +187,9 @@ class Pendant:
         bz = z - (top + 2.6)
         hole = teardrop(y, bz, 1.45)
         outer = teardrop(y, bz, 1.45 + 0.9)
-        bail = np.maximum(np.maximum(outer, -hole), np.abs(x) - 0.8)
-        neck = np.maximum(np.hypot(x, y) - 0.9, np.maximum(-(z - top + 1.5), z - (top + 1.2)))
+        bx = x - self.top_x
+        bail = np.maximum(np.maximum(outer, -hole), np.abs(bx) - 0.8)
+        neck = np.maximum(np.hypot(bx, y) - 0.9, np.maximum(-(z - top + 1.5), z - (top + 1.2)))
         d = np.minimum(d, np.minimum(bail, neck))
         return d
 
@@ -312,15 +363,17 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--size", type=float, default=40.0, help="flower width, mm")
-    ap.add_argument("--rot", type=float, default=84.0,
-                    help="direction of the top petal, deg (84 leaves only the two "
-                         "bottom tips as low points)")
+    ap.add_argument("--rot", type=float, default=None,
+                    help="direction of the top petal, deg (default: searched for the "
+                         "fewest low points; v1 used 84 with --style round)")
+    ap.add_argument("--style", choices=["pointed", "round"], default="pointed")
+    ap.add_argument("--thick", type=float, default=2.6, help="pendant thickness, mm (v1: 3.6)")
     ap.add_argument("--voxel", type=float, default=0.04)
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
     t0 = time.time()
-    p = Pendant(args.size, rot=args.rot)
+    p = Pendant(args.size, thick=args.thick, rot=args.rot, style=args.style)
     fillets = []
     for attempt in range(1, 5):
         mesh, n_tips, n_frag, dropped, shift, grid = build(p, args.voxel, fillets, True)
@@ -345,6 +398,17 @@ def main():
     print(f"verify: {len(islands)} islands {islands[:10]}; worst per-layer overhang "
           f"beyond 30 deg: {cant:.3f} mm2; downward faces flatter than 30 deg: "
           f"{flat:.1f} of {area:.0f} mm2 ({100 * flat / area:.2f}%)")
+    # a lighter file for sharing, kept only if it still verifies clean
+    # (simplifying can shave a micro-fillet and bring an island back)
+    if not islands:
+        for tol in (0.008, 0.006):
+            light = decimate(mesh, tol)
+            li, *_ = verify(light)
+            print(f"  simplified at {tol} mm: {len(light.faces)} faces, "
+                  f"watertight={light.is_watertight}, {len(li)} islands")
+            if light.is_watertight and not li:
+                mesh = light
+                break
     out = args.out or f"gyroid_plumeria_pendant_{args.size:g}mm.stl"
     mesh.export(out)
     print("wrote", out)
