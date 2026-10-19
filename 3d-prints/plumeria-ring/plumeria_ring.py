@@ -38,6 +38,7 @@ SIDE_R = 2.3                    # shoulder flower radius
 SIDE_PHI = 1.05                 # shoulder flower angle from top (rad, ~60 deg)
 
 TEXT_HEIGHT, TEXT_DEPTH = 1.2, 0.25
+MAIN_PETAL_T, SIDE_PETAL_T = (1.15, 0.8), (0.75, 0.6)  # (base, tip) mm
 
 
 def us_size_to_inner_diameter(size):
@@ -225,7 +226,7 @@ class Ring:
         zb = self.rout - 0.1
         calyx = ellipsoid(x, y, z - (zb - 0.7), 4.6, 3.6, 2.0)
         d = smin(d, calyx, 0.9)
-        d = smin(d, flower(x, y, z - zb, MAIN_R, 0.31, 1.15, 0.8), 0.45)
+        d = smin(d, flower(x, y, z - zb, MAIN_R, 0.31, *MAIN_PETAL_T), 0.45)
 
         # shoulder flowers, each rotated so it faces radially outward
         for sgn, rot in [(1, 1.1), (-1, -0.4)]:
@@ -235,7 +236,7 @@ class Ring:
             base = self.rout - 0.25
             cal = ellipsoid(lx, y, lz - (base - 0.2), 2.1, 2.1, 1.0)
             d = smin(d, cal, 0.4)
-            d = smin(d, flower(lx, y, lz - base, SIDE_R, rot, 0.75, 0.6), 0.25)
+            d = smin(d, flower(lx, y, lz - base, SIDE_R, rot, *SIDE_PETAL_T), 0.25)
 
         # engraved text inside the back of the liner
         if self.text is not None:
@@ -315,8 +316,14 @@ def main():
     ap.add_argument("--tolerance", type=float, default=0.004,
                     help="max simplification deviation, mm")
     ap.add_argument("--text", default="ALOHA", help='inner engraving ("" for none)')
+    ap.add_argument("--metal", action="store_true",
+                    help="for casting or electroplating: thicker wires, deeper engravings")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
+    if args.metal:
+        global TEXT_DEPTH, MAIN_PETAL_T, SIDE_PETAL_T
+        TEXT_DEPTH = 0.40
+        MAIN_PETAL_T, SIDE_PETAL_T = (1.2, 0.9), (1.0, 0.85)
 
     ring = Ring(args.size, args.text)
     print(f"US size {args.size}: inner diameter {2*ring.ri:.2f} mm")
@@ -325,7 +332,7 @@ def main():
     mesh = decimate(mesh, args.tolerance)
     print(f"final: {len(mesh.faces)} faces, watertight={mesh.is_watertight}, "
           f"volume={mesh.volume/1000:.3f} mL, bounds={np.round(mesh.extents, 2)} mm")
-    out = args.out or f"plumeria_ring_US{args.size:g}.stl"
+    out = args.out or f"plumeria_ring_US{args.size:g}{'_metal' if args.metal else ''}.stl"
     mesh.export(out)
     print("wrote", out)
 

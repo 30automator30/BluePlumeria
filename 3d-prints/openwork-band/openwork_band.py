@@ -39,6 +39,7 @@ RAIL = 0.6                        # slim edge rails
 OW_END = 15.0                     # 30 mm decorative section, |s| < OW_END
 VINE = 0.72                       # vine thickness
 TEXT_HEIGHT, TEXT_DEPTH = 1.5, 0.25
+ENGRAVE = 0.12                    # extra depth of engraved lines
 
 
 def half_width(s):
@@ -222,7 +223,7 @@ class OpenworkBand:
         cut = (m.groove | edges) & solid
         body = solid & ~cut
         edt = distance_transform_edt(body) * RES
-        h = np.where(body, DOME * np.clip(edt / 0.35, 0, 1) ** 0.7 - DOME, -DOME - 0.12)
+        h = np.where(body, DOME * np.clip(edt / 0.35, 0, 1) ** 0.7 - DOME, -DOME - ENGRAVE)
         self.h = gaussian_filter(np.where(solid, h + m.bump, 0.0), 0.8)
         self.text = text_sdf_2d(text, TEXT_HEIGHT)
 
@@ -259,8 +260,13 @@ def main():
     ap.add_argument("--tolerance", type=float, default=0.004,
                     help="max simplification deviation, mm")
     ap.add_argument("--text", default="ALOHA", help='inner engraving ("" for none)')
+    ap.add_argument("--metal", action="store_true",
+                    help="for casting or electroplating: thicker wires, deeper engravings")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
+    if args.metal:
+        global VINE, RAIL, GROOVE, ENGRAVE, TEXT_DEPTH
+        VINE, RAIL, GROOVE, ENGRAVE, TEXT_DEPTH = 1.0, 0.85, 0.09, 0.28, 0.40
 
     band = OpenworkBand(args.size, args.text)
     print(f"US size {args.size}: inner diameter {2*band.ri:.2f} mm")
@@ -270,7 +276,7 @@ def main():
     mesh = decimate(mesh, args.tolerance)
     print(f"final: {len(mesh.faces)} faces, watertight={mesh.is_watertight}, "
           f"volume={mesh.volume/1000:.3f} mL, bounds={np.round(mesh.extents, 2)} mm")
-    out = args.out or f"openwork_band_US{args.size:g}.stl"
+    out = args.out or f"openwork_band_US{args.size:g}{'_metal' if args.metal else ''}.stl"
     mesh.export(out)
     print("wrote", out)
 

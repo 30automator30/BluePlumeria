@@ -40,11 +40,13 @@ RES2 = 0.02          # 2D raster resolution for the outline, mm
 
 
 class Pendant:
-    def __init__(self, size=40.0, thick=2.6, rot=None, wall=0.55, style="pointed"):
+    def __init__(self, size=40.0, thick=2.6, rot=None, wall=0.55, style="pointed",
+                 cell_scale=1.0):
         self.R = size / 2 * 0.86             # petal length (flower ~size wide)
         self.T = thick
         self.style = style
         self.wall = wall
+        self.cell_scale = cell_scale         # >1: larger gyroid cells, wider pores
         if rot is None:
             rot = self.best_rotation()
         self.rot = np.radians(rot)           # direction of the top petal
@@ -156,7 +158,7 @@ class Pendant:
         ang = -(self.rot + 2 * np.pi * (np.maximum(lab, 1) - 1) / 5)
         u = x * np.cos(ang) - z * np.sin(ang)
         v = x * np.sin(ang) + z * np.cos(ang)
-        P = 2.3 + 1.3 * np.clip(r / R, 0, 1)
+        P = (2.3 + 1.3 * np.clip(r / R, 0, 1)) * self.cell_scale
         k = 2 * np.pi / P
         # integrate the varying frequency radially so cells stay unbroken
         phase_u = 2 * np.pi * (u / P)
@@ -369,11 +371,15 @@ def main():
     ap.add_argument("--style", choices=["pointed", "round"], default="pointed")
     ap.add_argument("--thick", type=float, default=2.6, help="pendant thickness, mm (v1: 3.6)")
     ap.add_argument("--voxel", type=float, default=0.04)
+    ap.add_argument("--metal", action="store_true",
+                    help="for casting or electroplating: 0.8 mm walls, 1.4x larger cells "
+                         "so the pores stay at least 1 mm open")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
     t0 = time.time()
-    p = Pendant(args.size, thick=args.thick, rot=args.rot, style=args.style)
+    p = Pendant(args.size, thick=args.thick, rot=args.rot, style=args.style,
+                wall=0.8 if args.metal else 0.55, cell_scale=1.4 if args.metal else 1.0)
     fillets = []
     for attempt in range(1, 5):
         mesh, n_tips, n_frag, dropped, shift, grid = build(p, args.voxel, fillets, True)
@@ -409,7 +415,7 @@ def main():
             if light.is_watertight and not li:
                 mesh = light
                 break
-    out = args.out or f"gyroid_plumeria_pendant_{args.size:g}mm.stl"
+    out = args.out or f"gyroid_plumeria_pendant_{args.size:g}mm{'_metal' if args.metal else ''}.stl"
     mesh.export(out)
     print("wrote", out)
 
