@@ -104,6 +104,15 @@ Every first-round print broke while supports were removed. The support contacts 
 - **Removal:** remove supports before the final cure, on a warmed print, with flush cutters; never snap.
 - **Resin:** tough/ABS-like for wearing; castable for metal. Each generator's `--metal` option builds thicker-wire, deeper-engraving versions for casting and plating.
 
+## 5d. Designing the supports into the sculpture
+
+- Amy's direction: turn supports into design. The sculpture body now prints straight on the plate with **no supports**. It has a flat-cut base, short roots, two question-mark curls (her sketch) under the second bloom and the left flower, and slim S-curved stems that branch off the curls to the remaining low points.
+- Stems leave and arrive vertically and never lean past ~50°, so they print without supports themselves.
+- Plan stems on a coarse grid (0.3 mm, fast), but **always re-check the final mesh at printer resolution** (`verify`, 0.05 mm layers). The coarse plan missed 9 islands of 0.01–0.3 mm². The repair loop (find islands, add a stem from the nearest solid below, rebuild) took two rounds.
+- The first layer on the plate is not an island; skip it in the check.
+- Simplifying the 3.4M-face body at 0.02 mm brought back two 0.01 mm² specks; 0.012 mm (1.8M faces) stayed clean. Re-verify every lighter copy.
+- Petal lattice: veins must run *into* the next frame. Veins that stop at a gap leave loose stubs, and those are what snapped during support removal. Bolder rims (2.4 × 2.3 mm) and struts (1.25 × 1.5 mm) survive removal.
+
 ## 6. Checking CHITUBOX .ctb files
 
 Claude can read encrypted CHITUBOX `.ctb` files: settings, preview image and every layer. The decryption scheme is the one documented in the open-source UVtools project (AES-CBC settings block, per-layer XOR plus RLE). Workflow:
