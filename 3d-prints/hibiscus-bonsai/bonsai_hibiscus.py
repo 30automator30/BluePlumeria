@@ -253,46 +253,50 @@ def tree_parts():
     """Trunk strands, tiers, branches, twigs, and where flowers, bud and
     leaves go.
 
-    Three cords, each a three-strand plait. The centre cord rises straight
-    from the soil; the two side cords rise out of the soil near the pot
-    edges and sweep in on an S-curve (two radii) to join it at the golden
-    height. From there the three twist together, still reading as three
-    into one, up to the crown, where they part into three branches. A
-    middle tier sweeps out both ways as plaits into question-mark curls."""
+    Four cords, each a three-strand plait, rise from flat golden curls on
+    the soil and spiral in as a golden vortex (like the plumeria's base) to
+    meet at the golden height. From there the four twist together, still
+    reading as four into one, up to the crown, where they part into four
+    branches. A middle tier sweeps out both ways as plaits into
+    question-mark curls."""
     tubes, things = [], []
-    zj = SOIL_Z + (BRANCH_Z - SOIL_Z) / PHI ** 1.5         # where the side cords join
-    z2 = zj + 7.0                                          # middle tier, just above
+    zj = SOIL_Z + (BRANCH_Z - SOIL_Z) / PHI                # where the cords meet
+    z2 = zj + 6.0                                          # middle tier, just above
+    n_cords = 4
 
     def helix(j, z):
         s = (z - zj) / (BRANCH_Z - zj)
-        th = 2 * np.pi * (j / 3 + CORD_TURNS * s)
+        th = 2 * np.pi * (j / n_cords + CORD_TURNS * s)
         r = CORD_R * (1 - 0.12 * s)
         return np.column_stack([r * np.cos(th), r * np.sin(th), z]), th
 
     zt = np.linspace(zj, BRANCH_Z, 220)
+    r_join = 8.0
+    kmax = np.log(21.0 / r_join) / np.log(PHI)             # quarter turns of the vortex
     tops = []
-    for j in range(3):
+    for j in range(n_cords):
         up, th = helix(j, zt)
+        # golden vortex from the soil (radius / phi and rise / phi^2 each
+        # quarter turn, like the plumeria's base), squeezed to fit the plug
+        k = np.linspace(0, kmax, 120)
+        th_v = th[0] - (kmax - k) * np.pi / 2
+        rv = r_join * PHI ** (kmax - k)
+        zv = SOIL_Z - 0.8 + (zj - 6.0 - SOIL_Z + 0.8) * (1 - PHI ** (-2 * k)) / (1 - PHI ** (-2 * kmax))
+        squash = 0.62 + 0.38 * k / kmax
+        vort = np.column_stack([rv * np.cos(th_v), squash * rv * np.sin(th_v), zv])
         tan_j = unit(up[3] - up[0])
-        if j == 1:                                         # centre cord: straight up
-            foot = np.array([0, 0, SOIL_Z - 0.8])
-            low = bezier(foot, foot + [0, 0, 0.5 * (zj - SOIL_Z)], up[0] - 8 * tan_j, up[0], n=60)
-        else:                                              # side cords: S-curve from the pot edge
-            sgn = 1 if j == 0 else -1
-            foot = np.array([sgn * 23.0, 1.5 * sgn, SOIL_Z - 0.8])
-            low = bezier(foot, foot + [0, 0, 16.0], up[0] - 12 * tan_j, up[0], n=110)
-        cord = np.vstack([low[:-1], up])
-        r = np.concatenate([np.full(len(low) - 1, STRAND_R * 0.95),
+        tv = unit(vort[-1] - vort[-4])
+        link = bezier(vort[-1], vort[-1] + 3 * tv, up[0] - 3 * tan_j, up[0], n=30)
+        cord = np.vstack([vort[:-1], link[:-1], up])
+        r = np.concatenate([np.full(len(vort) + len(link) - 2, STRAND_R * 0.95),
                             STRAND_R * np.linspace(0.95, 0.85, len(up))])
         tubes += plait(cord, cord[:, 2], j, np.ones(len(cord)), r)
         tops.append((cord, th[-1]))
-        # a little root flare where each cord meets the soil
-        out = unit([foot[0], foot[1], 0]) if np.linalg.norm(foot[:2]) > 1 else np.array([0, 1.0, 0])
-        for k in (-1, 1):
-            rd = unit(out + 0.9 * k * np.array([-out[1], out[0], 0]))
-            root = bezier(foot + [0, 0, 2.0], foot + rd * 3 + [0, 0, 1.4],
-                          foot + rd * 6 + [0, 0, 0.4], foot + rd * 8 - [0, 0, 0.6], n=14)
-            tubes.append((root, np.linspace(1.4, 0.6, 14)))
+        # each cord rises out of a flat golden curl on the soil
+        foot = vort[0]
+        curl = lp.ground_curl(foot + [0, 0, 0.6], vort[0] - vort[3], 5.0, 1 if j % 2 else -1)
+        curl[:, 2] = np.minimum(curl[:, 2], foot[2] + 1.2) + SOIL_Z - lp.RIB_T / 2 - 0.6
+        tubes.append((curl, np.linspace(0.7, 1.8, len(curl))))
 
     # middle tier: sweeps out both ways and rolls into question-mark curls
     p0 = np.array([0, 0, z2])
@@ -305,12 +309,13 @@ def tree_parts():
         tubes.append((arm[-12:], np.linspace(0.6, 1.2, 12)))
         curl, _, _ = lp.golden_curl(tip, tip - arm[-2], 4.5)
         tubes.append((curl, np.linspace(1.2, 0.8, len(curl))))
-        tier_leaves(things, arm[int(0.55 * len(arm))], a, n=3, spread=0.9)
-        tier_leaves(things, arm[int(0.85 * len(arm))], a + 0.5, n=2, spread=1.8, el0=40)
+        tier_leaves(things, arm[int(0.4 * len(arm))], a - 0.6, n=2, spread=1.8, el0=36)
+        tier_leaves(things, arm[int(0.6 * len(arm))], a, n=3, spread=0.9)
+        tier_leaves(things, arm[int(0.85 * len(arm))], a + 0.5, n=3, spread=1.2, el0=40)
 
     # crown: the three cords part into three branches
     cords = tops
-    roles = {(0, 0): "flower", (1, 1): "flower", (2, 0): "bud"}   # flowers face away from each other
+    roles = {(0, 0): "flower", (2, 0): "flower", (1, 1): "bud"}   # flowers face away from each other
     twig_ends = []
     for j, (cord, th) in enumerate(cords):
         p0 = cord[-1]
