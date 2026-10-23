@@ -118,7 +118,7 @@ def leaf_sdf(fr, L=LEAF_L, W=5.0, T=1.0):
                       axis=0) * 0.8
         vein = np.maximum(side - 0.28, o + 0.7)
         d = smin(d, soft_band(vein, np.abs(w - h - 0.4) - 0.22, 0.28, 0.22), 0.25)
-        stalk = capsule_chain(u, v, w, np.array([[-3.5, 0, -1.6], [0.3, 0, 0.0]]),
+        stalk = capsule_chain(u, v, w, np.array([[-3.5, 0, 0.0], [0.3, 0, 0.0]]),
                               np.array([0.75, 0.6]))
         return smin(d, stalk, 0.5)
     return f, box(fr, (-4.5, -W - 1.5, -3), (L + 1, W + 1.5, 4))
@@ -128,8 +128,8 @@ def leaf_sdf(fr, L=LEAF_L, W=5.0, T=1.0):
 
 def flower_sdf(fr, R=FLOWER_R):
     """Open hibiscus with solid petals like the reference photo: five broad
-    petals overlapping as a pinwheel, ruffled (scalloped outline and soft
-    waves near the edge), a thickened rim, raised radiating veins, a ridge
+    petals overlapping as a pinwheel, ruffled (a scalloped outline, kept in
+    plane so the edge never dips), a thickened rim, raised radiating veins, a ridge
     round the eye, a calyx, and an arching staminal column with anthers
     and five stigma pads."""
     rho0 = 2.5
@@ -146,14 +146,14 @@ def flower_sdf(fr, R=FLOWER_R):
         e2 = np.cross(tan, e1)
         a = k * GOLDEN_ANGLE
         out = np.cos(a) * e1 + np.sin(a) * e2
-        beads.append((col[j], col[j] + (col_r[j] + 0.35) * out + 1.0 * tan, 0.3, 0.45))
+        beads.append((col[j], col[j] + 0.85 * col_r[j] * out + 0.9 * tan, 0.3, 0.45))   # seated in the column
     tip, tan = col[-1], unit(col[-1] - col[-3])
     e1 = unit(np.cross(tan, [0, 1.0, 0]))
     e2 = np.cross(tan, e1)
     for k in range(5):
         a = 2 * np.pi * k / 5
-        beads.append((tip, tip + 1.6 * (0.85 * tan + 0.5 * (np.cos(a) * e1 + np.sin(a) * e2)),
-                      0.3, 0.55))
+        beads.append((tip, tip + 1.4 * (0.9 * tan + 0.4 * (np.cos(a) * e1 + np.sin(a) * e2)),
+                      0.35, 0.5))
 
     def f(x, y, z):
         lx, ly, lz = local(fr, x, y, z)
@@ -175,8 +175,7 @@ def flower_sdf(fr, R=FLOWER_R):
             ramp = np.clip((t - 0.5) / 0.35, 0, 1)
             o = np.maximum(np.abs(v) - half, np.maximum(-u, u - L)) + 0.55 * ramp * np.sin(9 * psi)
             sv = np.clip(v / half, -1, 1)
-            edge = np.clip(1 + o / 5.0, 0, 1)
-            h = base_h + 0.8 * sv * tc + 0.35 * ramp ** 2 * edge * np.sin(9 * psi + 1.0)
+            h = base_h + 0.5 * sv * tc
             dz = np.abs(lz - h) / np.sqrt(1 + slope ** 2)
             blade = soft_band(o, dz - 0.6, 4.0, 0.6)                    # 1.2 mm petal
             rim = np.maximum(o, -(o + 1.1))
@@ -221,45 +220,107 @@ def bud_sdf(base, axis, length=12.0, radius=2.8):
 
 # ------------------------------------------------------------------ tree
 
+def plait(cord, z, j, merge, r):
+    """Three strands plaited round a cord centreline (side to side and
+    over-under), closing up where merge falls to 0."""
+    tan = np.gradient(cord, axis=0)
+    tan /= np.linalg.norm(tan, axis=1, keepdims=True)
+    radial = cord - np.column_stack([0 * z, 0 * z, cord[:, 2]])
+    radial[np.linalg.norm(radial, axis=1) < 1e-3] = [1.0, 0, 0]
+    e1 = radial - (radial * tan).sum(1)[:, None] * tan
+    e1 /= np.linalg.norm(e1, axis=1, keepdims=True)
+    e2 = np.cross(tan, e1)
+    t = 2 * np.pi * (z - z[0]) / PLAIT_PITCH + j * 2 * np.pi / 3
+    out = []
+    for k in range(3):
+        ph = 2 * np.pi * k / 3
+        wx = 1.6 * r * merge * np.sin(t + ph)
+        wy = 1.05 * r * merge * np.sin(2 * (t + ph))
+        out.append((cord + wx[:, None] * e2 + wy[:, None] * e1, r))
+    return out
+
+
+def tier_leaves(things, p, a0, n=3, spread=0.9, el0=32):
+    for k in range(n):
+        a = a0 + (k - (n - 1) / 2) * spread
+        el = np.radians(el0 + 8 * (k % 3))
+        ld = unit(np.cos(el) * np.array([np.cos(a), np.sin(a), 0]) + np.sin(el) * UP)
+        things.append(("leaf", frame(p + 3.0 * ld, ld)))
+
+
 def tree_parts():
-    """Trunk strands, branches, twigs, and where flowers, bud and leaves go."""
+    """Trunk strands, tiers, branches, twigs, and where flowers, bud and
+    leaves go.
+
+    Three cords (each a three-strand plait) twist round the trunk and peel
+    off at golden heights: the lowest forks into two arms that arch down
+    and root in the soil; the middle one sweeps out both ways into
+    question-mark curls; the last plaits on alone to the crown, where its
+    three strands become three branches."""
     tubes, things = [], []
-    z = np.linspace(SOIL_Z - 0.6, BRANCH_Z, 300)
-    s = (z - z[0]) / (z[-1] - z[0])
-    taper = 1 - 0.15 * s
-    merge = np.clip((1 - s) / 0.12, 0, 1)               # plaits close up into the branches
-    cords = []
-    for j in range(4):
-        th = 2 * np.pi * (j / 4 + CORD_TURNS * s)
+    z1 = SOIL_Z + (BRANCH_Z - SOIL_Z) / PHI ** 2          # low tier
+    z2 = SOIL_Z + (BRANCH_Z - SOIL_Z) / PHI               # middle tier
+    cord_top = [z1, z2, BRANCH_Z]
+
+    def cord_radius(z):
+        # 3 cords, then 2 after the low peel, then 1 (on the axis)
+        r3 = CORD_R
+        r2 = CORD_R * 0.7 * np.clip((z2 + 4 - z) / 6, 0, 1)
+        return np.where(z < z1, r3, r3 + (r2 - r3) * np.clip((z - z1) / 6, 0, 1))
+
+    tops = []
+    for j in range(3):
+        z = np.linspace(SOIL_Z - 0.6, cord_top[j], int(30 + 4 * cord_top[j]))
+        s = (z - z[0]) / (BRANCH_Z - z[0])
+        th = 2 * np.pi * (j / 3 + CORD_TURNS * s)
         radial = np.column_stack([np.cos(th), np.sin(th), 0 * th])
-        cord = (CORD_R * taper)[:, None] * radial + np.column_stack([0 * z, 0 * z, z])
-        tan = np.gradient(cord, axis=0)
-        tan /= np.linalg.norm(tan, axis=1, keepdims=True)
-        e1 = radial - (radial * tan).sum(1)[:, None] * tan
-        e1 /= np.linalg.norm(e1, axis=1, keepdims=True)
-        e2 = np.cross(tan, e1)
-        t = 2 * np.pi * (z - z[0]) / PLAIT_PITCH + j * np.pi / 2
-        r = STRAND_R * taper
-        for k in range(3):
-            ph = 2 * np.pi * k / 3
-            wx = 1.6 * r * merge * np.sin(t + ph)
-            wy = 1.05 * r * merge * np.sin(2 * (t + ph))
-            tubes.append((cord + wx[:, None] * e2 + wy[:, None] * e1, r))
-        # where the plait closes up, the cord becomes one round branch
-        top = cord[-60:]
-        tubes.append((top, np.linspace(0.3, 2.1, 60)))
-        cords.append((cord, th[-1]))
-        # surface root over the soil
+        cord = cord_radius(z)[:, None] * radial + np.column_stack([0 * z, 0 * z, z])
+        r = STRAND_R * (1 - 0.15 * s)
+        if j < 2:                                         # closes up before it peels off
+            merge = np.clip((cord_top[j] - z) / 5.0, 0, 1)
+            tubes += plait(cord, z, j, merge, r)
+            tubes.append((cord[-25:], np.linspace(0.3, 2.0, 25)))
+        else:                                             # strands open into the crown
+            tubes += plait(cord, z, j, np.ones_like(z), r)
+        tops.append((cord, th[-1]))
         rad0 = np.array([np.cos(th[0]), np.sin(th[0]), 0])
         root = bezier(cord[0] + [0, 0, 1.0], cord[0] + rad0 * 5 + [0, 0, 1.2],
                       cord[0] + rad0 * 10 + [0, 0, 0.2], cord[0] + rad0 * 15 - [0, 0, 0.6], n=20)
         tubes.append((root, np.linspace(2.0, 0.8, 20)))
 
-    # four branches, each forking at 1/phi into two twigs
+    # low tier: two arms arch out along the pot and root in the soil
+    p0 = tops[0][0][-1]
+    for sgn in (1, -1):
+        q = np.array([sgn * 24.0, 0.25 * p0[1] + 2.0 * sgn, SOIL_Z - 0.8])
+        start = p0 if np.sign(p0[0]) == sgn or abs(p0[0]) < 0.5 else np.array([0, 0, p0[2]])
+        arm = bezier(start, start + np.array([sgn * 7.0, 0, 6.0]), q + [0, 0, 15.0], q, n=40)
+        tubes.append((arm, np.linspace(1.9, 1.5, 40)))
+        apex = arm[np.argmax(arm[:, 2])]
+        tier_leaves(things, apex + [0, 0, 1.0], 0.0 if sgn > 0 else np.pi, n=3, spread=1.0)
+        for f_ in (0.62, 0.8):
+            pt = arm[int(f_ * (len(arm) - 1))]
+            tier_leaves(things, pt, (0.0 if sgn > 0 else np.pi) + 0.9 * (1 if f_ > 0.7 else -1),
+                        n=2, spread=1.6, el0=40)
+
+    # middle tier: sweeps out both ways and rolls into question-mark curls
+    p0 = tops[1][0][-1]
+    for a in (np.radians(30), np.radians(210)):
+        out = np.array([np.cos(a), np.sin(a), 0])
+        tip = p0 + 17.0 * out + np.array([0, 0, 11.0])
+        arm = bezier(p0, p0 + 5 * out + [0, 0, 1], tip - 5 * out - [0, 0, 3], tip, n=36)
+        curl, _, _ = lp.golden_curl(tip, tip - arm[-2], 4.5)
+        tubes.append((np.vstack([arm, curl]),
+                      np.concatenate([np.linspace(1.9, 1.3, len(arm)), np.linspace(1.3, 0.8, len(curl))])))
+        tier_leaves(things, arm[int(0.55 * len(arm))], a, n=3, spread=0.9)
+        tier_leaves(things, arm[int(0.85 * len(arm))], a + 0.5, n=2, spread=1.8, el0=40)
+
+    # crown: the last cord's three strands become three branches
+    crown = tops[2][0][-1]
+    cords = [(None, tops[2][1] + 2 * np.pi * k / 3) for k in range(3)]
     roles = {(0, 0): "flower", (2, 1): "flower", (1, 0): "bud"}
     twig_ends = []
-    for j, (cord, th) in enumerate(cords):
-        p0 = cord[-1]
+    for j, (_, th) in enumerate(cords):
+        p0 = crown
         out = np.array([np.cos(th + 0.4), np.sin(th + 0.4), 0])
         d = unit(np.cos(np.radians(40)) * out + np.sin(np.radians(40)) * UP)
         p3 = p0 + BRANCH_LEN * d
@@ -281,27 +342,27 @@ def tree_parts():
                 b = a + (1.4 if k else -1.4)
                 ld = unit(np.cos(np.radians(36)) * np.array([np.cos(b), np.sin(b), 0])
                           + np.sin(np.radians(36)) * UP)
-                things.append(("leaf", frame(q + 0.6 * ld, ld)))
+                things.append(("leaf", frame(q + 3.0 * ld, ld)))
         # two leaves along each branch
         for k, f_ in enumerate((0.35, 0.8)):
             p = br[int(f_ * (len(br) - 1))]
             a = th + 0.4 + (1.3 if k else -1.3)
             ld = unit(0.55 * np.array([np.cos(a), np.sin(a), 0]) + 0.45 * d + 0.5 * UP)
-            things.append(("leaf", frame(p + 0.8 * ld, ld)))
+            things.append(("leaf", frame(p + 3.0 * ld, ld)))
 
     for tip, td, role, j in twig_ends:
         if role == "flower":
-            axis = unit(0.35 * np.array([td[0], td[1], 0]) + UP)
+            axis = unit(0.14 * np.array([td[0], td[1], 0]) + UP)
             things.append(("flower", frame(tip + 2.0 * axis, [1.0, 0, 0] - axis[0] * axis, axis)))
             # a leaf or two tucked under each flower
             for k in range(2):
                 a = np.arctan2(td[1], td[0]) + (k - 0.5) * 2.2
                 ld = unit(0.75 * np.array([np.cos(a), np.sin(a), 0]) + 0.6 * UP)
-                things.append(("leaf", frame(tip - 4.0 * td + 0.6 * ld, ld)))
+                things.append(("leaf", frame(tip - 4.0 * td + 3.0 * ld, ld)))
         elif role == "bud":
             things.append(("bud", (tip, unit(td + 0.6 * UP))))
             ld = unit(np.array([-td[1], td[0], 0]) + 0.7 * UP)
-            things.append(("leaf", frame(tip - 3.0 * td, ld)))
+            things.append(("leaf", frame(tip - 3.0 * td + 2.4 * ld, ld)))
         else:
             # three short sprigs fan out from the twig tip, each ending in a
             # rosette of leaves, so the crown fills out into a dome
@@ -316,7 +377,7 @@ def tree_parts():
                     a = a0 + da + (k - 1) * 0.9 + 0.25 * np.sin(j + m + k)
                     el = np.radians(32 + 8 * ((k + m + j) % 3))
                     ld = unit(np.cos(el) * np.array([np.cos(a), np.sin(a), 0]) + np.sin(el) * UP)
-                    things.append(("leaf", frame(end + 0.6 * ld, ld)))
+                    things.append(("leaf", frame(end + 3.0 * ld, ld)))
     return tubes, things
 
 
