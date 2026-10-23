@@ -230,7 +230,8 @@ def plait(cord, z, j, merge, r):
     e1 = radial - (radial * tan).sum(1)[:, None] * tan
     e1 /= np.linalg.norm(e1, axis=1, keepdims=True)
     e2 = np.cross(tan, e1)
-    t = 2 * np.pi * (z - z[0]) / PLAIT_PITCH + j * 2 * np.pi / 3
+    arc = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(cord, axis=0), axis=1))])
+    t = 2 * np.pi * arc / PLAIT_PITCH + j * 2 * np.pi / 3
     out = []
     for k in range(3):
         ph = 2 * np.pi * k / 3
@@ -253,9 +254,9 @@ def tree_parts():
     leaves go.
 
     Three cords (each a three-strand plait) twist round the trunk and peel
-    off at golden heights: the lowest forks into two arms that arch down
-    and root in the soil; the middle one sweeps out both ways into
-    question-mark curls; the last plaits on alone to the crown, where its
+    off at golden heights, staying woven: the lowest forks into two plaited
+    arms that arch down and root in the soil (no leaves); the middle one
+    sweeps out both ways as plaits into question-mark curls; the last plaits on alone to the crown, where its
     three strands become three branches."""
     tubes, things = [], []
     z1 = SOIL_Z + (BRANCH_Z - SOIL_Z) / PHI ** 2          # low tier
@@ -276,12 +277,7 @@ def tree_parts():
         radial = np.column_stack([np.cos(th), np.sin(th), 0 * th])
         cord = cord_radius(z)[:, None] * radial + np.column_stack([0 * z, 0 * z, z])
         r = STRAND_R * (1 - 0.15 * s)
-        if j < 2:                                         # closes up before it peels off
-            merge = np.clip((cord_top[j] - z) / 5.0, 0, 1)
-            tubes += plait(cord, z, j, merge, r)
-            tubes.append((cord[-25:], np.linspace(0.3, 2.0, 25)))
-        else:                                             # strands open into the crown
-            tubes += plait(cord, z, j, np.ones_like(z), r)
+        tubes += plait(cord, z, j, np.ones_like(z), r)  # stays woven into its tier
         tops.append((cord, th[-1]))
         rad0 = np.array([np.cos(th[0]), np.sin(th[0]), 0])
         root = bezier(cord[0] + [0, 0, 1.0], cord[0] + rad0 * 5 + [0, 0, 1.2],
@@ -293,24 +289,20 @@ def tree_parts():
     for sgn in (1, -1):
         q = np.array([sgn * 24.0, 0.25 * p0[1] + 2.0 * sgn, SOIL_Z - 0.8])
         start = p0 if np.sign(p0[0]) == sgn or abs(p0[0]) < 0.5 else np.array([0, 0, p0[2]])
-        arm = bezier(start, start + np.array([sgn * 7.0, 0, 6.0]), q + [0, 0, 15.0], q, n=40)
-        tubes.append((arm, np.linspace(1.9, 1.5, 40)))
-        apex = arm[np.argmax(arm[:, 2])]
-        tier_leaves(things, apex + [0, 0, 1.0], 0.0 if sgn > 0 else np.pi, n=3, spread=1.0)
-        for f_ in (0.62, 0.8):
-            pt = arm[int(f_ * (len(arm) - 1))]
-            tier_leaves(things, pt, (0.0 if sgn > 0 else np.pi) + 0.9 * (1 if f_ > 0.7 else -1),
-                        n=2, spread=1.6, el0=40)
+        arm = bezier(start, start + np.array([sgn * 7.0, 0, 6.0]), q + [0, 0, 15.0], q, n=80)
+        tubes += plait(arm, arm[:, 2], 3 + (sgn > 0), np.ones(len(arm)), np.full(len(arm), 0.85))
 
     # middle tier: sweeps out both ways and rolls into question-mark curls
     p0 = tops[1][0][-1]
     for a in (np.radians(30), np.radians(210)):
         out = np.array([np.cos(a), np.sin(a), 0])
         tip = p0 + 17.0 * out + np.array([0, 0, 11.0])
-        arm = bezier(p0, p0 + 5 * out + [0, 0, 1], tip - 5 * out - [0, 0, 3], tip, n=36)
+        arm = bezier(p0, p0 + 5 * out + [0, 0, 1], tip - 5 * out - [0, 0, 3], tip, n=70)
+        merge = np.clip((len(arm) - 1 - np.arange(len(arm))) / 10.0, 0, 1)   # closes up at the curl
+        tubes += plait(arm, arm[:, 2], 5 + int(a > 1), merge, np.linspace(0.85, 0.7, len(arm)))
+        tubes.append((arm[-12:], np.linspace(0.6, 1.2, 12)))
         curl, _, _ = lp.golden_curl(tip, tip - arm[-2], 4.5)
-        tubes.append((np.vstack([arm, curl]),
-                      np.concatenate([np.linspace(1.9, 1.3, len(arm)), np.linspace(1.3, 0.8, len(curl))])))
+        tubes.append((curl, np.linspace(1.2, 0.8, len(curl))))
         tier_leaves(things, arm[int(0.55 * len(arm))], a, n=3, spread=0.9)
         tier_leaves(things, arm[int(0.85 * len(arm))], a + 0.5, n=2, spread=1.8, el0=40)
 
