@@ -129,7 +129,7 @@ def leaf_sdf(fr, L=LEAF_L, W=5.0, T=1.0):
 def flower_sdf(fr, R=FLOWER_R):
     """Open hibiscus with solid petals like the reference photo: five broad
     petals overlapping as a pinwheel, ruffled (a scalloped outline, kept in
-    plane so the edge never dips), a thickened rim, raised radiating veins, a ridge
+    plane so the edge never dips, fading out at the rounded tips), a thickened rim, raised radiating veins, a ridge
     round the eye, a calyx, and an arching staminal column with anthers
     and five stigma pads."""
     rho0 = 2.5
@@ -173,7 +173,7 @@ def flower_sdf(fr, R=FLOWER_R):
                                        0.807 * np.sqrt(np.clip(1 - ((tc - 0.7) / 0.3) ** 2, 0, 1))) + 1e-3
             psi = np.arctan2(v, u - 0.45 * L)
             ramp = np.clip((t - 0.5) / 0.35, 0, 1)
-            o = np.maximum(np.abs(v) - half, np.maximum(-u, u - L)) + 0.55 * ramp * np.sin(9 * psi)
+            o = np.maximum(np.abs(v) - half, np.maximum(-u, u - L)) + 0.45 * ramp * np.clip((0.9 - t) / 0.12, 0, 1) * np.sin(9 * psi)
             sv = np.clip(v / half, -1, 1)
             h = base_h + 0.5 * sv * tc
             dz = np.abs(lz - h) / np.sqrt(1 + slope ** 2)
