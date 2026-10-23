@@ -5,7 +5,7 @@ A braided hibiscus bonsai, about 120 mm tall in its pot. It has two parts, and b
 | File | What it is |
 |---|---|
 | `bonsai_hibiscus.py` | The generator: tree and pot. `--preview` skips support planning. |
-| `final_stems.pkl` | The 23 print stems in the approved final build. These are the planner's stems plus repair stems added after the full-resolution check. |
+| `final_stems.pkl` | The 35 print stems in the approved final build. These are the planner's stems plus repair stems added after the full-resolution check. |
 | `preview.png` | Renders of the final build. |
 
 ## Design
