@@ -55,7 +55,7 @@ NECK_R = R0 / PHI ** 3               # 4.3
 RF = H / PHI ** 2                    # 37.8 petal reach from the centre
 RHO0 = 3.5                           # petals start this far out
 HT = 0.55 * RF                       # trumpet rise from claw to tip
-TILT = np.radians(10)                # flower leans toward the viewer (-y)
+TILT = np.radians(0)                 # upright: every petal keeps rising outward
 AXIS = np.array([0.0, -np.sin(TILT), np.cos(TILT)])
 CENTRE = np.array([0.0, -2.0, H / PHI])          # top of the calyx
 FRAME = (CENTRE,) + frame_from_axis(AXIS)
@@ -89,14 +89,14 @@ def petal_sdf(lx, ly, lz, i):
     dphi = np.angle(np.exp(1j * (np.arctan2(ly, lx) - phi0)))
     v = rho * dphi
     half = petal_half_width(t, 0.78 * L)
-    o = np.maximum(np.abs(v) - half, np.maximum(-u, u - L))  # outline (2D)
+    # ruffled margin as scallops in the outline (in plane, so no dips)
+    psi = np.arctan2(v, u - 0.45 * L)
+    ruff = 0.9 * np.clip((t - 0.45) / 0.4, 0, 1) * np.sin(11 * psi)
+    o = np.maximum(np.abs(v) - half, np.maximum(-u, u - L)) + ruff   # outline (2D)
     sv = np.clip(v / half, -1, 1)
 
     h, slope = trumpet(rho)
     h = h + 1.6 * sv * np.clip(t, 0, 1)                       # one edge over the next
-    psi = np.arctan2(v, u - 0.45 * L)
-    edge = np.clip(1 + o / 6.0, 0, 1)                         # ruffle only the margin
-    h = h + 1.1 * np.clip((t - 0.45) / 0.4, 0, 1) * edge * np.sin(11 * psi)
     dz = np.abs(lz - h) / np.sqrt(1 + slope ** 2)
 
     rim = np.maximum(o, -(o + RIM_W))
@@ -132,14 +132,14 @@ def column_parts():
         e2 = np.cross(tan, e1)
         a = k * GOLDEN_ANGLE
         out = np.cos(a) * e1 + np.sin(a) * e2
-        blobs.append((p[j], p[j] + (rad[j] + 0.9) * out + 0.5 * tan, 0.35, 0.62))
+        blobs.append((p[j], p[j] + (rad[j] + 0.5) * out + 1.4 * tan, 0.4, 0.55))   # angled up
     tip, tan = p[-1], (p[-1] - p[-4]) / np.linalg.norm(p[-1] - p[-4])
     e1 = np.cross(tan, [0, 1.0, 0]); e1 /= np.linalg.norm(e1)
     e2 = np.cross(tan, e1)
     for k in range(5):
         a = 2 * np.pi * k / 5
-        end = tip + 2.2 * (0.75 * tan + 0.66 * (np.cos(a) * e1 + np.sin(a) * e2))
-        blobs.append((tip, end, 0.45, 0.85))
+        end = tip + 2.2 * (0.85 * tan + 0.5 * (np.cos(a) * e1 + np.sin(a) * e2))
+        blobs.append((tip, end, 0.45, 0.75))
     return p, rad, blobs
 
 
