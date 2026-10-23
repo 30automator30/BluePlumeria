@@ -253,47 +253,49 @@ def tree_parts():
     """Trunk strands, tiers, branches, twigs, and where flowers, bud and
     leaves go.
 
-    Three cords (each a three-strand plait) twist round the trunk and peel
-    off at golden heights, staying woven: the lowest forks into two plaited
-    arms that arch down and root in the soil (no leaves); the middle one
-    sweeps out both ways as plaits into question-mark curls; the last plaits on alone to the crown, where its
-    three strands become three branches."""
+    Three cords, each a three-strand plait. The centre cord rises straight
+    from the soil; the two side cords rise out of the soil near the pot
+    edges and sweep in on an S-curve (two radii) to join it at the golden
+    height. From there the three twist together, still reading as three
+    into one, up to the crown, where they part into three branches. A
+    middle tier sweeps out both ways as plaits into question-mark curls."""
     tubes, things = [], []
-    z1 = SOIL_Z + (BRANCH_Z - SOIL_Z) / PHI ** 2          # low tier
-    z2 = SOIL_Z + (BRANCH_Z - SOIL_Z) / PHI               # middle tier
-    cord_top = [z1, z2, BRANCH_Z]
+    zj = SOIL_Z + (BRANCH_Z - SOIL_Z) / PHI ** 1.5         # where the side cords join
+    z2 = zj + 7.0                                          # middle tier, just above
 
-    def cord_radius(z):
-        # 3 cords, then 2 after the low peel, then 1 (on the axis)
-        r3 = CORD_R
-        r2 = CORD_R * 0.7 * np.clip((z2 + 4 - z) / 6, 0, 1)
-        return np.where(z < z1, r3, r3 + (r2 - r3) * np.clip((z - z1) / 6, 0, 1))
+    def helix(j, z):
+        s = (z - zj) / (BRANCH_Z - zj)
+        th = 2 * np.pi * (j / 3 + CORD_TURNS * s)
+        r = CORD_R * (1 - 0.12 * s)
+        return np.column_stack([r * np.cos(th), r * np.sin(th), z]), th
 
+    zt = np.linspace(zj, BRANCH_Z, 220)
     tops = []
     for j in range(3):
-        z = np.linspace(SOIL_Z - 0.6, cord_top[j], int(30 + 4 * cord_top[j]))
-        s = (z - z[0]) / (BRANCH_Z - z[0])
-        th = 2 * np.pi * (j / 3 + CORD_TURNS * s)
-        radial = np.column_stack([np.cos(th), np.sin(th), 0 * th])
-        cord = cord_radius(z)[:, None] * radial + np.column_stack([0 * z, 0 * z, z])
-        r = STRAND_R * (1 - 0.15 * s)
-        tubes += plait(cord, z, j, np.ones_like(z), r)  # stays woven into its tier
+        up, th = helix(j, zt)
+        tan_j = unit(up[3] - up[0])
+        if j == 1:                                         # centre cord: straight up
+            foot = np.array([0, 0, SOIL_Z - 0.8])
+            low = bezier(foot, foot + [0, 0, 0.5 * (zj - SOIL_Z)], up[0] - 8 * tan_j, up[0], n=60)
+        else:                                              # side cords: S-curve from the pot edge
+            sgn = 1 if j == 0 else -1
+            foot = np.array([sgn * 23.0, 1.5 * sgn, SOIL_Z - 0.8])
+            low = bezier(foot, foot + [0, 0, 16.0], up[0] - 12 * tan_j, up[0], n=110)
+        cord = np.vstack([low[:-1], up])
+        r = np.concatenate([np.full(len(low) - 1, STRAND_R * 0.95),
+                            STRAND_R * np.linspace(0.95, 0.85, len(up))])
+        tubes += plait(cord, cord[:, 2], j, np.ones(len(cord)), r)
         tops.append((cord, th[-1]))
-        rad0 = np.array([np.cos(th[0]), np.sin(th[0]), 0])
-        root = bezier(cord[0] + [0, 0, 1.0], cord[0] + rad0 * 5 + [0, 0, 1.2],
-                      cord[0] + rad0 * 10 + [0, 0, 0.2], cord[0] + rad0 * 15 - [0, 0, 0.6], n=20)
-        tubes.append((root, np.linspace(2.0, 0.8, 20)))
-
-    # low tier: two arms arch out along the pot and root in the soil
-    p0 = tops[0][0][-1]
-    for sgn in (1, -1):
-        q = np.array([sgn * 24.0, 0.25 * p0[1] + 2.0 * sgn, SOIL_Z - 0.8])
-        start = p0 if np.sign(p0[0]) == sgn or abs(p0[0]) < 0.5 else np.array([0, 0, p0[2]])
-        arm = bezier(start, start + np.array([sgn * 7.0, 0, 6.0]), q + [0, 0, 15.0], q, n=80)
-        tubes += plait(arm, arm[:, 2], 3 + (sgn > 0), np.ones(len(arm)), np.full(len(arm), 0.85))
+        # a little root flare where each cord meets the soil
+        out = unit([foot[0], foot[1], 0]) if np.linalg.norm(foot[:2]) > 1 else np.array([0, 1.0, 0])
+        for k in (-1, 1):
+            rd = unit(out + 0.9 * k * np.array([-out[1], out[0], 0]))
+            root = bezier(foot + [0, 0, 2.0], foot + rd * 3 + [0, 0, 1.4],
+                          foot + rd * 6 + [0, 0, 0.4], foot + rd * 8 - [0, 0, 0.6], n=14)
+            tubes.append((root, np.linspace(1.4, 0.6, 14)))
 
     # middle tier: sweeps out both ways and rolls into question-mark curls
-    p0 = tops[1][0][-1]
+    p0 = np.array([0, 0, z2])
     for a in (np.radians(30), np.radians(210)):
         out = np.array([np.cos(a), np.sin(a), 0])
         tip = p0 + 17.0 * out + np.array([0, 0, 11.0])
@@ -306,13 +308,12 @@ def tree_parts():
         tier_leaves(things, arm[int(0.55 * len(arm))], a, n=3, spread=0.9)
         tier_leaves(things, arm[int(0.85 * len(arm))], a + 0.5, n=2, spread=1.8, el0=40)
 
-    # crown: the last cord's three strands become three branches
-    crown = tops[2][0][-1]
-    cords = [(None, tops[2][1] + 2 * np.pi * k / 3) for k in range(3)]
-    roles = {(0, 0): "flower", (2, 1): "flower", (1, 0): "bud"}
+    # crown: the three cords part into three branches
+    cords = tops
+    roles = {(0, 0): "flower", (1, 1): "flower", (2, 0): "bud"}   # flowers face away from each other
     twig_ends = []
-    for j, (_, th) in enumerate(cords):
-        p0 = crown
+    for j, (cord, th) in enumerate(cords):
+        p0 = cord[-1]
         out = np.array([np.cos(th + 0.4), np.sin(th + 0.4), 0])
         d = unit(np.cos(np.radians(40)) * out + np.sin(np.radians(40)) * UP)
         p3 = p0 + BRANCH_LEN * d
@@ -370,7 +371,24 @@ def tree_parts():
                     el = np.radians(32 + 8 * ((k + m + j) % 3))
                     ld = unit(np.cos(el) * np.array([np.cos(a), np.sin(a), 0]) + np.sin(el) * UP)
                     things.append(("leaf", frame(end + 3.0 * ld, ld)))
-    return tubes, things
+    return tubes, [t for t in things if not clips_flower(t, things)]
+
+
+def clips_flower(thing, things):
+    """True for a leaf whose blade would pass through a flower's bowl."""
+    if thing[0] != "leaf":
+        return False
+    base, u, _, _ = thing[1]
+    pts = base + np.linspace(-0.2, 1.0, 10)[:, None] * LEAF_L * u
+    for kind, fr in things:
+        if kind != "flower":
+            continue
+        q = pts - fr[0]
+        h = q @ fr[3]
+        r = np.linalg.norm(q - h[:, None] * fr[3], axis=1)
+        if np.any((r < FLOWER_R + 1.5) & (h > -4) & (h < 0.72 * FLOWER_R + 3)):
+            return True
+    return False
 
 
 def build_tree(voxel, stems=(), quiet=False):
@@ -413,6 +431,39 @@ def build_tree(voxel, stems=(), quiet=False):
     return vol, (xs[0], ys[0], zs[0])
 
 
+def clear_stems(islands, vol, voxel, origin):
+    """Like the sculpture's stem planner, but a stem may only take a path
+    that stays clear of everything between its foot and its tip, so no
+    stem pokes through a petal or leaf on the way up."""
+    from scipy import ndimage as ndi
+    S = vol < 0
+    pts = np.argwhere(S & ~ndi.binary_erosion(S)) * voxel + np.asarray(origin)
+    org = np.asarray(origin)
+
+    def clear(path):
+        mid = path[int(0.12 * len(path)):int(0.82 * len(path))]
+        idx = np.round((mid - org) / voxel).astype(int)
+        idx = np.clip(idx, 0, np.array(vol.shape) - 1)
+        return not np.any(vol[idx[:, 0], idx[:, 1], idx[:, 2]] < -0.15)
+
+    stems = []
+    for p in sorted(islands, key=lambda q: -q[2]):
+        top = p + [0, 0, 0.5]
+        drop = top[2] - pts[:, 2]
+        horiz = np.linalg.norm(pts[:, :2] - top[:2], axis=1)
+        ok = np.nonzero((drop > 2.0) & (horiz < 0.7 * drop))[0]
+        order = ok[np.argsort(np.sqrt(drop[ok] ** 2 + horiz[ok] ** 2))]
+        for i in order[:400:4]:
+            path = lp.stem_path(top, pts[i] - [0, 0, 0.6])
+            if clear(path):
+                stems.append((path, np.linspace(*lp.STEM_R, len(path))))
+                pts = np.vstack([pts, path[path[:, 2] < top[2] - 4.0] + [0, 0, 0.6]])
+                break
+        else:
+            print(f"  no clear stem path for island at {np.round(p, 1)}")
+    return stems
+
+
 def plan_stems(voxel=0.3, passes=8):
     """Slim stems up to anything that would start in mid-air (coarse grid)."""
     stems = []
@@ -422,7 +473,7 @@ def plan_stems(voxel=0.3, passes=8):
         print(f"  stem pass {i + 1}: {len(isl)} island(s), {len(stems)} stem(s)")
         if not isl:
             break
-        stems += lp.stems_for(isl, vol, voxel, origin)
+        stems += clear_stems(isl, vol, voxel, origin)
     return stems
 
 
