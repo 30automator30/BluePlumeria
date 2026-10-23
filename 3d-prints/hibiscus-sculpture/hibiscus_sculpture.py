@@ -14,11 +14,11 @@ Golden layout (mm):
               with a smooth fillet.
               A staminal column arches up from the centre, with 13 anthers
               set at the golden angle and 5 stigma pads at its tip.
-  trunk       three round strands plaited like a braided hibiscus standard,
-              fused where they cross, turning slowly round the trunk and
-              gathering into the calyx at H/phi. At the foot each strand
-              splays into a golden root curl; side shoots carry a twisted
-              bud and a golden curl.
+  trunk       a rope of braids, like a braided hibiscus standard: four
+              cords twist round each other, each a three-strand plait (12
+              strands, fused where they cross), gathering into the calyx
+              at H/phi. At the foot each cord splays into a golden root
+              curl; side shoots carry a twisted bud and a golden curl.
 
 Printability: the base is cut flat to sit on the plate. The petals rise
 outward from the calyx (a trumpet that never flattens past ~20 degrees), so
@@ -196,65 +196,77 @@ def stem_axis(z):
     return np.stack([x, y, z], -1)
 
 
-BRAID_R = 2.5                        # radius of each trunk strand
-BRAID_PITCH = 24.0                   # rise of one full plait cycle (6 crossings)
-BUD_AT = np.array([13.0, 9.0, 47.0])     # bud base, beside the trunk
+STRAND_R = 1.05                      # each thin strand (>= the 0.9 mm lattice minimum)
+CORDS = 4                            # main cords twisting round the trunk
+CORD_R = 3.5                         # cord centres sit this far from the axis
+CORD_TURNS = 0.75                    # the twist: turns over the trunk's height
+PLAIT_PITCH = 14.0                   # rise of one plait cycle inside a cord
+BUD_AT = np.array([14.0, 9.0, 47.0])     # bud base, beside the trunk
 BUD_AXIS = np.array([0.45, 0.25, 0.86])
 
 
-def braid():
-    """Three round strands plaited like a braided hibiscus standard. Each
-    weaves side to side and over-under its neighbours (a figure-eight in
-    the plait's plane), the plait turns slowly round the trunk, and the
-    strands taper and gather into the calyx. They touch at every crossing,
-    so the trunk prints as one solid piece."""
+def trunk():
+    """A rope of braids, like a braided hibiscus standard: four cords twist
+    round the trunk, and each cord is a three-strand plait (12 strands).
+    Strands touch at every crossing and cords press on their neighbours, so
+    the trunk is solid. Everything tapers and gathers into the calyx.
+    Returns the cord centrelines and the strands."""
     cb = CENTRE - CALYX_DEPTH * AXIS
-    z = np.linspace(3.0, cb[2] + 3.0, 260)
+    z = np.linspace(3.0, cb[2] + 3.0, 320)
     s = (z - z[0]) / (z[-1] - z[0])
-    t = 2 * np.pi * (z - z[0]) / BRAID_PITCH
     c = stem_axis(z)
-    psi = np.pi * 0.6 * s                              # the plait turns round
-    e1 = np.column_stack([np.cos(psi), np.sin(psi), 0 * psi])
-    e2 = np.column_stack([-np.sin(psi), np.cos(psi), 0 * psi])
     taper = 1 - 0.2 * s
     gather = np.clip((1 - s) / 0.15, 0, 1) ** 0.7      # close up into the calyx
-    strands = []
-    for k in range(3):
-        ph = 2 * np.pi * k / 3
-        wx = 1.6 * BRAID_R * taper * gather * np.sin(t + ph)
-        wy = 1.05 * BRAID_R * taper * gather * np.sin(2 * (t + ph))
-        strands.append((c + wx[:, None] * e1 + wy[:, None] * e2, BRAID_R * taper))
-    return strands
+    cords, strands = [], []
+    for j in range(CORDS):
+        th = 2 * np.pi * (j / CORDS + CORD_TURNS * s)
+        radial = np.column_stack([np.cos(th), np.sin(th), 0 * th])
+        cord = c + (CORD_R * taper * gather)[:, None] * radial
+        tan = np.gradient(cord, axis=0)
+        tan /= np.linalg.norm(tan, axis=1, keepdims=True)
+        e1 = radial - (radial * tan).sum(1)[:, None] * tan   # plait faces outward
+        e1 /= np.linalg.norm(e1, axis=1, keepdims=True)
+        e2 = np.cross(tan, e1)
+        t = 2 * np.pi * (z - z[0]) / PLAIT_PITCH + j * np.pi / 2
+        r = STRAND_R * taper
+        for k in range(3):
+            ph = 2 * np.pi * k / 3
+            wx = 1.6 * r * gather * np.sin(t + ph)     # side to side ...
+            wy = 1.05 * r * gather * np.sin(2 * (t + ph))   # ... and over-under
+            strands.append((cord + wx[:, None] * e2 + wy[:, None] * e1, r))
+        cords.append(cord)
+    return cords, strands
 
 
 def body_parts():
-    """Braided trunk with root curls, a bud shoot and a curl shoot."""
+    """Rope-of-braids trunk with root curls, a bud shoot and a curl shoot."""
     tubes, extras = [], []
-    strands = braid()
-    for k, (pts, rad) in enumerate(strands):
-        # each strand splays out at the foot into a golden root curl
-        out = pts[0] - np.array([0, 0, pts[0][2]])
-        out = out / np.linalg.norm(out) if np.linalg.norm(out) > 0.5 else \
-            np.array([np.cos(2 * np.pi * k / 3), np.sin(2 * np.pi * k / 3), 0])
-        start = pts[0] + 3.0 * out - [0, 0, 1.5]
-        root = lp.ground_curl(start, -out, 10.0 + 2.0 * k, 1 if k % 2 else -1)
-        path = np.vstack([root, pts])
-        rr = np.concatenate([np.linspace(1.0, BRAID_R * 1.15, len(root)), rad])
-        tubes.append((path, rr))
-    # bud shoot from strand 0, curl shoot from strand 1
-    p, rad = strands[0]
+    cords, strands = trunk()
+    tubes += strands
+    for j, cord in enumerate(cords):
+        # each cord splays out at the foot into a golden root curl
+        out = np.array([cord[0][0], cord[0][1], 0.0])
+        out /= np.linalg.norm(out)
+        start = cord[0] + 2.0 * out - [0, 0, 1.5]
+        root = lp.ground_curl(start, -out, 9.0 + 1.5 * j, 1 if j % 2 else -1)
+        path = np.vstack([root, cord[:12]])
+        tubes.append((path, np.concatenate([np.linspace(1.0, 2.4, len(root)),
+                                            np.linspace(2.4, 1.2, 12)])))
+    # bud shoot from cord 0, curl shoot from cord 2
+    p = cords[0]
     j = int(0.45 * len(p))
     tubes.append((bezier(p[j], p[j] + [3, 1, 4], BUD_AT - 5 * BUD_AXIS, BUD_AT + 0.5 * BUD_AXIS,
                          n=40), np.linspace(1.9, 1.3, 40)))
     extras.append(bud_sdf_fn(BUD_AT, BUD_AXIS))
-    p, rad = strands[1]
+    p = cords[2]
     j = int(0.32 * len(p))
-    side = -np.array([1.0, 0.6, 0]) / np.linalg.norm([1.0, 0.6])
+    side = np.array([p[j][0], p[j][1], 0.0])
+    side /= np.linalg.norm(side)
     reach = p[j] + side * 11 + [0, 0, 12]
     arc = bezier(p[j], p[j] + side * 3 + [0, 0, 6], reach - side * 3 - [0, 0, 2], reach)
     curl, _, _ = lp.golden_curl(arc[-1], arc[-1] - arc[-2], 5.5)
     tubes.append((np.vstack([arc, curl]),
-                   np.concatenate([np.linspace(2.0, 1.6, len(arc)), np.linspace(1.6, 0.9, len(curl))])))
+                  np.concatenate([np.linspace(2.0, 1.6, len(arc)), np.linspace(1.6, 0.9, len(curl))])))
     return [], tubes, extras
 
 
