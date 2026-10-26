@@ -113,6 +113,16 @@ Every first-round print broke while supports were removed. The support contacts 
 - Simplifying the 3.4M-face body at 0.02 mm brought back two 0.01 mm² specks; 0.012 mm (1.8M faces) stayed clean. Re-verify every lighter copy.
 - Petal lattice: veins must run *into* the next frame. Veins that stop at a gap leave loose stubs, and those are what snapped during support removal. Bolder rims (2.4 × 2.3 mm) and struts (1.25 × 1.5 mm) survive removal.
 
+## 5e. Hibiscus bonsai: printed clean, flat on the plate, no supports
+
+- The approach worked first time: both parts printed flat on the plate with no supports. Leaves rise from their stalks, petal ruffles stay in the outline, and a few slim stems catch anything left over.
+- CHITUBOX auto-orient tilts these parts and adds a forest of supports. Undo it: set rotation back to 0, place on bed, lift 0, delete supports.
+- Fixes that removed most islands at the source: leaf stalks must run into the twig (a stalk dipping below its twig floats); a scalloped outline instead of height ruffles; flowers lean no more than about 8 degrees; anther beads seated in the column.
+- Check for clipping (a flower through a flower, leaves through petals) before building. Swing leaves clear of flowers; route stems only through clear paths.
+- Trunk: a smooth four-stem braid with a flared base (stems running on as roots into the soil) read as a tree. A rope of plaited cords looked busy and leggy.
+- A full 0.12 mm build uses about 14 GB, so run each repair round in a fresh process.
+- Cleanup: white flecks on edges are dried resin or wash haze; re-brush with fresh IPA, dry, then a short re-cure.
+
 ## 6. Checking CHITUBOX .ctb files
 
 Claude can read encrypted CHITUBOX `.ctb` files: settings, preview image and every layer. The decryption scheme is the one documented in the open-source UVtools project (AES-CBC settings block, per-layer XOR plus RLE). Workflow:
