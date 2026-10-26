@@ -4,12 +4,18 @@ printed in one piece upright on its plinth with no supports: a bird of
 paradise clump with a pride of Barbados spike.
 
   plinth   two stepped squares with chamfered edges, sized by phi.
-  clump    a fan of leaf sheaths; seven tall paddle leaves on long stalks
-           fan up out of it, split along their side veins like the giant
+  clump    leaf sheaths twisting round each other; seven tall paddle
+           leaves on swaying S-curved stalks fan up out of it, curving in
+           and twisting like flames, split along their side veins like the giant
            bird of paradise, with a raised midrib and parallel veins.
-  blooms   five bird of paradise heads at staggered heights, each facing
-           its own way: a keeled, grooved beak on its scape, three crest
-           sepals and the blue tongue, two younger sepals behind.
+  blooms   three large bird of paradise heads at staggered heights, each
+           facing its own way, in full detail: a sheathing bract on the
+           scape; a sharp-keeled, upturned beak with colour-band guide
+           lines; three crest sepals with a keel, a channel and drawn-out
+           tips, pale throat bracts; the blue arrowhead tongue with its
+           notch and stigma whisker; a younger crest and tongue behind.
+  curls    four golden-spiral tendrils curl out from the base, as on the
+           plumeria sculpture.
   pride    a pride of Barbados spike at the back: five frilly, cupped
            flowers set at the golden angle, each with seven long stamens
            arching out and up, and buds at the tip.
@@ -42,33 +48,41 @@ H = 120.0
 PLINTH = (21.0, 21.0 / PHI ** 0.5, 6.0, 11.0)       # lower half-size, upper half-size, step z, top z
 ROOT = np.array([0.0, 0.0, PLINTH[3]])             # where the clump leaves the plinth
 
-# five bird of paradise heads: (angle round the clump, distance out, bend
-# height, beak length, beak tilt up), staggered like a real clump
-BLOOMS = [(10, 8, 98, 30, 22), (150, 13, 90, 28, 26), (250, 14, 82, 27, 26),
-          (60, 16, 74, 26, 28), (320, 16, 67, 25, 26)]
+# three large bird of paradise heads: (angle round the clump, distance
+# out, bend height, beak length, beak tilt up), staggered like a real clump
+BLOOMS = [(20, 9, 90, 38, 24), (150, 14, 79, 36, 28), (290, 15, 68, 35, 26)]
 # seven split leaves: (angle, lean from vertical, blade base height, length)
 LEAVES = [(200, 42, 40, 44), (110, 36, 46, 46), (300, 40, 38, 42), (30, 46, 34, 40),
           (235, 26, 52, 48), (165, 50, 30, 38), (75, 32, 48, 44)]
-PRIDE_ANGLE = 285                                    # pride of Barbados spike, at the back
+PRIDE_ANGLE = 220                                    # pride of Barbados spike, between two heads
 
 
 # --------------------------------------------------------------- blades
 
 def blade_sdf(fr, L, W, T, shape="lance", twist=0.0, bend=0.0, fold=0.04,
-              rib=0.35, veins=None, wave=0.0, splits=()):
+              rib=0.35, veins=None, wave=0.0, splits=(), channel=0.0, vein_gap=2.6):
     """A thin blade in the frame fr (u along it, w its face normal):
     'lance' tapers to points at both ends, 'leaf' is an oblong paddle with
     a pointed tip. twist turns it about its length, bend curls it toward
-    +w, fold gives a gentle V. A raised midrib and optional veins run on
-    the +w face for painting."""
-    if shape == "lance":
-        tt = np.linspace(0, 1, 801)
-        nrm = (tt ** 0.5 * (1 - tt) ** 0.9).max()
+    +w, fold gives a gentle V. 'acum' is a lance with a long drawn-out tip,
+    'arrow' the bird of paradise tongue (an arrowhead with a side notch).
+    A raised midrib and optional veins run on the +w face for painting, and
+    channel cuts a groove down the middle of the -w face."""
+    tt = np.linspace(0, 1, 801)
+    tip = 1.4 if shape == "acum" else 0.9
+    nrm = (tt ** 0.5 * (1 - tt) ** tip).max()
 
     def half_w(t):
         tc = np.clip(t, 0, 1)
-        if shape == "lance":
-            return W * tc ** 0.5 * (1 - tc) ** 0.9 / nrm
+        if shape in ("lance", "acum"):
+            return W * tc ** 0.5 * (1 - tc) ** tip / nrm
+        if shape == "arrow":
+            base = W * tc ** 0.5 * (1 - tc) ** 0.9 / nrm
+            # barbs widen gradually up to t = 0.82 (so they grow from below)
+            # and drop away sharply above: the notch of the arrowhead
+            ramp = np.clip((tc - 0.5) / 0.32, 0, 1) ** 1.5
+            lobe = 1.2 * W * np.where(tc < 0.82, ramp, np.exp(-((tc - 0.82) / 0.035) ** 2))
+            return base + lobe
         return W * np.clip(tc / 0.32, 0, 1) ** 0.8 * np.clip((1 - tc) / 0.3, 0, 1) ** 0.65   # tapered base
 
     def f(x, y, z):
@@ -87,7 +101,7 @@ def blade_sdf(fr, L, W, T, shape="lance", twist=0.0, bend=0.0, fold=0.04,
             mr = np.maximum(np.abs(v) - 0.45, o + 0.8)
             d = smin(d, soft_band(mr, np.abs(w - h - T / 2) - rib, 0.45, rib), 0.3)
         if veins == "parallel":
-            line = np.abs(((u - 0.55 * np.abs(v)) / 2.6) % 1.0 - 0.5) * 2.6 * 0.88
+            line = np.abs(((u - 0.55 * np.abs(v)) / vein_gap) % 1.0 - 0.5) * vein_gap * 0.88
             vn = np.maximum(line - 0.22, np.maximum(o + 0.7, 0.8 - np.abs(v)))
             d = smin(d, soft_band(vn, np.abs(w - h - T / 2) - 0.14, 0.22, 0.14), 0.2)
         elif veins == "long":
@@ -95,6 +109,9 @@ def blade_sdf(fr, L, W, T, shape="lance", twist=0.0, bend=0.0, fold=0.04,
             line = np.min([np.abs(sv - k) for k in (-0.5, 0.5)], axis=0) * half
             vn = np.maximum(line - 0.2, o + 0.6)
             d = smin(d, soft_band(vn, np.abs(w - h - T / 2) - 0.12, 0.2, 0.12), 0.2)
+        if channel:
+            ch = np.maximum(np.abs(v) - 0.3, o + 0.7)
+            d = np.maximum(d, -soft_band(ch, np.abs(w - h + T / 2) - channel, 0.3, channel))
         for k, sd in splits:                                   # slots along the side veins
             line = np.abs(u - k * L - 0.55 * np.abs(v))
             slot = np.maximum(line - 0.7, np.maximum(0.3 * half - np.abs(v), -sd * v))
@@ -110,7 +127,9 @@ _NRM = (_tt ** 0.35 * (1 - _tt) ** 0.75).max()
 
 
 def spathe_sdf(bend, dirn, L):
-    """The beak: boat-shaped, keeled below, grooved along the top."""
+    """The beak: boat-shaped with a sharp keel below, a groove along the
+    top and an upturned tip. Shallow guide lines mark the colour bands (a
+    ring near the base, a line along each side above the keel)."""
     fr = frame(bend, dirn, UP)
     sc = L / 46.0
 
@@ -120,14 +139,19 @@ def spathe_sdf(bend, dirn, L):
         prof = t ** 0.35 * (1 - t) ** 0.75 / _NRM
         a = (4.3 * prof + 0.2) * sc + 0.3                     # half-width
         b = (3.3 * prof * (1 - 0.15 * t) + 0.2) * sc + 0.3    # half-height
-        c = -2.6 * sc * t ** 2                                # the tip dips
+        c = sc * (-2.2 * t ** 2 + 2.8 * t ** 6)               # dips, then the tip turns up
         wl = w - c
         bb = np.where(wl < 0, b * 1.3, b)                     # deeper keel side
         r = np.sqrt((v / a) ** 2 + (wl / bb) ** 2)
         d = (r - 1) * np.minimum(a, bb)
         d = np.maximum(d, np.maximum(-u, u - L))
-        keel = np.maximum(np.abs(v) - 0.45, np.abs(wl + bb * 0.95) - 0.45)
-        d = smin(d, np.maximum(keel, np.maximum(-u + 2, u - L + 3)), 0.5)
+        keel = np.maximum(np.abs(v) - 0.35, np.abs(wl + bb * 1.0) - 0.45)
+        d = smin(d, np.maximum(keel, np.maximum(-u + 2, u - L + 3)), 0.35)
+        ring = np.abs(u - 0.14 * L) - 0.16                      # colour-band guides
+        side = np.abs(wl + 0.35 * bb) - 0.16
+        guide = np.maximum(np.minimum(ring, np.maximum(side, np.maximum(0.1 * L - u, u - 0.9 * L))),
+                           -d - 0.13)
+        d = np.maximum(d, -guide)
         groove = np.maximum(np.sqrt(v ** 2 + (wl - b) ** 2) - 0.75,
                             np.maximum(0.12 * L - u, u - 0.7 * L))
         return np.maximum(d, -groove)
@@ -139,7 +163,7 @@ def spathe_top(bend, dirn, L, t):
     prof = t ** 0.35 * (1 - t) ** 0.75 / _NRM
     b = (3.3 * prof * (1 - 0.15 * t) + 0.2) * sc + 0.3
     fr = frame(bend, dirn, UP)
-    return bend + t * L * fr[1] + (-2.6 * sc * t ** 2 + b - 0.5) * fr[3]
+    return bend + t * L * fr[1] + (sc * (-2.2 * t ** 2 + 2.8 * t ** 6) + b - 0.5) * fr[3]
 
 
 def heading(yaw, el):
@@ -147,33 +171,67 @@ def heading(yaw, el):
                 + np.sin(np.radians(el)) * UP)
 
 
+def sway(path, amp, phase=0.0):
+    """Swing a path sideways in an S (zero at both ends), so stalks flow."""
+    s = np.linspace(0, 1, len(path))[:, None]
+    tan = np.gradient(path, axis=0)
+    side = np.cross(tan, UP)
+    side /= np.linalg.norm(side, axis=1, keepdims=True) + 1e-9
+    return path + amp * np.sin(2 * np.pi * s + phase) * np.sin(np.pi * s) ** 1.5 * side   # ends keep their line
+
+
 def bloom(tubes, things, ang, rad, zb, L, tilt):
-    """One bird of paradise head on its scape: beak facing out at angle
-    ang, crest of three sepals and the blue tongue, two younger behind."""
+    """One bird of paradise head in full detail: scape with a sheathing
+    bract, keeled beak, three crest sepals (keel, channel, drawn-out tips)
+    with pale throat bracts, the blue arrowhead tongue with its stigma
+    whisker, and a second, younger crest and tongue behind. Head parts go
+    in their own lists so the final build can mesh them more finely."""
     out = np.array([np.cos(np.radians(ang)), np.sin(np.radians(ang)), 0])
     bend = np.array([0, 0, zb]) + rad * out
     dirn = heading(ang, tilt)
     root = ROOT + [0, 0, 5] + 1.5 * out
     scape = bezier(root, root + [0, 0, 0.35 * (zb - root[2])] + 2 * out,
-                   bend - [0, 0, 0.3 * (zb - root[2])] - 4 * out, bend, n=50)
-    tubes.append((scape, np.linspace(1.8, 1.45, 50)))
-    tubes.append((np.array([bend, bend + 2 * dirn]), np.array([2.1, 1.9])))
-    things.append(spathe_sdf(bend, dirn, L))
+                   bend - [0, 0, 0.3 * (zb - root[2])] - 4 * out, bend, n=60)
+    scape = sway(scape, 4.5 if int(ang) % 2 == 0 else -4.5)
+    tubes.append((scape, np.linspace(1.9, 1.6, 60)))
+    ht, hb = [], []                                    # head tubes and blades
+    ht.append((np.array([bend, bend + 2 * dirn]), np.array([2.3, 2.1])))
+    hb.append(spathe_sdf(bend, dirn, L))
+    # sheathing bract wrapping the scape just below the beak
+    j = len(scape) - 14
+    tg = unit(scape[j + 4] - scape[j])
+    hb.append(blade_sdf(frame(scape[j], tg, out), 11.0, 2.4, 0.9, "acum", fold=0.32, rib=0.2))
     side = np.array([-out[1], out[0], 0])
-    k = L / 46.0
+    k = L / 38.0
     p = spathe_top(bend, dirn, L, 0.42)
-    for Ls, el, yaw in ((40, 52, 4), (37, 64, -10), (33, 77, 12)):
+    # pale throat bracts where the crest leaves the beak
+    for sg in (-1, 1):
+        hb.append(blade_sdf(frame(p - 0.4 * dirn, heading(ang + 30 * sg, 38), side), 6.5 * k, 1.5,
+                            0.8, "lance", fold=0.3, rib=0.0))
+    for (Ls, el, yaw), bd in zip(((34, 50, 4), (31, 63, -10), (28, 76, 12)), (-0.12, 0.1, -0.08)):
         d = heading(ang + yaw, el)
-        things.append(blade_sdf(frame(p, d, side), Ls * k * 1.15, 1.7, 1.1, "lance", twist=0.25,
-                                bend=-0.05, fold=0.12, rib=0.25, veins="long"))
-    d = heading(ang + 6, 58)
-    things.append(blade_sdf(frame(p + 0.6 * out, d, side), 31 * k * 1.15, 1.5, 1.0, "lance",
-                            twist=0.1, fold=0.0, rib=0.2))
-    q = spathe_top(bend, dirn, L, 0.24)
-    for Ls, el, yaw in ((27, 88, 6), (23, 100, -8)):
+        hb.append(blade_sdf(frame(p, d, side), Ls * k, 2.4, 1.1, "acum", twist=0.45, bend=bd,
+                            fold=0.14, rib=0.25, channel=0.16))
+    # the blue tongue: arrowhead with a notch, stigma whisker past its tip
+    d = heading(ang + 6, 57)
+    Lt = 27 * k
+    hb.append(blade_sdf(frame(p + 0.6 * out, d, side), Lt, 1.5, 1.0, "arrow", twist=0.1,
+                        fold=0.05, rib=0.2))
+    tip = p + 0.6 * out + Lt * d
+    ht.append((np.array([tip - 1.0 * d, tip + 4.5 * heading(ang + 6, 62)]), np.array([0.45, 0.36])))
+    # a second, younger crest and tongue rising behind
+    q = spathe_top(bend, dirn, L, 0.25)
+    for Ls, el, yaw in ((24, 86, 6), (21, 98, -8)):
         d = heading(ang + yaw, el)
-        things.append(blade_sdf(frame(q, d, side), Ls * k * 1.15, 1.5, 1.0, "lance", twist=0.2,
-                                fold=0.1, rib=0.2))
+        hb.append(blade_sdf(frame(q, d, side), Ls * k, 2.0, 1.0, "acum", twist=0.25, fold=0.12,
+                            rib=0.2, channel=0.12))
+    d = heading(ang - 4, 80)
+    hb.append(blade_sdf(frame(q + 0.5 * out, d, side), 19 * k, 1.3, 0.9, "arrow", fold=0.05, rib=0.15))
+    tubes.extend(ht)
+    things.extend(hb)
+    lo = np.min([np.min(t_[0], 0) for t_ in ht] + [b_[1][0] for b_ in hb], axis=0) - 1
+    hi = np.max([np.max(t_[0], 0) for t_ in ht] + [b_[1][1] for b_ in hb], axis=0) + 1
+    return ht, hb, (lo, hi)
 
 
 # ------------------------------------------------------- pride of Barbados
@@ -196,11 +254,12 @@ def pride_flower(fr, R=8.0):
         for i in range(5):
             dphi = np.angle(np.exp(1j * (ang - 2 * np.pi * i / 5)))
             v = rho * dphi
-            t = np.clip(rho / R, 0, 1)
+            Ri = R * (0.75 if i == 0 else 1.0)                 # the smaller, upright standard petal
+            t = np.clip(rho / Ri, 0, 1)
             half = 4.2 * np.clip((t - 0.15) / 0.5, 0.18, 1) ** 0.8 * np.sqrt(np.clip(1 - ((t - 0.62) / 0.4) ** 2, 0, 1)) + 0.4
             frill = 0.35 * np.sin(11 * np.arctan2(v, rho - 0.3 * R)) * np.clip((t - 0.4) / 0.4, 0, 1)
-            o = np.maximum(np.abs(v) - half, rho - R) + frill
-            h = 3.0 * t ** 1.3                                  # cupped up
+            o = np.maximum(np.abs(v) - half * (0.8 if i == 0 else 1.0), rho - Ri) + frill
+            h = (5.0 if i == 0 else 3.0) * t ** 1.3            # cupped up; the standard stands taller
             d = smin(d, soft_band(o, np.abs(lz - h) - 0.45, 2.0, 0.45), 0.3)
         d = smin(d, np.sqrt(lx ** 2 + ly ** 2 + (lz + 0.8) ** 2) - 1.5, 0.6)
         for st in stam:
@@ -230,7 +289,7 @@ def pride_spike(tubes, things):
         o = np.array([np.cos(a), np.sin(a), 0])
         b = top + 2.5 * o + [0, 0, 2.0 + 1.5 * k]
         tubes.append((np.array([top, b]), np.array([0.7, 0.6])))
-        tubes.append((np.array([b, b + [0, 0, 1.2]]), np.array([1.6, 1.4])))
+        tubes.append((np.array([b, b + [0, 0, 1.0]]), np.array([1.9, 1.7])))    # round bud
 
 
 GOLDEN = np.pi * (3 - np.sqrt(5))
@@ -244,11 +303,22 @@ def parts():
     for k in range(5):
         a = 2 * np.pi * k / 5
         o = np.array([np.cos(a), np.sin(a), 0])
-        sh = bezier(ROOT - [0, 0, 0.5] + 2.5 * o, ROOT + [0, 0, 5] + 2.0 * o,
-                    ROOT + [0, 0, 10] + 1.0 * o, ROOT + [0, 0, 15] + 0.5 * o, n=16)
-        tubes.append((sh, np.linspace(3.2, 1.6, 16)))
-    for b_ in BLOOMS:
-        bloom(tubes, things, *b_)
+        ss = np.linspace(0, 1, 24)                     # sheaths twist round each other
+        aa = a + 0.9 * ss
+        rr = 2.6 - 2.0 * ss
+        sh = np.column_stack([rr * np.cos(aa), rr * np.sin(aa), ROOT[2] - 0.5 + 16 * ss])
+        tubes.append((sh, np.linspace(3.2, 1.6, 24)))
+    # golden-spiral tendrils curling out from the base, as on the plumeria
+    for k in range(4):
+        a = np.radians(45 + 90 * k + 12 * (k % 2))
+        o = np.array([np.cos(a), np.sin(a), 0])
+        p0 = ROOT + [0, 0, 6] + 2.2 * o
+        p1 = (17.0 + 3 * (k % 2)) * o + [0, 0, ROOT[2] + 20 + 7 * (k % 3)]
+        arc = sway(bezier(p0, p0 + [0, 0, 9] + 2 * o, p1 - 7 * o - [0, 0, 2], p1, n=40), 2.5 * (-1) ** k)
+        curl, _, _ = lp.golden_curl(arc[-1], arc[-1] - arc[-3], 4.2)
+        tubes.append((np.vstack([arc, curl]),
+                      np.concatenate([np.linspace(1.5, 1.1, len(arc)), np.linspace(1.1, 0.65, len(curl))])))
+    heads = [bloom(tubes, things, *b_) for b_ in BLOOMS]
     pride_spike(tubes, things)
     # split paddle leaves on long stalks fanning up out of the clump
     rng = np.random.default_rng(3)
@@ -258,23 +328,27 @@ def parts():
         base = ROOT + [0, 0, 8] + 1.5 * out
         top = np.array([0, 0, zb]) + (zb - ROOT[2]) * np.tan(np.radians(lean)) * 0.55 * out
         stalk = bezier(base, base + [0, 0, 0.35 * (zb - base[2])], top - 0.3 * (zb - base[2]) * d, top, n=40)
+        stalk = sway(stalk, 5.0 * (-1) ** int(ang // 45))
         tubes.append((stalk, np.linspace(1.4, 1.0, 40)))
         n_split = 3 + int(rng.integers(0, 2))
         splits = [(float(f_), float(sd)) for f_, sd in zip(np.sort(rng.uniform(0.3, 0.85, n_split)),
                                                            rng.choice([-1, 1], n_split))]
         # face up and inward, so the gentle fold and curl lift the edges and tip
-        things.append(blade_sdf(frame(top - 0.8 * d, d, -out), L, 10.0, 1.0, "leaf", twist=0.2,
-                                bend=0.03, fold=0.03, rib=0.35, veins="parallel", wave=0.2,
+        things.append(blade_sdf(frame(stalk[-1] - 0.8 * d, d, -out), L, 10.0, 1.0, "leaf", twist=0.5,
+                                bend=0.1, fold=0.03, rib=0.35, veins="parallel", wave=0.2, vein_gap=1.8,
                                 splits=splits))
-    return tubes, things
+    return tubes, things, heads
 
 
-def build(voxel, stems=(), quiet=False):
+def build(voxel, stems=(), quiet=False, region=None):
+    """Distance field of the whole piece, or of just the box region
+    (lo, hi), e.g. one head meshed finely for the final build."""
     say = (lambda *a: None) if quiet else print
     t0 = time.time()
-    xs = np.arange(-50, 50, voxel, dtype=np.float32)
-    ys = np.arange(-50, 50, voxel, dtype=np.float32)
-    zs = np.arange(-0.6, H + 4, voxel, dtype=np.float32)
+    lo_, hi_ = region if region is not None else ((-50, -50, -0.6), (50, 50, H + 4))
+    xs = np.arange(lo_[0], hi_[0], voxel, dtype=np.float32)
+    ys = np.arange(lo_[1], hi_[1], voxel, dtype=np.float32)
+    zs = np.arange(lo_[2], hi_[2], voxel, dtype=np.float32)
     vol = np.full((len(xs), len(ys), len(zs)), 3.0, np.float32)
     lo, up, zstep, ztop = PLINTH
 
@@ -286,7 +360,7 @@ def build(voxel, stems=(), quiet=False):
         return np.minimum(low, top)
     add(vol, xs, ys, zs, (-lo - 1, -lo - 1, -1), (lo + 1, lo + 1, ztop + 1), plinth, k=0)
 
-    tubes, things = parts()
+    tubes, things, heads = parts()
     for pts, rr in tubes:
         rr = np.broadcast_to(rr, (len(pts),))
         for k0 in range(0, len(pts) - 1, 10):
