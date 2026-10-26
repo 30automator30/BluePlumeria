@@ -51,6 +51,7 @@ BRANCH_LEN = 25.0
 TWIG_LEN = BRANCH_LEN / PHI * 1.1
 FLOWER_R = 19.0                      # petal reach: flowers ~40 mm across
 LEAF_L = 15.0
+TRUNK_STYLE = "braid"                # "braid": smooth 4-stem braid; "rope": spiralling plaited cords
 
 POT_H = 22.0
 FIT = 0.3
@@ -249,6 +250,41 @@ def tier_leaves(things, p, a0, n=3, spread=0.9, el0=32):
         things.append(("leaf", frame(p + 3.0 * ld, ld)))
 
 
+def smooth_braid(tubes):
+    """Four smooth stems woven over and under like a braided hibiscus
+    standard: two wind one way and two the other, swapping in and out at
+    every crossing. They rise from one flared root base, taper about 40%
+    to the crown and part there. Returns each stem's path and end angle."""
+    z = np.linspace(SOIL_Z - 0.5, BRANCH_Z, 360)
+    s = (z - z[0]) / (z[-1] - z[0])
+    w = 2 * np.pi / 42.0                                   # one turn per 42 mm: a gentle twist
+    R = 3.4 - 1.2 * s                                      # braid radius
+    r = 2.5 - 1.0 * s                                      # stem radius
+    tops = []
+    for j in range(4):
+        sense = 1 if j % 2 == 0 else -1
+        ph = np.pi / 2 * j
+        th = sense * w * (z - z[0]) + ph
+        weave = 0.75 * r * np.sin(2 * w * (z - z[0]) + (0 if sense > 0 else np.pi))
+        rr = R + weave
+        path = np.column_stack([rr * np.cos(th), rr * np.sin(th), z])
+        tubes.append((path, r))
+        tops.append((path, th[-1]))
+    # root flare: a broad base that the stems grow out of, and surface roots
+    zf = np.linspace(SOIL_Z - 0.6, SOIL_Z + 9.0, 30)
+    flare = 5.6 * np.exp(-(zf - SOIL_Z) / 3.0) + 3.6
+    tubes.append((np.column_stack([0 * zf, 0 * zf, zf]), flare))
+    for k in range(5):
+        a = 2 * np.pi * k / 5 + 0.3
+        d = np.array([np.cos(a), np.sin(a), 0])
+        n = np.array([-d[1], d[0], 0]) * (1 if k % 2 else -1)
+        L = 12.0 + 3.0 * (k % 2)
+        root = bezier(np.array([0, 0, SOIL_Z + 2.5]) + 4 * d, 9 * d + [0, 0, SOIL_Z + 1.6],
+                      L * d + 2.5 * n + [0, 0, SOIL_Z + 0.4], (L + 4) * d + 3.5 * n + [0, 0, SOIL_Z - 0.5], n=24)
+        tubes.append((root, np.linspace(2.4, 0.7, 24)))
+    return tops
+
+
 def tree_parts():
     """Trunk strands, tiers, branches, twigs, and where flowers, bud and
     leaves go.
@@ -274,7 +310,9 @@ def tree_parts():
     r_join = 8.0
     kmax = np.log(21.0 / r_join) / np.log(PHI)             # quarter turns of the vortex
     tops = []
-    for j in range(n_cords):
+    if TRUNK_STYLE == "braid":
+        tops = smooth_braid(tubes)
+    for j in (range(n_cords) if TRUNK_STYLE == "rope" else ()):
         up, th = helix(j, zt)
         # golden vortex from the soil (radius / phi and rise / phi^2 each
         # quarter turn, like the plumeria's base), squeezed to fit the plug
