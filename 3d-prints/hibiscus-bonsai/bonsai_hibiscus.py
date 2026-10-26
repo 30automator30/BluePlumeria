@@ -253,35 +253,50 @@ def tier_leaves(things, p, a0, n=3, spread=0.9, el0=32):
 def smooth_braid(tubes):
     """Four smooth stems woven over and under like a braided hibiscus
     standard: two wind one way and two the other, swapping in and out at
-    every crossing. They rise from one flared root base, taper about 40%
-    to the crown and part there. Returns each stem's path and end angle."""
-    z = np.linspace(SOIL_Z - 0.5, BRANCH_Z, 360)
+    every crossing, tapering about 40% to the crown where they part.
+    Toward the soil they spread into a flared base (nebari): the stems
+    stand out as buttresses over a concave flare, then run on as roots
+    that dive into the soil, with smaller roots between them. Returns each
+    stem's path and end angle."""
+    z = np.linspace(SOIL_Z + 0.8, BRANCH_Z, 360)
     s = (z - z[0]) / (z[-1] - z[0])
     w = 2 * np.pi / 42.0                                   # one turn per 42 mm: a gentle twist
-    R = 3.4 - 1.2 * s                                      # braid radius
-    r = 2.5 - 1.0 * s                                      # stem radius
+    flare = 9.5 * np.exp(-(z - SOIL_Z) / 7.5)              # the stems spread toward the soil
+    R = 3.4 - 1.2 * s + flare
+    r = 2.5 - 1.0 * s + 0.12 * flare
+    squash = 1 - 0.25 * np.clip(flare / 9.5, 0, 1)         # follow the pot's narrower side
     tops = []
     for j in range(4):
         sense = 1 if j % 2 == 0 else -1
-        ph = np.pi / 2 * j
-        th = sense * w * (z - z[0]) + ph
-        weave = 0.75 * r * np.sin(2 * w * (z - z[0]) + (0 if sense > 0 else np.pi))
+        th = sense * w * (z - z[0]) + np.pi / 2 * j + np.pi / 4
+        weave = 0.75 * r * np.sin(2 * w * (z - z[0]) + (0 if sense > 0 else np.pi)) * np.clip(1 - flare / 6, 0.2, 1)
         rr = R + weave
-        path = np.column_stack([rr * np.cos(th), rr * np.sin(th), z])
-        tubes.append((path, r))
+        path = np.column_stack([rr * np.cos(th), squash * rr * np.sin(th), z])
+        # the stem runs on as a root, out and down into the soil
+        p0, d0 = path[0], unit(path[0] - path[3])
+        out = unit([p0[0], p0[1], 0])
+        tip = p0 + 9.0 * out + np.array([0, 0, SOIL_Z - 1.8 - p0[2]])
+        root = bezier(p0, p0 + 2.5 * d0, tip - 3.0 * out + [0, 0, 1.2], tip, n=24)[::-1]
+        full = np.vstack([root[:-1], path])
+        rad = np.concatenate([np.linspace(1.1, r[0], len(root) - 1), r])
+        tubes.append((full, rad))
         tops.append((path, th[-1]))
-    # root flare: a broad base that the stems grow out of, and surface roots
-    zf = np.linspace(SOIL_Z - 0.6, SOIL_Z + 9.0, 30)
-    flare = 5.6 * np.exp(-(zf - SOIL_Z) / 3.0) + 3.6
-    tubes.append((np.column_stack([0 * zf, 0 * zf, zf]), flare))
-    for k in range(5):
-        a = 2 * np.pi * k / 5 + 0.3
-        d = np.array([np.cos(a), np.sin(a), 0])
-        n = np.array([-d[1], d[0], 0]) * (1 if k % 2 else -1)
-        L = 12.0 + 3.0 * (k % 2)
-        root = bezier(np.array([0, 0, SOIL_Z + 2.5]) + 4 * d, 9 * d + [0, 0, SOIL_Z + 1.6],
-                      L * d + 2.5 * n + [0, 0, SOIL_Z + 0.4], (L + 4) * d + 3.5 * n + [0, 0, SOIL_Z - 0.5], n=24)
-        tubes.append((root, np.linspace(2.4, 0.7, 24)))
+    # counter-wound stems end at mirrored angles; part them evenly at the crown
+    order = np.argsort([np.arctan2(p_[-1][1], p_[-1][0]) for p_, _ in tops])
+    a0 = np.arctan2(tops[order[0]][0][-1][1], tops[order[0]][0][-1][0])
+    for rank, j in enumerate(order):
+        tops[j] = (tops[j][0], a0 + np.pi / 2 * rank)
+    # concave flare under the buttresses, so the base reads as one trunk
+    zf = np.linspace(SOIL_Z - 0.8, SOIL_Z + 16.0, 40)
+    tubes.append((np.column_stack([0 * zf, 0 * zf, zf]), 2.8 + 4.6 * np.exp(-(zf - SOIL_Z) / 4.0)))
+    # smaller roots between the buttresses, diving into the soil
+    for k in range(4):
+        a = np.pi / 2 * k
+        d = np.array([np.cos(a), 0.75 * np.sin(a), 0])
+        start = 5.5 * d + [0, 0, SOIL_Z + 2.0]
+        tip = (16.0 + 2.0 * (k % 2)) * d + [0, 0, SOIL_Z - 1.6]
+        root = bezier(start, start + 3.5 * d + [0, 0, 0.2], tip - 3.0 * d + [0, 0, 1.1], tip, n=20)
+        tubes.append((root, np.linspace(1.9, 0.8, 20)))
     return tops
 
 
@@ -414,7 +429,20 @@ def tree_parts():
                     el = np.radians(32 + 8 * ((k + m + j) % 3))
                     ld = unit(np.cos(el) * np.array([np.cos(a), np.sin(a), 0]) + np.sin(el) * UP)
                     things.append(("leaf", frame(end + 3.0 * ld, ld)))
-    return tubes, [t for t in things if not clips_flower(t, things)]
+    kept = []
+    for t in things:                      # swing leaves out of the flowers' way
+        if not clips_flower(t, things):
+            kept.append(t)
+            continue
+        base, u, _, _ = t[1]
+        for da in (0.5, -0.5, 1.0, -1.0, 1.6, -1.6, 2.2, -2.2):
+            c, s_ = np.cos(da), np.sin(da)
+            u2 = np.array([c * u[0] - s_ * u[1], s_ * u[0] + c * u[1], u[2]])
+            t2 = ("leaf", frame(base, u2))
+            if not clips_flower(t2, things):
+                kept.append(t2)
+                break
+    return tubes, kept
 
 
 def clips_flower(thing, things):
