@@ -45,7 +45,10 @@ PLUG = (29.0, 20.0)                  # plug half-axes (oval)
 POM_R = 12.5                         # blossom radius: ~25 mm brushes
 STAMEN_R = (0.40, 0.34, 0.58)        # filament radius at base, at tip; anther bead
 STAMEN_EL = np.radians(25)           # no stamen leaves its flower flatter than this
-LEAF_L, LEAF_W = 7.5, 3.3            # small elliptic leaves (half-width)
+LEAF_L, LEAF_W = 7.5, 3.3
+BIRD_BRANCH = 1                      # the ʻiʻiwi perches on the right branch
+BIRD_S = 1.3                         # ...about 33 mm from bill tip to tail
+BRANCH_R = (2.6, 2.3, 2.0, 1.9)      # branch radius where it leaves the trunk            # small elliptic leaves (half-width)
 
 POT_H = 20.0
 POT_R = (39.0, 29.5)                 # outer half-axes at the rim
@@ -176,12 +179,12 @@ def bud_cluster(c, axis, n=12, seed=1):
 
 # ------------------------------------------------------------------ bird
 
-def iiwi(P, f, target, tail_tip):
+def iiwi(P, f, target, tail_tip, S=1.0):
     """An ʻiʻiwi (scarlet honeycreeper) perched at P on a branch, facing f,
     reaching its long down-curved bill into a blossom at `target`. Plump
     body, round head with a bead eye, folded wings of layered feather
     tracts, a notched tail resting on the branch behind, legs and toes
-    gripping the branch.
+    gripping the branch. S scales the whole bird (1.0: about 25 mm long).
 
     Printability: the belly sits just above the branch on the legs, the
     tail tip rests on the branch and the bill tip is in the blossom, so
@@ -191,21 +194,21 @@ def iiwi(P, f, target, tail_tip):
     M = np.vstack([f, s, UP])                               # world -> local rows
 
     def L(p):
-        return P + p[0] * f + p[1] * s + p[2] * UP
+        return P + S * (p[0] * f + p[1] * s + p[2] * UP)
     hc = L([5.4, 0, 9.6])
     pitch = np.radians(20)
     bill_end = unit(f - 0.9 * UP)
-    p0 = hc + 2.6 * unit(target - hc + 2.0 * UP)
+    p0 = hc + 2.6 * S * unit(target - hc + 2.0 * UP)
     Lb = np.linalg.norm(target - p0)
     bill = bezier(p0, p0 + 0.4 * Lb * unit(target - p0 + 0.35 * Lb * UP),
                   target - 0.3 * Lb * bill_end, target, n=24)
-    bill_r = np.linspace(1.05, 0.3, 24)
+    bill_r = np.linspace(1.05 * S, 0.32, 24)
     rump = L([-5.5, 0, 4.2])
     tu = unit(tail_tip - rump)
     tL = np.linalg.norm(tail_tip - rump)
     tw = unit(UP - (UP @ tu) * tu)
     tfr = (rump, tu, np.cross(tw, tu), tw)
-    eyes = [hc + 3.0 * unit(0.45 * f + sg * 0.8 * s + 0.35 * UP) for sg in (1, -1)]
+    eyes = [hc + 3.0 * S * unit(0.45 * f + sg * 0.8 * s + 0.35 * UP) for sg in (1, -1)]
 
     def ell(a, b, h, c_, ax, pt):
         ca, sa = np.cos(pt), np.sin(pt)
@@ -215,7 +218,7 @@ def iiwi(P, f, target, tail_tip):
 
     def fn(x, y, z):
         q = np.stack([x - P[0], y - P[1], z - P[2]], -1) @ M.T
-        a, b, h = q[..., 0], q[..., 1], q[..., 2]
+        a, b, h = q[..., 0] / S, q[..., 1] / S, q[..., 2] / S
         d = ell(a, b, h, (0.0, 0, 5.0), (6.6, 4.0, 4.3), pitch)               # body
         d = smin(d, np.sqrt((a - 5.4) ** 2 + b ** 2 + (h - 9.6) ** 2) - 3.3, 2.2)   # head
         for sg in (1, -1):                                  # folded wings, lying along the back
@@ -225,25 +228,26 @@ def iiwi(P, f, target, tail_tip):
                 wing = np.minimum(wing, ell(a, b, h, (-1.8 + off, sg * (3.05 + 0.08 * off), 6.6 + dz + 0.25 * off),
                                             (ln, th, ht), pitch))
             d = smin(d, wing, 0.7)
+        d = d * S
         tu_, tv_, tw_ = local(tfr, x, y, z)                 # tail
         t = np.clip(tu_ / tL, 0, 1)
-        half = 1.5 + 0.6 * t
-        notch = tL - 0.9 * (1 - np.clip(np.abs(tv_) / half, 0, 1))
+        half = S * (1.5 + 0.6 * t)
+        notch = tL - 0.9 * S * (1 - np.clip(np.abs(tv_) / half, 0, 1))
         o = np.maximum(np.abs(tv_) - half, np.maximum(-tu_, tu_ - notch))
-        d = smin(d, soft_band(o, np.abs(tw_) - 0.5, 1.0, 0.5), 0.8)
-        d = smin(d, capsule_chain(x, y, z, bill, bill_r), 0.6)
+        d = smin(d, soft_band(o, np.abs(tw_) - 0.5 * S, 1.0, 0.5 * S), 0.8 * S)
+        d = smin(d, capsule_chain(x, y, z, bill, bill_r), 0.6 * S)
         for e in eyes:
-            d = smin(d, np.sqrt((x - e[0]) ** 2 + (y - e[1]) ** 2 + (z - e[2]) ** 2) - 0.6, 0.15)
+            d = smin(d, np.sqrt((x - e[0]) ** 2 + (y - e[1]) ** 2 + (z - e[2]) ** 2) - 0.6 * S, 0.15)
         for sg in (1, -1):                                  # legs and toes
             leg = np.array([L([-0.6, sg * 1.4, 2.4]), L([-0.4, sg * 1.5, 0.6]), L([-0.3, sg * 1.5, -0.6])])
-            d = smin(d, capsule_chain(x, y, z, leg, np.array([0.6, 0.55, 0.55])), 0.4)
+            d = smin(d, capsule_chain(x, y, z, leg, S * np.array([0.6, 0.55, 0.55])), 0.4)
             for tt in (L([2.0, sg * 1.7, -0.4]), L([-2.0, sg * 1.6, -0.4]), L([-0.3, sg * 2.6, -1.2])):
-                d = smin(d, capsule_chain(x, y, z, np.array([leg[1], tt]), np.array([0.5, 0.4])), 0.3)
+                d = smin(d, capsule_chain(x, y, z, np.array([leg[1], tt]), S * np.array([0.5, 0.4])), 0.3)
         return d
     pts = np.vstack([bill, [L([a_, b_, h_]) for a_ in (-13, 10) for b_ in (-6, 6) for h_ in (-2, 14)], [tail_tip]])
-    keep = [(L([0, 0, 5.0]), 7.6), (hc, 6.5), (rump + 0.5 * tL * tu, 3.2)] + \
-        [(p, 1.8) for p in bill[::3]]
-    return fn, (pts.min(0) - 3.0, pts.max(0) + 3.0), keep
+    keep = [(L([0, 0, 5.0]), 7.6 * S), (hc, 6.5 * S), (rump + 0.5 * tL * tu, 3.2 * S)] + \
+        [(p, 1.8 * S) for p in bill[::3]]
+    return fn, (pts.min(0) - 3.0 * S, pts.max(0) + 3.0 * S), keep
 
 
 # ------------------------------------------------------------------ tree
@@ -359,10 +363,11 @@ def tree_parts():
         axis = unit(0.45 * out + UP)
         c = br[-1] + 8.5 * axis + 0.5 * out
         poms.append((c, axis, j))
-    bird = place_bird(ends[0][0], np.linspace(2.6, 1.25, 50), poms[0][0])
+    bird = place_bird(ends[BIRD_BRANCH][0], np.linspace(BRANCH_R[BIRD_BRANCH], 1.25, 50),
+                      poms[BIRD_BRANCH][0], BIRD_S)
     keep = bird[2]
 
-    def hits(pts, pad=0.8):
+    def hits(pts, pad=1.6):
         return any(np.min(np.linalg.norm(pts - kc, axis=1)) < kr + pad for kc, kr in keep)
 
     fine = []
@@ -371,7 +376,7 @@ def tree_parts():
         side = unit(np.cross(UP, out))
         tw = bezier(tip, tip + 2.5 * unit(br[-1] - br[-3]), c - 3.5 * axis, c - 1.0 * axis, n=16)
         tubes.append((tw, np.linspace(1.25, 1.1, 16)))
-        fine += lehua(c, axis, seed=j, avoid=keep if j == 0 else ())
+        fine += lehua(c, axis, seed=j, avoid=keep if j == BIRD_BRANCH else ())
         a_out = np.arctan2(out[1], out[0])
         roots = (br[-1], br[-6]) if j < 4 else (line[-1], line[-6])
         fan = (-2.0, -1.05, -0.2, 0.7, 1.5, 2.6) if j < 4 else (0.3, 1.35, 2.4, 3.45, 4.5, 5.55)
@@ -400,28 +405,28 @@ def tree_parts():
         sprig_leaves(things, br[int(0.4 * len(br)):], unit(br[-1] - br[int(0.4 * len(br))]),
                      nodes=((0.3, 1.0), (0.6, 1.0)), rosette=False)
 
-    kept = [t for t in things if not clips_pom(t, poms) and not hits(thing_pts(t), 0.5)]
+    kept = [t for t in things if not clips_pom(t, poms) and not hits(thing_pts(t), 1.2)]
     return tubes, kept, poms, fine, bird
 
 
-def place_bird(br, rad, c):
-    """Perch the ʻiʻiwi on the low branch where its bill reaches the
-    blossom best: about 10 mm of bill, head no lower than 2 mm under the
+def place_bird(br, rad, c, S=1.0):
+    """Perch the ʻiʻiwi where its bill reaches the branch's blossom best:
+    about 7.5 mm of bill (times S), head no lower than 2 mm under the
     flowers it sips from."""
     best = None
-    for i in range(12, 44):
+    for i in range(12, 48):
         P = br[i] + rad[i] * UP
         f = unit((c - P) * [1, 1, 0])
-        target = c + 3.4 * unit(-f * np.cos(np.radians(45)) + UP * np.sin(np.radians(45)))
-        head = P + 5.4 * f + 9.6 * UP
-        Lb = np.linalg.norm(target - head) - 2.6
-        score = abs(Lb - 10.0) + 2.0 * max(target[2] - head[2] - 2.0, 0)
+        target = c + 5.0 * unit(-f * np.cos(np.radians(40)) + UP * np.sin(np.radians(40)))   # a low flower's cup
+        head = P + S * (5.4 * f + 9.6 * UP)
+        Lb = np.linalg.norm(target - head) - 2.6 * S
+        score = abs(Lb - 7.5 * S) + 2.0 * max(target[2] - head[2] - 2.0, 0)
         if best is None or score < best[0]:
             best = (score, i, P, f, target)
     _, i, P, f, target = best
-    k = max(i - 14, 0)                                   # tail rests on the branch behind
+    k = max(i - int(14 * S), 0)                                   # tail rests on the branch behind
     tail_tip = br[k] + (rad[k] + 0.1) * UP
-    return iiwi(P, f, target, tail_tip)
+    return iiwi(P, f, target, tail_tip, S)
 
 
 def sprig_leaves(things, sp, sd, nodes=((0.3, 1.0), (0.55, 1.0), (0.78, 0.85)), rosette=True):
