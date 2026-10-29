@@ -83,7 +83,7 @@ def leaf_sdf(fr, sc=1.0, T=0.9):
         d = soft_band(o, np.abs(w - h) - T / 2, 2.0, T / 2)
         rib = np.maximum(np.abs(v) - 0.36, o + 0.8)
         d = smin(d, soft_band(rib, np.abs(w - h - 0.4) - 0.3, 0.36, 0.3), 0.25)
-        stalk = capsule_chain(u, v, w, np.array([[-2.4, 0, 0.0], [0.4, 0, 0.0]]),
+        stalk = capsule_chain(u, v, w, np.array([[-1.5, 0, 0.0], [0.4, 0, 0.0]]),   # ends inside the twig
                               np.array([0.6, 0.5]))
         return smin(d, stalk, 0.4)
     return f, box(fr, (-3.2, -W - 1, -2.5), (L + 1, W + 1, 3.5))
@@ -161,11 +161,12 @@ def lehua(c, axis, seed=0, avoid=(), n_fl=11, per=12):
     return tubes
 
 
-def bud_cluster(c, axis, n=12, seed=1):
+def bud_cluster(c, axis, base, n=12, seed=1):
     """A tight cluster of round, fuzzy flower buds, like popcorn, on short
-    stalks. Each bud is a teardrop that widens along its stalk."""
+    stalks, on a short neck rising from `base` (the sprig tip). Each bud
+    is a teardrop that widens along its stalk."""
     rng = np.random.default_rng(seed)
-    tubes = [(np.array([c - 1.0 * axis, c + 0.8 * axis]), np.array([1.0, 1.3]))]
+    tubes = [(np.array([base, c + 0.8 * axis]), np.array([0.8, 1.3]))]
     _, e3, e1, e2 = frame(c, axis, np.array([1.0, 0, 0]))
     for i in range(n):
         h = 1 - (i + 0.5) / n * 0.95
@@ -179,14 +180,15 @@ def bud_cluster(c, axis, n=12, seed=1):
 
 # ------------------------------------------------------------------ bird
 
-def iiwi(P, f, target, tail_tip, S=1.0):
+def iiwi(P, f, target, tail_tip, S=1.0, rb=2.0):
     """An ʻiʻiwi (scarlet honeycreeper) perched at P on a branch, facing f,
     reaching its long down-curved bill into a blossom at `target`. Plump
     body, round head with a bead eye, folded wings of layered feather
     tracts, a notched tail resting on the branch behind, legs and toes
-    gripping the branch. S scales the whole bird (1.0: about 25 mm long).
+    gripping the branch. S scales the whole bird (1.0: about 25 mm long);
+    rb is the branch radius, which keeps the feet on top of the branch.
 
-    Printability: the belly sits just above the branch on the legs, the
+    Printability: the belly rests on the branch over its feet, the
     tail tip rests on the branch and the bill tip is in the blossom, so
     every low point of the bird is held up by something."""
     f = unit(f * [1, 1, 0])
@@ -238,11 +240,16 @@ def iiwi(P, f, target, tail_tip, S=1.0):
         d = smin(d, capsule_chain(x, y, z, bill, bill_r), 0.6 * S)
         for e in eyes:
             d = smin(d, np.sqrt((x - e[0]) ** 2 + (y - e[1]) ** 2 + (z - e[2]) ** 2) - 0.6 * S, 0.15)
-        for sg in (1, -1):                                  # legs and toes
-            leg = np.array([L([-0.6, sg * 1.4, 2.4]), L([-0.4, sg * 1.5, 0.6]), L([-0.3, sg * 1.5, -0.6])])
+        # belly feathers fluffed down onto the branch under its lowest point
+        tuft = np.array([L([-1.75, 0, 1.6]), L([-1.75, 0, 0.2]), L([-1.75, 0, -1.0])])
+        d = smin(d, capsule_chain(x, y, z, tuft, S * np.array([1.3, 1.1, 0.9])), 0.8 * S)
+        for sg in (1, -1):                                  # legs and toes, on top of the branch
+            def F(a_, b_, h_):
+                return P + S * a_ * f + rb * (b_ * s + h_ * UP)
+            leg = np.array([L([-0.6, sg * 1.2, 2.4]), F(-0.4, sg * 0.5, 0.15), F(-0.3, sg * 0.5, -0.3)])
             d = smin(d, capsule_chain(x, y, z, leg, S * np.array([0.6, 0.55, 0.55])), 0.4)
-            for tt in (L([2.0, sg * 1.7, -0.4]), L([-2.0, sg * 1.6, -0.4]), L([-0.3, sg * 2.6, -1.2])):
-                d = smin(d, capsule_chain(x, y, z, np.array([leg[1], tt]), S * np.array([0.5, 0.4])), 0.3)
+            for tt in (F(2.0, sg * 0.7, -0.25), F(1.6, sg * 0.25, -0.15), F(-1.8, sg * 0.55, -0.2)):
+                d = smin(d, capsule_chain(x, y, z, np.array([leg[1], tt]), np.array([0.5, 0.42])), 0.3)
         return d
     pts = np.vstack([bill, [L([a_, b_, h_]) for a_ in (-13, 10) for b_ in (-6, 6) for h_ in (-2, 14)], [tail_tip]])
     keep = [(L([0, 0, 5.0]), 7.6 * S), (hc, 6.5 * S), (rump + 0.5 * tL * tu, 3.2 * S)] + \
@@ -370,13 +377,16 @@ def tree_parts():
     def hits(pts, pad=1.6):
         return any(np.min(np.linalg.norm(pts - kc, axis=1)) < kr + pad for kc, kr in keep)
 
-    fine = []
+    fine, boxes = [], []
     for (br, out), (c, axis, j) in zip(ends, poms):
         tip = br[-1]
         side = unit(np.cross(UP, out))
         tw = bezier(tip, tip + 2.5 * unit(br[-1] - br[-3]), c - 3.5 * axis, c - 1.0 * axis, n=16)
         tubes.append((tw, np.linspace(1.25, 1.1, 16)))
-        fine += lehua(c, axis, seed=j, avoid=keep if j == BIRD_BRANCH else ())
+        flowers = lehua(c, axis, seed=j, avoid=keep if j == BIRD_BRANCH else ())
+        fine += flowers
+        allp = np.vstack([q for q, _ in flowers])
+        boxes.append((allp.min(0) - 1.5, allp.max(0) + 1.5))
         a_out = np.arctan2(out[1], out[0])
         roots = (br[-1], br[-6]) if j < 4 else (line[-1], line[-6])
         fan = (-2.0, -1.05, -0.2, 0.7, 1.5, 2.6) if j < 4 else (0.3, 1.35, 2.4, 3.45, 4.5, 5.55)
@@ -397,7 +407,7 @@ def tree_parts():
             tubes.append((sp, np.linspace(1.05, 0.8, 18)))
             sprig_leaves(things, sp, sd)
             if buds and not hits(sp[-1:] + 0.5 * sd, 3.5):
-                tubes += bud_cluster(sp[-1] + 0.5 * sd, unit(sd + UP), seed=int(10 * L) + j)
+                tubes += bud_cluster(sp[-1] + 0.5 * sd, unit(sd + UP), sp[-1], seed=int(10 * L) + j)
             else:
                 things.append(("liko", (sp[-1] - 0.3 * sd, unit(0.35 * sd + UP))))
     # leaf pairs along the branches themselves
@@ -406,7 +416,13 @@ def tree_parts():
                      nodes=((0.3, 1.0), (0.6, 1.0)), rosette=False)
 
     kept = [t for t in things if not clips_pom(t, poms) and not hits(thing_pts(t), 1.2)]
-    return tubes, kept, poms, fine, bird
+    return tubes, kept, poms, fine, bird, boxes
+
+
+def fine_regions():
+    """Boxes to re-mesh finely in the final build: each blossom, and the bird."""
+    parts = tree_parts()
+    return parts[5] + [parts[4][1]]
 
 
 def place_bird(br, rad, c, S=1.0):
@@ -426,7 +442,7 @@ def place_bird(br, rad, c, S=1.0):
     _, i, P, f, target = best
     k = max(i - int(14 * S), 0)                                   # tail rests on the branch behind
     tail_tip = br[k] + (rad[k] + 0.1) * UP
-    return iiwi(P, f, target, tail_tip, S)
+    return iiwi(P, f, target, tail_tip, S, rad[i])
 
 
 def sprig_leaves(things, sp, sd, nodes=((0.3, 1.0), (0.55, 1.0), (0.78, 0.85)), rosette=True):
@@ -469,7 +485,7 @@ def clips_pom(thing, poms):
 
 
 def bounds():
-    return np.array([-50.0, -42.0, -0.6]), np.array([50.0, 42.0, 112.0])
+    return np.array([-54.0, -46.0, -0.6]), np.array([52.0, 46.0, 116.0])
 
 
 def add_tube(vol, xs, ys, zs, pts, rr, k):
@@ -492,7 +508,7 @@ def add_tube(vol, xs, ys, zs, pts, rr, k):
 def build_tree(voxel, stems=(), quiet=False, region=None):
     say = (lambda *a: None) if quiet else print
     t0 = time.time()
-    tubes, things, poms, fine, bird = tree_parts()
+    tubes, things, poms, fine, bird, _ = tree_parts()
     lo, hi = bounds() if region is None else (np.asarray(region[0]), np.asarray(region[1]))
     xs = np.arange(lo[0], hi[0], voxel, dtype=np.float32)
     ys = np.arange(lo[1], hi[1], voxel, dtype=np.float32)
