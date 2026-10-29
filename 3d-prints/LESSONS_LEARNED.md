@@ -123,6 +123,15 @@ Every first-round print broke while supports were removed. The support contacts 
 - A full 0.12 mm build uses about 14 GB, so run each repair round in a fresh process.
 - Cleanup: white flecks on edges are dried resin or wash haze; re-brush with fresh IPA, dry, then a short re-cure.
 
+## 5f. Tropical arrangement (bird of paradise + pride of Barbados): printed clean
+
+- Fine detail survived in standard resin: 0.7 mm stamens with anther tips, stigma whiskers, crest channels, colour-band guide grooves of about 0.13 mm, and leaf splits.
+- Leaves must cup up and inward. Curling them outward and down made their edges and tips hang, which needed 97 stems; cupping them cut that to 12.
+- Flowing S-sway on stalks: fade it out at both ends (sin(pi s)^1.5), or the leaf it carries changes angle and starts hanging.
+- Pointy add-ons (arrowhead barbs, beads on whiskers) start in mid-air. Widen barbs gradually up to the notch, and taper whiskers instead of capping them with a bead.
+- Multi-resolution build: re-mesh the heads at 0.06 mm in their own boxes and join them to the 0.12 mm body. Keep every piece inside each box, because leaves crossing it are separate pieces there; dropping them cut leaves off flat at the box walls. Always render the final file before sending.
+- Container restarts cost hours on long builds. Save the stems and the STL each round, and resume from them.
+
 ## 6. Checking CHITUBOX .ctb files
 
 Claude can read encrypted CHITUBOX `.ctb` files: settings, preview image and every layer. The decryption scheme is the one documented in the open-source UVtools project (AES-CBC settings block, per-layer XOR plus RLE). Workflow:
