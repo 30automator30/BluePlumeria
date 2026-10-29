@@ -43,21 +43,41 @@ def to_mf(m):
                                tri_verts=np.asarray(m.faces, np.uint32)))
 
 
+def stl_welds(m):
+    """Edges that would not be shared by exactly two faces once the mesh is
+    saved as STL (float32, no topology) and welded again on loading."""
+    _, inv = np.unique(m.vertices.astype(np.float32), axis=0, return_inverse=True)
+    f = inv.ravel()[m.faces]
+    e = np.sort(np.vstack([f[:, [0, 1]], f[:, [1, 2]], f[:, [2, 0]]]), axis=1)
+    _, c = np.unique(e, axis=0, return_counts=True)
+    return int((c != 2).sum())
+
+
+def separate_twins(m):
+    """Where thin parts touch, Manifold can leave distinct vertices at the
+    same spot (to STL precision); they would fuse on reload and the file
+    would no longer be watertight. Push each twin a different few um
+    along its own normal until none is left."""
+    v = m.vertices.copy()
+    for _ in range(4):
+        _, inv, counts = np.unique(v.astype(np.float32), axis=0,
+                                   return_inverse=True, return_counts=True)
+        inv = inv.ravel()
+        twins = np.nonzero(counts[inv] > 1)[0]
+        if not len(twins):
+            break
+        order = twins[np.argsort(inv[twins], kind="stable")]
+        g = inv[order]
+        rank = np.arange(len(order)) - np.searchsorted(g, g)
+        n = trimesh.Trimesh(v, m.faces, process=False).vertex_normals[order]
+        v[order] -= (0.001 * (1 + rank))[:, None] * n
+    return trimesh.Trimesh(v, m.faces, process=False)
+
+
 def from_mf(M):
-    """Manifold to trimesh. Where thin parts touch, Manifold can leave two
-    distinct vertices at the same spot; STL stores no topology, so they
-    would fuse on reload and the file would no longer be watertight. Nudge
-    such twins apart by 1 um along their own normals."""
     o = M.to_mesh()
     m = trimesh.Trimesh(o.vert_properties[:, :3].astype(np.float64), o.tri_verts, process=False)
-    _, idx, counts = np.unique(m.vertices.astype(np.float32), axis=0,   # as the STL stores them
-                               return_inverse=True, return_counts=True)
-    twins = counts[idx.ravel()] > 1
-    if twins.any():
-        v = m.vertices.copy()
-        v[twins] -= 0.001 * m.vertex_normals[twins]
-        m = trimesh.Trimesh(v, m.faces, process=False)
-    return m
+    return separate_twins(m)
 
 
 def fine_part(stems, lo, hi, voxel=0.06):
@@ -100,10 +120,11 @@ def one_round(out):
     full = from_mf(body)
     full = max(full.split(only_watertight=False), key=lambda p: len(p.faces))
     full.export(os.path.join(out, "ohia_bonsai_tree.stl"))
+    np.savez(os.path.join(out, "tree.npz"), v=full.vertices, f=full.faces)   # exact topology
     new = islands(full)
     json.dump([[float(a) for a in i] for i in new], open(ip, "w"))
     print(f"round: {len(full.faces)} faces, watertight={full.is_watertight}, "
-          f"volume={full.volume / 1000:.2f} mL, size={np.round(full.extents, 1)} mm, "
+          f"STL weld faults={stl_welds(full)}, volume={full.volume / 1000:.2f} mL, size={np.round(full.extents, 1)} mm, "
           f"{len(stems)} stems, islands {len(new)} {new[:8]}", flush=True)
 
 
@@ -122,18 +143,18 @@ def main():
             break
     else:
         sys.exit("islands remain after 6 rounds")
-    full = trimesh.load(os.path.join(out, "ohia_bonsai_tree.stl"))
-    print(f"reloaded tree: watertight={full.is_watertight}", flush=True)
+    z = np.load(os.path.join(out, "tree.npz"))
+    full = trimesh.Trimesh(z["v"], z["f"], process=False)
     for tol in (0.012, 0.009, 0.006):
-        lite = decimate(full, tol)
-        if not islands(lite):
+        lite = separate_twins(decimate(full, tol))
+        if not islands(lite) and not stl_welds(lite):
             lite.export(os.path.join(out, "ohia_bonsai_tree_lite.stl"))
             print(f"lite: {len(lite.faces)} faces at {tol} mm, no islands", flush=True)
             break
     vol, o = ob.build_pot(0.12)
-    pot = decimate(mesh_volume(vol, 0.12, o), 0.006)
+    pot = separate_twins(decimate(mesh_volume(vol, 0.12, o), 0.006))
     pot.export(os.path.join(out, "ohia_bonsai_pot.stl"))
-    print(f"pot: {len(pot.faces)} faces, watertight={pot.is_watertight}, "
+    print(f"pot: {len(pot.faces)} faces, watertight={pot.is_watertight}, STL weld faults={stl_welds(pot)}, "
           f"islands {len(islands(pot))}", flush=True)
     json.dump({"stems": len(pickle.load(open(sp, "rb")))}, open(os.path.join(out, "build.json"), "w"))
 
