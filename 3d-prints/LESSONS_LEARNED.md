@@ -132,6 +132,14 @@ Every first-round print broke while supports were removed. The support contacts 
 - Multi-resolution build: re-mesh the heads at 0.06 mm in their own boxes and join them to the 0.12 mm body. Keep every piece inside each box, because leaves crossing it are separate pieces there; dropping them cut leaves off flat at the box walls. Always render the final file before sending.
 - Container restarts cost hours on long builds. Save the stems and the STL each round, and resume from them.
 
+## 5g. ʻŌhiʻa lehua bonsai with ʻiʻiwi: final build notes (not yet printed)
+
+- Lehua stamens: every stamen leaves its flower at least 25 degrees up and curls upward. Anthers swell gradually from the filament (club, not bead), so the tip is the highest point. Flower cups widen at about 30 degrees, so flowers must point at least 40 degrees up.
+- Leaf stalks must end inside their twig. A petiole that ran through a thin sprig poked out underneath and started in mid-air. The same goes for anything hung under a sprig tip, such as bud-cluster necks: start them at the tip.
+- A perched bird: keep the feet on top of the branch (within about 0.7 × branch radius sideways), since toes wrapping the sides hang in mid-air. A pitched body's lowest point sits behind the legs, so rest the belly feathers on the branch there. Rest the tail tip on the branch and put the bill tip into a flower.
+- Check islands at 0.2 mm before the final build. It found 18 design-level islands in under a minute. The 0.05 mm final check then needed only 2 stems.
+- STL watertightness: Manifold can leave distinct vertices that coincide at float32 precision, and STL welds them on reload, giving a few non-manifold edges. Find twins at float32, not by rounding to 1e-6. Push each twin a different amount (twins at a pinch can share a normal), and check a simulated STL weld before saving. Keep the exact topology (npz) for later steps such as the lite copy.
+
 ## 6. Checking CHITUBOX .ctb files
 
 Claude can read encrypted CHITUBOX `.ctb` files: settings, preview image and every layer. The decryption scheme is the one documented in the open-source UVtools project (AES-CBC settings block, per-layer XOR plus RLE). Workflow:
@@ -159,3 +167,4 @@ Writing `.ctb` files from scratch is possible (use a CHITUBOX file as the templa
 | Openwork band | `openwork-band/` | `openwork_band.py` (approved), `openwork_band_concept.py` (alternative) |
 | Self-supporting gyroid pendant | `gyroid-pendant/` | `gyroid_pendant.py` (island repair loop + verification) |
 | Fractal lattice sculpture | `fractal-plumeria/` | `lattice_plumeria.py` (bloom + body), `fractal_plumeria.py` (earlier concept), `print_prep.py` (orientation + supports + verification) |
+| ʻŌhiʻa lehua bonsai with ʻiʻiwi | `ohia-bonsai/` | `ohia_bonsai.py` (tree + pot), `final_build.py` (fine blossoms and bird, island repair, lite copy, STL-weld check) |

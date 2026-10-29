@@ -6,8 +6,8 @@ An ʻōhiʻa lehua bonsai with an ʻiʻiwi, about 120 mm tall in its pot. It has
 |---|---|
 | `ohia_bonsai.py` | The generator: tree and pot. `--preview` skips support planning. |
 | `final_build.py` | The final build: the tree at 0.12 mm with the blossoms and bird re-meshed at 0.06 mm, a printer-resolution island check and repair rounds, a lighter copy, and the pot. |
-| `final_stems.pkl` | The print stems in the approved final build (if any were needed). |
-| `preview.png` | Renders of the approved design. |
+| `final_stems.pkl` | The 2 print stems in the approved final build, added by the printer-resolution repair round. |
+| `preview.png` | Renders of the final build. |
 
 ## Design
 - **Trunk:** a gnarled informal upright. Five stems fuse into one trunk, twisting half a turn so the bark reads as deep twisted ridges. They flare into buttress roots that dive into the soil.
@@ -24,3 +24,8 @@ An ʻōhiʻa lehua bonsai with an ʻiʻiwi, about 120 mm tall in its pot. It has
 - **Leaves and buds on sprigs:** leaf stalks end inside their twig, and bud clusters rise on a neck from the sprig tip. Both used to poke out underneath and start in mid-air.
 - **Bird:** its feet stay on top of the branch (side toes hung off it at first). Its belly feathers rest on the branch under its lowest point. Its tail tip rests on the branch, and its bill tip sits in a flower cup.
 - **Stamen thickness:** filaments are about 0.7–0.8 mm thick with 1.1 mm anthers. Handle the blossoms gently when washing and removing supports from the plate.
+
+## Final build
+- **Tree:** 8.9M faces, watertight (and still watertight after an STL save and reload), 26.7 mL of resin, 97 × 84 × 111 mm. A 0.05 mm-layer slice check finds 0 islands, after 1 repair round added 2 slim stems.
+- **Lite copy:** 2.1M faces (0.012 mm simplification). It also checks at 0 islands and reloads watertight.
+- **Pot:** 47k faces, watertight, 0 islands.
