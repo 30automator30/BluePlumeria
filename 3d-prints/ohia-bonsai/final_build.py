@@ -44,8 +44,20 @@ def to_mf(m):
 
 
 def from_mf(M):
+    """Manifold to trimesh. Where thin parts touch, Manifold can leave two
+    distinct vertices at the same spot; STL stores no topology, so they
+    would fuse on reload and the file would no longer be watertight. Nudge
+    such twins apart by 1 um along their own normals."""
     o = M.to_mesh()
-    return trimesh.Trimesh(o.vert_properties[:, :3].astype(np.float64), o.tri_verts, process=False)
+    m = trimesh.Trimesh(o.vert_properties[:, :3].astype(np.float64), o.tri_verts, process=False)
+    _, idx, counts = np.unique(np.round(m.vertices, 6), axis=0,
+                               return_inverse=True, return_counts=True)
+    twins = counts[idx.ravel()] > 1
+    if twins.any():
+        v = m.vertices.copy()
+        v[twins] -= 0.001 * m.vertex_normals[twins]
+        m = trimesh.Trimesh(v, m.faces, process=False)
+    return m
 
 
 def fine_part(stems, lo, hi, voxel=0.06):
@@ -59,15 +71,6 @@ def fine_part(stems, lo, hi, voxel=0.06):
     m = trimesh.Trimesh(vt + np.asarray(o) - voxel, fc, process=False)
     keep = [q for q in m.split(only_watertight=False) if len(q.faces) >= 200]
     return mf.Manifold.compose([to_mf(q) for q in keep]).simplify(0.004)
-
-
-def clean(mesh):
-    """Merge the welded copy the STL will load as, drop the zero-area
-    slivers that welding leaves, and keep the one connected piece."""
-    m = trimesh.Trimesh(np.asarray(mesh.vertices, np.float32).astype(np.float64), mesh.faces)
-    m.update_faces(m.unique_faces() & m.nondegenerate_faces())
-    m.remove_unreferenced_vertices()
-    return max(m.split(only_watertight=False), key=lambda p: len(p.faces))
 
 
 def islands(mesh):
@@ -94,7 +97,8 @@ def one_round(out):
         cut = mf.Manifold.cube((hi - lo - 2.0).tolist()).translate((lo + 1.0).tolist())
         body = (body - cut) + part
         gc.collect()
-    full = clean(from_mf(body))
+    full = from_mf(body)
+    full = max(full.split(only_watertight=False), key=lambda p: len(p.faces))
     full.export(os.path.join(out, "ohia_bonsai_tree.stl"))
     new = islands(full)
     json.dump([[float(a) for a in i] for i in new], open(ip, "w"))
@@ -119,14 +123,15 @@ def main():
     else:
         sys.exit("islands remain after 6 rounds")
     full = trimesh.load(os.path.join(out, "ohia_bonsai_tree.stl"))
+    print(f"reloaded tree: watertight={full.is_watertight}", flush=True)
     for tol in (0.012, 0.009, 0.006):
-        lite = clean(decimate(full, tol))
+        lite = decimate(full, tol)
         if not islands(lite):
             lite.export(os.path.join(out, "ohia_bonsai_tree_lite.stl"))
             print(f"lite: {len(lite.faces)} faces at {tol} mm, no islands", flush=True)
             break
     vol, o = ob.build_pot(0.12)
-    pot = clean(decimate(mesh_volume(vol, 0.12, o), 0.006))
+    pot = decimate(mesh_volume(vol, 0.12, o), 0.006)
     pot.export(os.path.join(out, "ohia_bonsai_pot.stl"))
     print(f"pot: {len(pot.faces)} faces, watertight={pot.is_watertight}, "
           f"islands {len(islands(pot))}", flush=True)
