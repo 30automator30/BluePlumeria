@@ -61,6 +61,15 @@ def fine_part(stems, lo, hi, voxel=0.06):
     return mf.Manifold.compose([to_mf(q) for q in keep]).simplify(0.004)
 
 
+def clean(mesh):
+    """Merge the welded copy the STL will load as, drop the zero-area
+    slivers that welding leaves, and keep the one connected piece."""
+    m = trimesh.Trimesh(np.asarray(mesh.vertices, np.float32).astype(np.float64), mesh.faces)
+    m.update_faces(m.unique_faces() & m.nondegenerate_faces())
+    m.remove_unreferenced_vertices()
+    return max(m.split(only_watertight=False), key=lambda p: len(p.faces))
+
+
 def islands(mesh):
     return [i for i in verify(mesh, 0.05, 0.05)[0] if i[0] > lp.BASE_CUT + 0.15]
 
@@ -85,8 +94,7 @@ def one_round(out):
         cut = mf.Manifold.cube((hi - lo - 2.0).tolist()).translate((lo + 1.0).tolist())
         body = (body - cut) + part
         gc.collect()
-    full = from_mf(body)
-    full = max(full.split(only_watertight=False), key=lambda p: len(p.faces))
+    full = clean(from_mf(body))
     full.export(os.path.join(out, "ohia_bonsai_tree.stl"))
     new = islands(full)
     json.dump([[float(a) for a in i] for i in new], open(ip, "w"))
@@ -112,13 +120,13 @@ def main():
         sys.exit("islands remain after 6 rounds")
     full = trimesh.load(os.path.join(out, "ohia_bonsai_tree.stl"))
     for tol in (0.012, 0.009, 0.006):
-        lite = decimate(full, tol)
+        lite = clean(decimate(full, tol))
         if not islands(lite):
             lite.export(os.path.join(out, "ohia_bonsai_tree_lite.stl"))
             print(f"lite: {len(lite.faces)} faces at {tol} mm, no islands", flush=True)
             break
     vol, o = ob.build_pot(0.12)
-    pot = decimate(mesh_volume(vol, 0.12, o), 0.006)
+    pot = clean(decimate(mesh_volume(vol, 0.12, o), 0.006))
     pot.export(os.path.join(out, "ohia_bonsai_pot.stl"))
     print(f"pot: {len(pot.faces)} faces, watertight={pot.is_watertight}, "
           f"islands {len(islands(pot))}", flush=True)
