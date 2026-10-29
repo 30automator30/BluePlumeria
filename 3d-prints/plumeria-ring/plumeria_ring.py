@@ -306,7 +306,7 @@ def decimate(mesh, tolerance):
     out = solid.simplify(tolerance).to_mesh()
     m = trimesh.Trimesh(out.vert_properties[:, :3].astype(np.float64),
                         out.tri_verts, process=False)
-    _, idx, counts = np.unique(np.round(m.vertices, 6), axis=0,
+    _, idx, counts = np.unique(m.vertices.astype(np.float32), axis=0,   # as the STL stores them
                                return_inverse=True, return_counts=True)
     twins = counts[idx.ravel()] > 1
     if twins.any():

@@ -50,7 +50,7 @@ def from_mf(M):
     such twins apart by 1 um along their own normals."""
     o = M.to_mesh()
     m = trimesh.Trimesh(o.vert_properties[:, :3].astype(np.float64), o.tri_verts, process=False)
-    _, idx, counts = np.unique(np.round(m.vertices, 6), axis=0,
+    _, idx, counts = np.unique(m.vertices.astype(np.float32), axis=0,   # as the STL stores them
                                return_inverse=True, return_counts=True)
     twins = counts[idx.ravel()] > 1
     if twins.any():
