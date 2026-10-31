@@ -140,6 +140,14 @@ Every first-round print broke while supports were removed. The support contacts 
 - Check islands at 0.2 mm before the final build. It found 18 design-level islands in under a minute. The 0.05 mm final check then needed only 2 stems.
 - STL watertightness: Manifold can leave distinct vertices that coincide at float32 precision, and STL welds them on reload, giving a few non-manifold edges. Find twins at float32, not by rounding to 1e-6. Push each twin a different amount (twins at a pinch can share a normal), and check a simulated STL weld before saving. Keep the exact topology (npz) for later steps such as the lite copy.
 
+## 5h. Echo series: strung pieces, traced outlines, epoxy beds
+
+- **Strung, not hung:** Amy's work is beaded necklaces, so the focal pieces carry a 1.6 mm channel through a solid core (at least 1.2 mm of wall), with flared mouths and cupped bead seats. Petals and leaves are 1.2-2 mm shells on top of that tube, not slabs from the back. The slab version looked like a cookie.
+- **Copy an outline, don't guess it:** two rounds of hand-drawn makau curves were rejected. Tracing the reference photo into a mask (`echo-series/makau_outline.npz`) and building the SDF from a distance transform got it right first time.
+- **Snag-proof:** round every tip by eroding then dilating the mask (0.35 mm), and keep barbs as notches on the inside, not spikes.
+- **Epoxy beds:** a 0.65 mm rail around a 0.7 mm well. Add the bed depth *on top of* the shell so the floor keeps its full thickness, and raise the flower throat by the same amount or the centre sinks into a pit.
+- **Connectivity check on the voxels:** label the solid voxels (26-connected) before meshing. Keeping only the largest mesh part silently drops a floating hook. A quick front-view height map with one colour per body (and the bead outline) beats blind parameter nudging.
+
 ## 6. Checking CHITUBOX .ctb files
 
 Claude can read encrypted CHITUBOX `.ctb` files: settings, preview image and every layer. The decryption scheme is the one documented in the open-source UVtools project (AES-CBC settings block, per-layer XOR plus RLE). Workflow:
@@ -148,6 +156,8 @@ Claude can read encrypted CHITUBOX `.ctb` files: settings, preview image and eve
 3. Claude decodes all layers and runs the island check (any region with nothing beneath it).
 
 The first heirloom band file had zero islands across 643 layers. It's a quick, reliable pre-print check.
+
+Count islands the way the slicer does: use 8-connected labels and treat a pixel as resting on the layer above if any of its 8 neighbours was cured there. A strict 4-connected, same-pixel test reports hundreds of false "never joins" specks from anti-aliased edges. With that rule the rings plate gave 623 islands, against CHITUBOX's 604. Then judge each island by how many layers it floats and how big it grows before joining. Most join within 1-2 layers and are harmless; the real ones were flat ring bottoms between support tips (fix: tilt the ring 15-30 degrees or add supports).
 
 Writing `.ctb` files from scratch is possible (use a CHITUBOX file as the template) but untested on the printer. Prefer: Claude orients the part → CHITUBOX supports and slices it → Claude checks the `.ctb`.
 
@@ -166,5 +176,6 @@ Writing `.ctb` files from scratch is possible (use a CHITUBOX file as the templa
 | Heirloom band | `heirloom-band/` | `heirloom_band.py` |
 | Openwork band | `openwork-band/` | `openwork_band.py` (approved), `openwork_band_concept.py` (alternative) |
 | Self-supporting gyroid pendant | `gyroid-pendant/` | `gyroid_pendant.py` (island repair loop + verification) |
+| Plumeria Echo series (hero, secondary, accents) | `echo-series/` | `echo_series.py` (strung spine, epoxy beds, traced makau) |
 | Fractal lattice sculpture | `fractal-plumeria/` | `lattice_plumeria.py` (bloom + body), `fractal_plumeria.py` (earlier concept), `print_prep.py` (orientation + supports + verification) |
 | ʻŌhiʻa lehua bonsai with ʻiʻiwi | `ohia-bonsai/` | `ohia_bonsai.py` (tree + pot), `final_build.py` (fine blossoms and bird, island repair, lite copy, STL-weld check) |
