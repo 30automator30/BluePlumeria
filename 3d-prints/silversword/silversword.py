@@ -184,7 +184,7 @@ def head_parts(base, n, size, out, seed=0):
     cup as one tube, the ray petals as tubes, the dome as (centre, radius,
     depth) and the pit centres for the floret texture."""
     rng = np.random.default_rng(seed)
-    rd = 1.9 * size
+    rd = 2.05 * size
     up_p = unit(UP - (UP @ n) * n)                        # up, in the head's plane
     side = np.cross(n, up_p)
     q = base + (1.0 + 2.4 * size) * n                     # dome centre
@@ -201,7 +201,7 @@ def head_parts(base, n, size, out, seed=0):
             d = np.cos(cup) * r_dir + np.sin(cup) * n
             if np.arcsin(np.clip(d[2], -1, 1)) >= RAY_EL:
                 break
-        L = size * (2.6 + 0.4 * rng.random())
+        L = size * (2.9 + 0.4 * rng.random())
         d2 = unit(d + 0.35 * UP)                          # tips flick up a little
         ray = bezier(root, root + 0.4 * L * d, root + 0.75 * L * d, root + 0.6 * L * d + 0.4 * L * d2, n=8)
         tubes.append((ray, size * np.array([0.5, 0.52, 0.5, 0.46, 0.42, 0.36, 0.28, 0.2])))
@@ -300,10 +300,10 @@ def nene(P, f, S=1.0):
         for sg in (1, -1):                                # folded wings: four tiers
             for k, (off, ln, ht, dz) in enumerate(((3.0, 6.0, 4.2, 2.6), (-0.5, 7.0, 3.8, 2.8),
                                                    (-4.0, 7.2, 3.3, 3.1), (-7.5, 6.4, 2.6, 3.4))):
-                w = ell(a, b, h, (off, sg * (5.6 - 0.15 * k), B[2] + dz), (ln, 1.3, ht), pitch - 0.05)
-                d = smin(d, w, 0.6) if k == 0 else np.minimum(d, w)
+                w = ell(a, b, h, (off, sg * (4.9 - 0.25 * k), B[2] + dz), (ln, 1.3, ht), pitch - 0.05)
+                d = smin(d, w, 0.9) if k == 0 else smin(d, w, 0.25)
         # barred feather edges: shallow scalloped grooves across back and flanks
-        row = np.abs(((a + 0.35 * np.abs(b) ** 1.3) / 1.9) % 1.0 - 0.5) * 1.9
+        row = np.abs(((a + 0.3 * np.abs(b) ** 1.3) / 2.6) % 1.0 - 0.5) * 2.6
         back = (h > B[2] - 1.5) & (a < 8)
         d = np.where(back, np.maximum(d, -np.maximum(row - 0.12, -d - 0.22)), d)
         tail = ell(a, b, h, (-14.0, 0, 19.6), (4.5, 2.6, 1.3), np.radians(-14))
@@ -324,7 +324,7 @@ def nene(P, f, S=1.0):
         d = smin(d, capsule_chain(x, y, z, bill, S * np.array([1.15, 0.85, 0.5])), 0.5 * S)
         for e in eyes:
             d = smin(d, np.sqrt((x - e[0]) ** 2 + (y - e[1]) ** 2 + (z - e[2]) ** 2) - 0.5 * S, 0.15)
-        d = smin(d, capsule_chain(x, y, z, leg, S * np.array([1.3, 0.85, 0.8])), 0.6 * S)
+        d = smin(d, capsule_chain(x, y, z, leg, S * np.array([1.6, 1.1, 1.0])), 0.6 * S)
         for ang_ in (-0.45, 0.0, 0.45):                   # three toes, webbed
             dirn = np.cos(ang_) * f + np.sin(ang_) * s
             toe = np.array([foot, foot + S * 5.0 * dirn])
