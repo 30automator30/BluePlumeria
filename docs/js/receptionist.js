@@ -47,7 +47,7 @@
   '.bp-rcp.open .bp-rcp-launch .bp-rcp-label,.bp-rcp.open .bp-rcp-launch .bp-rcp-open-i{display:none}' +
   '.bp-rcp.open .bp-rcp-launch .bp-rcp-close-x{display:block}' +
   '.bp-rcp-panel{position:fixed;right:22px;bottom:88px;z-index:9000;width:380px;max-width:calc(100vw - 32px);' +
-    'height:560px;max-height:calc(100vh - 130px);display:none;flex-direction:column;overflow:hidden;' +
+    'height:560px;max-height:calc(100vh - 130px);max-height:calc(100dvh - 130px);display:none;flex-direction:column;overflow:hidden;' +
     'background:var(--paper,#FCFAF6);border:1px solid var(--border,#E4DBCC);border-radius:18px;' +
     'box-shadow:0 24px 70px rgba(28,23,18,.28);font-family:var(--font-body,"Outfit",Arial,sans-serif);' +
     'opacity:0;transform:translateY(10px) scale(.98);transition:opacity .22s,transform .22s}' +
@@ -83,8 +83,10 @@
   '.bp-rcp-send:disabled{opacity:.4;cursor:default}' +
   '.bp-rcp-send svg{width:18px;height:18px}' +
   '.bp-rcp-note{margin:.45rem 2px 0;font-size:.66rem;color:var(--muted,#8A7F6E);text-align:center;font-weight:300}' +
-  '@media(max-width:480px){.bp-rcp-panel{right:8px;left:8px;bottom:82px;width:auto;' +
-    'height:calc(100vh - 100px);max-height:none}.bp-rcp-launch{right:14px;bottom:14px}}';
+  '@media(max-width:480px){.bp-rcp-panel{right:8px;left:8px;bottom:82px;width:auto;max-width:none;' +
+    'height:calc(100vh - 100px);height:calc(100dvh - 100px);max-height:none}' +
+    '.bp-rcp-form textarea{font-size:16px}' +  // under 16px, iOS zooms the page on focus
+    '.bp-rcp-launch{right:14px;bottom:14px}}';
 
   /* ---- build DOM ---- */
   var root = document.createElement("div");
@@ -133,6 +135,20 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && root.classList.contains("open")) toggle(false);
   });
+
+  /* ---- keep the panel above the on-screen keyboard ---- */
+  function fitKeyboard() {
+    var vv = window.visualViewport;
+    var covered = window.innerHeight - vv.height - vv.offsetTop;
+    var keyboardUp = covered > 80 && vv.scale === 1;   // ignore toolbar shifts and pinch-zoom
+    panel.style.bottom = keyboardUp ? covered + 8 + "px" : "";
+    panel.style.height = keyboardUp ? vv.height - 16 + "px" : "";
+    panel.style.maxHeight = keyboardUp ? "none" : "";
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", fitKeyboard);
+    window.visualViewport.addEventListener("scroll", fitKeyboard);
+  }
 
   /* ---- input behaviour ---- */
   input.addEventListener("input", function () {
