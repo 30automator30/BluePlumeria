@@ -49,15 +49,15 @@ UP = np.array([0, 0, 1.0])
 
 # ---------------------------------------------------------------- layout
 PLINTH = (62.0, 42.0)                # half-axes of the oval
-PL_H = 5.0                           # plinth height at the rim
+PL_H = 3.0                           # plinth height at the rim
 CENTRE = np.array([-10.0, 4.0])      # the silversword
 CROWN_H = 17.0                       # rosette crown above the ground
 SPIKE = (30.0, 150.0)                # bloom spike: bottom and tip heights
-HEAD_GAP = 6.8                       # spacing of flower heads on the spike
+HEAD_GAP = 6.1                       # spacing of flower heads on the spike
 HEAD_EL = np.radians(40)             # heads face at least this far up
 RAY_EL = np.radians(8)               # ray petals point at least this far up
-SMALL = [(np.array([-46.0, 22.0]), 0.42), (np.array([34.0, 26.0]), 0.36),
-         (np.array([-40.0, -26.0]), 0.3)]          # small rosettes: (where, scale)
+SMALL = [(np.array([-40.0, 18.0]), 0.42), (np.array([30.0, 22.0]), 0.36),
+         (np.array([-36.0, -22.0]), 0.3)]          # small rosettes: (where, scale)
 NENE = (np.array([36.0, -20.0]), 1.0)               # goose: (foot, scale)
 
 
@@ -135,6 +135,8 @@ def rosette(c, scale=1.0, n_up=230, n_skirt=80, seed=0):
         reach = scale * (29 + 5 * rng.random())
         p0 = crown + scale * 2.2 * d0
         tip = np.array([c[0], c[1], 0]) + reach * out
+        if oval(tip[0], tip[1], PLINTH[0] - 3.0, PLINTH[1] - 3.0) > 0:
+            continue                                       # would reach past the edge
         tip[2] = ground(tip[0], tip[1]) - 0.15             # rests on the cinders
         k = np.linalg.norm(tip - p0)
         pts = bezier(p0, p0 + 0.6 * k * d0, tip + 0.35 * k * unit(0.25 * out + UP) - 0.1 * k * out, tip, n=16)   # bows out, then down
@@ -189,22 +191,26 @@ def head_parts(base, n, size, out, seed=0):
     side = np.cross(n, up_p)
     q = base + (1.0 + 2.4 * size) * n                     # dome centre
     # stalk out of the core, then a cup widening at 34 degrees to the dome
+    # (a true cone, not a chain of spheres: a sphere at the wide end would
+    # hang below the cup and start in mid-air)
     cup_len = (rd - 0.6) / np.tan(np.radians(34))
-    pts = np.array([base - 1.4 * out, base + 0.4 * n, q - cup_len * n, q - 0.5 * cup_len * n, q])
-    tubes = [(pts, np.array([0.8, 0.65, 0.6, 0.6 + 0.5 * (rd - 0.6), rd]))]
+    pts = np.array([base - 1.4 * out, base + 0.4 * n, q - cup_len * n])
+    tubes = [(pts, np.array([0.8, 0.65, 0.6]))]
+    cone = (q - cup_len * n, n, cup_len, 0.6, rd)
+    rays = []
     n_ray = 14
     for i in range(n_ray):
         a = 2 * np.pi * (i + 0.3 * rng.random()) / n_ray
         r_dir = np.cos(a) * up_p + np.sin(a) * side
-        root = q + 0.9 * rd * r_dir - 0.2 * n
+        root = q + 0.35 * rd * r_dir - 0.3 * size * n          # buried in the cup, so no bulb hangs
         for cup in np.radians(np.arange(22, 82, 4)):     # flattest cup that still rises
             d = np.cos(cup) * r_dir + np.sin(cup) * n
             if np.arcsin(np.clip(d[2], -1, 1)) >= RAY_EL:
                 break
-        L = size * (2.9 + 0.4 * rng.random())
+        L = size * (2.9 + 0.4 * rng.random()) + 0.6 * rd
         d2 = unit(d + 0.35 * UP)                          # tips flick up a little
-        ray = bezier(root, root + 0.4 * L * d, root + 0.75 * L * d, root + 0.6 * L * d + 0.4 * L * d2, n=8)
-        tubes.append((ray, size * np.array([0.5, 0.52, 0.5, 0.46, 0.42, 0.36, 0.28, 0.2])))
+        ray = bezier(root, root + 0.4 * L * d, root + 0.68 * L * d + 0.08 * L * d2, root + 0.65 * L * d + 0.35 * L * d2, n=8)
+        rays.append((ray, size * np.array([0.5, 0.52, 0.5, 0.46, 0.42, 0.36, 0.28, 0.2])))
     pits = []
     for k in range(19):
         rr = 0.72 * rd * np.sqrt((k + 0.5) / 19)
@@ -212,11 +218,11 @@ def head_parts(base, n, size, out, seed=0):
         p = q + rr * (np.cos(a) * up_p + np.sin(a) * side)
         h = 0.9 * size * np.sqrt(max(1 - (rr / rd) ** 2, 0))
         pits.append(p + (h + 0.12 * size) * n)
-    return tubes, (q, rd, 0.9 * size, n), pits
+    return tubes, rays, (q, rd, 0.9 * size, n), pits, cone
 
 
 def spike_tubes():
-    tubes, domes, pits = [], [], []
+    tubes, rays, domes, pits, cups = [], [], [], [], []
     z = np.linspace(SPIKE[0] - 9.0, SPIKE[1], 120)
     core = np.column_stack([np.full_like(z, CENTRE[0]), np.full_like(z, CENTRE[1]), z])
     tubes.append((core, np.maximum(spike_r(z), 2.4)))
@@ -229,9 +235,11 @@ def spike_tubes():
         p = top - [0, 0, 3.0] + 1.5 * d
         tubes.append((np.array([p, p + 1.6 * d, p + 2.6 * d]), np.array([0.6, 1.1, 0.7])))
     for k, (base, n, size, out) in enumerate(spike_heads()):
-        t_, dm, pt = head_parts(base, n, size, out, seed=k)
+        t_, ry, dm, pt, cp = head_parts(base, n, size, out, seed=k)
         tubes += t_
+        rays += ry
         domes.append(dm)
+        cups.append(cp)
         pits += pt
     # slim green bracts round the foot of the spike, rising
     for k in range(26):
@@ -241,7 +249,20 @@ def spike_tubes():
         p0 = np.array([CENTRE[0], CENTRE[1], zk]) + (spike_r(zk) - 0.5) * out
         el = np.radians(48 + 18 * (k % 3))
         tubes.append(needle(p0, np.cos(el) * out + np.sin(el) * UP, 9.0 + 3.0 * (k % 2), np.radians(20), r0=0.55, n=12))
-    return tubes, domes, pits
+    return tubes, domes, pits, cups, rays
+
+
+def cup_sdf(a, n, length, r0, r1):
+    """A flat-ended cone along n from a, widening from r0 to r1."""
+    cos_a = np.cos(np.arctan2(r1 - r0, length))
+
+    def f(x, y, z):
+        p = np.stack([x - a[0], y - a[1], z - a[2]], -1)
+        h = p @ n
+        rr = np.sqrt(np.maximum((p * p).sum(-1) - h * h, 0))
+        side = (rr - (r0 + (r1 - r0) * h / length)) * cos_a
+        return np.maximum(side, np.maximum(-h, h - length))
+    return f, (np.minimum(a, a + length * n) - r1 - 0.5, np.maximum(a, a + length * n) + r1 + 0.5)
 
 
 def dome_sdf(q, rd, depth, n):
@@ -249,7 +270,8 @@ def dome_sdf(q, rd, depth, n):
         p = np.stack([x - q[0], y - q[1], z - q[2]], -1)
         h = p @ n
         rr = np.sqrt(np.maximum((p * p).sum(-1) - h * h, 0))
-        return np.sqrt((rr / rd) ** 2 + (h / depth) ** 2) * min(rd, depth) - min(rd, depth)
+        dome = np.sqrt((rr / rd) ** 2 + (h / depth) ** 2) * min(rd, depth) - min(rd, depth)
+        return np.maximum(dome, -h)                       # front half only: it sits flush on the cup
     return f, (q - rd - 0.5, q + rd + 0.5)
 
 
@@ -298,9 +320,10 @@ def nene(P, f, S=1.0):
         a, b, h = q[..., 0] / S, q[..., 1] / S, q[..., 2] / S
         d = ell(a, b, h, B, AX, pitch)
         for sg in (1, -1):                                # folded wings: four tiers
-            for k, (off, ln, ht, dz) in enumerate(((3.0, 6.0, 4.2, 2.6), (-0.5, 7.0, 3.8, 2.8),
-                                                   (-4.0, 7.2, 3.3, 3.1), (-7.5, 6.4, 2.6, 3.4))):
-                w = ell(a, b, h, (off, sg * (4.9 - 0.25 * k), B[2] + dz), (ln, 1.3, ht), pitch - 0.05)
+            # rear tiers climb onto the back, so the wingtips cross over the rump
+            for k, (off, ln, ht, dz, wb) in enumerate(((3.0, 6.0, 4.2, 2.6, 4.9), (-0.5, 7.0, 3.8, 3.0, 4.5),
+                                                       (-4.0, 7.0, 3.2, 3.9, 3.6), (-7.5, 6.2, 2.5, 4.6, 2.6))):
+                w = ell(a, b, h, (off, sg * wb, B[2] + dz), (ln, 1.3, ht), pitch - 0.05)
                 d = smin(d, w, 0.9) if k == 0 else smin(d, w, 0.25)
         # barred feather edges: shallow scalloped grooves across back and flanks
         row = np.abs(((a + 0.3 * np.abs(b) ** 1.3) / 2.6) % 1.0 - 0.5) * 2.6
@@ -342,7 +365,7 @@ def nene(P, f, S=1.0):
 # ------------------------------------------------------------------ build
 
 def parts():
-    tubes, domes, pits = spike_tubes()
+    tubes, domes, pits, cups, rays = spike_tubes()
     t_, crown = rosette(CENTRE, 1.0, seed=0)
     tubes += t_
     for k, (c, sc) in enumerate(SMALL):
@@ -352,7 +375,7 @@ def parts():
     # keep needles out of the goose
     gc_, gr = goose[2]
     tubes = [t for t in tubes if np.min(np.linalg.norm(t[0] - gc_, axis=1)) > gr + 2.0]
-    return tubes, domes, pits, goose
+    return tubes, domes, pits, goose, cups, rays
 
 
 def bounds():
@@ -362,7 +385,7 @@ def bounds():
 def build(voxel, stems=(), quiet=False, region=None):
     say = (lambda *a: None) if quiet else print
     t0 = time.time()
-    tubes, domes, pits, goose = parts()
+    tubes, domes, pits, goose, cups, rays = parts()
     lo, hi = bounds() if region is None else (np.asarray(region[0]), np.asarray(region[1]))
     xs = np.arange(lo[0], hi[0], voxel, dtype=np.float32)
     ys = np.arange(lo[1], hi[1], voxel, dtype=np.float32)
@@ -371,12 +394,12 @@ def build(voxel, stems=(), quiet=False, region=None):
     add(vol, xs, ys, zs, (-PLINTH[0] - 3, -PLINTH[1] - 3, -1), (PLINTH[0] + 3, PLINTH[1] + 3, PL_H + 5),
         plinth_sdf, k=0, chunk=8)
     say(f"  plinth {time.time() - t0:.0f}s")
-    for pts, rr in tubes:
-        add_tube(vol, xs, ys, zs, pts, np.asarray(rr, float), k=0.35)
-    say(f"  {len(tubes)} needles, stalks and petals {time.time() - t0:.0f}s")
+    for cp in cups:
+        f, (blo, bhi) = cup_sdf(*cp)
+        add(vol, xs, ys, zs, blo, bhi, f, k=0, chunk=16)     # a blend would bulge under the rim
     for dm in domes:
         f, (blo, bhi) = dome_sdf(*dm)
-        add(vol, xs, ys, zs, blo, bhi, f, k=0.3, chunk=16)
+        add(vol, xs, ys, zs, blo, bhi, f, k=0, chunk=16)
     sub = lp.sub
     for p in pits:                                        # floret pits
         sl = sub(xs, ys, zs, p - 0.5, p + 0.5)
@@ -384,7 +407,13 @@ def build(voxel, stems=(), quiet=False, region=None):
             continue
         X, Y, Z = np.meshgrid(xs[sl[0]], ys[sl[1]], zs[sl[2]], indexing="ij")
         vol[sl] = np.maximum(vol[sl], 0.3 - np.sqrt((X - p[0]) ** 2 + (Y - p[1]) ** 2 + (Z - p[2]) ** 2))
+    for pts, rr in rays:                                  # after the pits, which would cut them
+        add_tube(vol, xs, ys, zs, pts, np.asarray(rr, float), k=0)   # a blend webs neighbouring petals
     say(f"  {len(domes)} flower heads {time.time() - t0:.0f}s")
+    # needles and stalks last: pits carved after them would cut needles crossing a head
+    for pts, rr in tubes:
+        add_tube(vol, xs, ys, zs, pts, np.asarray(rr, float), k=0.35)
+    say(f"  {len(tubes)} needles, stalks and petals {time.time() - t0:.0f}s")
     f, (blo, bhi), _ = goose
     add(vol, xs, ys, zs, blo, bhi, f, k=0.4, chunk=8)
     say(f"  nēnē {time.time() - t0:.0f}s")

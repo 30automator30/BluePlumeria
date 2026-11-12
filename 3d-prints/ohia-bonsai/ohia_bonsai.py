@@ -502,7 +502,7 @@ def add_tube(vol, xs, ys, zs, pts, rr, k):
         p_ = rad.max() + 1.0
         add(buf, sx, sy, sz, seg.min(0) - p_, seg.max(0) + p_,
             lambda x, y, z, s_=seg, r_=rad: capsule_chain(x, y, z, s_, r_), k=0)
-    vol[sl] = smin(vol[sl], buf, k)
+    vol[sl] = smin(vol[sl], buf, k) if k else np.minimum(vol[sl], buf)
 
 
 def build_tree(voxel, stems=(), quiet=False, region=None):
