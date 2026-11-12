@@ -106,16 +106,20 @@ def one_round(out):
     key = hashlib.md5(pickle.dumps([(np.round(p, 3), np.round(r, 3)) for p, r in stems])).hexdigest()[:8]
     tdir = os.path.join(out, "tiles_" + key)
     os.makedirs(tdir, exist_ok=True)
+    tl = tiles()
+    for n_ in range(len(tl)):                             # each tile in its own process, to bound memory
+        if not os.path.exists(os.path.join(tdir, f"t{n_:03d}.npz")):
+            subprocess.run([sys.executable, __file__, out, "--tile", str(n_), tdir], check=True)
     vol, o = sw.build(BODY_VOXEL, stems, quiet=True)
     body = to_mf(decimate(mesh_volume(vol, BODY_VOXEL, o), 0.008))
     del vol
     gc.collect()
-    tl = tiles()
     for n_, (lo, hi) in enumerate(tl):
         lo, hi = lo - 1.0, hi + 1.0
         part = fine_part(stems, lo, hi, os.path.join(tdir, f"t{n_:03d}.npz"))
         cut = mf.Manifold.cube((hi - lo - 2.0).tolist()).translate((lo + 1.0).tolist())
         body = (body - cut) + part
+        body.num_tri()                                    # evaluate now, so the CSG tree does not pile up
         print(f"  tile {n_ + 1}/{len(tl)}", flush=True)
         gc.collect()
     full = from_mf(body)
@@ -132,6 +136,13 @@ def one_round(out):
 def main():
     out = sys.argv[1]
     os.makedirs(out, exist_ok=True)
+    if "--tile" in sys.argv:
+        n_, tdir = int(sys.argv[sys.argv.index("--tile") + 1]), sys.argv[sys.argv.index("--tile") + 2]
+        lo, hi = tiles()[n_]
+        fine_part(pickle.load(open(os.path.join(out, "stems.pkl"), "rb")), lo - 1.0, hi + 1.0,
+                  os.path.join(tdir, f"t{n_:03d}.npz"))
+        print(f"  built tile {n_ + 1}", flush=True)
+        return
     if "--round" in sys.argv:
         one_round(out)
         return
