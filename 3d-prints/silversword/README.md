@@ -27,3 +27,4 @@ An ʻāhinahina in bloom with a nēnē, about 153 mm tall on an oval cinder plin
 ## Final build
 - **Full:** 8.24M faces, watertight (and still watertight after an STL save and reload), 76.0 mL of resin, 126.5 × 86.4 × 152.8 mm. A 0.05 mm-layer slice check found 2 tiny islands. Both were skirt-needle tips hovering just above the cinders, and each got a 0.7 mm pin into the plinth (`final_pins.json`). Both spots re-check clean.
 - The 0.06 mm tiles total 32.7M faces before joining, so each tile is simplified to 0.012 mm as it is joined, which is under the printer's ~19 µm pixel.
+- **Lite copy:** 1.78M faces (0.025 mm simplification, 89 MB STL), 75.8 mL. It checks at 0 islands at 0.05 mm layers and reloads watertight.
