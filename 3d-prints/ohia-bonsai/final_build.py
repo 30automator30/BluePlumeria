@@ -69,7 +69,12 @@ def separate_twins(m):
         order = twins[np.argsort(inv[twins], kind="stable")]
         g = inv[order]
         rank = np.arange(len(order)) - np.searchsorted(g, g)
-        n = trimesh.Trimesh(v, m.faces, process=False).vertex_normals[order]
+        t = trimesh.Trimesh(v, m.faces, process=False)
+        n = t.vertex_normals[order]
+        flat = np.linalg.norm(n, axis=1) < 0.5        # normals cancel out: step toward the neighbours instead
+        for i in np.nonzero(flat)[0]:
+            d = v[t.vertex_neighbors[order[i]]].mean(axis=0) - v[order[i]]
+            n[i] = -d / (np.linalg.norm(d) + 1e-12)
         v[order] -= (0.001 * (1 + rank))[:, None] * n
     return trimesh.Trimesh(v, m.faces, process=False)
 

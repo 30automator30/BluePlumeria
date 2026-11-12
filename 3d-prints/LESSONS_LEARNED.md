@@ -148,6 +148,16 @@ Every first-round print broke while supports were removed. The support contacts 
 - **Epoxy beds:** a 0.65 mm rail around a 0.7 mm well. Add the bed depth *on top of* the shell so the floor keeps its full thickness, and raise the flower throat by the same amount or the centre sinks into a pit.
 - **Connectivity check on the voxels:** label the solid voxels (26-connected) before meshing. Keeping only the largest mesh part silently drops a floating hook. A quick front-view height map with one colour per body (and the bead outline) beats blind parameter nudging.
 
+## 5i. ʻĀhinahina (silversword) with nēnē: final build notes (not yet printed)
+
+- **Islands come from unions, not shapes.** A convex part has one lowest point that is its own support, so islands appear where parts join. Look for joint spheres on a widening capsule chain (use a true cone), the back rim of a full sphere at a cup mouth (keep the front half), smooth-min webs between neighbours (use a hard union for cups, domes and rays), and roots that poke out below the cup (bury them).
+- **Order matters for carving:** cut pits before adding parts that cross the pitted surface, or the pits notch them and leave slivers hanging.
+- **Local island checks:** thin needle tips show false islands at 0.2 mm, so confirm suspects at 0.06 mm on a crop. Ignore anything near the crop's side walls, because cut boundaries make false islands.
+- **Memory:** a 0.06 mm tile build and a running Manifold union in one process hit the 15 GB limit. Build each tile in its own process (cached to npz), and force the union to evaluate after each tile (`num_tri()`), or the lazy CSG tree piles up.
+- **Face budget:** 48 tiles at 0.06 mm came to 32.7M faces. Simplify each tile to 0.012 mm as it is joined (well under the printer's ~19 µm pixel) to land at ~8M.
+- **Late islands: pin, don't rebuild.** The full check takes about 3.5 h at this size, and adding stems changes the tile cache key, so a repair round means rebuilding everything. Two needle tips hovering just above the plinth were fixed by unioning short pins into the finished mesh and re-checking only those spots (`silversword/patch_islands.py`).
+- **Twin vertices with a zero normal** (at a pinch, the face normals cancel) do not move when nudged along the normal. Step them toward their neighbours instead (`separate_twins` in `ohia-bonsai/final_build.py`).
+
 ## 6. Checking CHITUBOX .ctb files
 
 Claude can read encrypted CHITUBOX `.ctb` files: settings, preview image and every layer. The decryption scheme is the one documented in the open-source UVtools project (AES-CBC settings block, per-layer XOR plus RLE). Workflow:
@@ -179,3 +189,4 @@ Writing `.ctb` files from scratch is possible (use a CHITUBOX file as the templa
 | Plumeria Echo series (hero, secondary, accents) | `echo-series/` | `echo_series.py` (strung spine, epoxy beds, traced makau) |
 | Fractal lattice sculpture | `fractal-plumeria/` | `lattice_plumeria.py` (bloom + body), `fractal_plumeria.py` (earlier concept), `print_prep.py` (orientation + supports + verification) |
 | ʻŌhiʻa lehua bonsai with ʻiʻiwi | `ohia-bonsai/` | `ohia_bonsai.py` (tree + pot), `final_build.py` (fine blossoms and bird, island repair, lite copy, STL-weld check) |
+| ʻĀhinahina (silversword) with nēnē | `silversword/` | `silversword.py` (spike, rosettes, nēnē, plinth), `final_build.py` (tiled 0.06 mm build, island repair, lite copy), `patch_islands.py` (pin late islands) |

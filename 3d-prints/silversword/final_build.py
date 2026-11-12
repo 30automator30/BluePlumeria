@@ -13,6 +13,7 @@ pushed apart so the STL reloads watertight.
 Usage
   python3 final_build.py OUTDIR            # everything
   python3 final_build.py OUTDIR --round    # one round (used internally)
+  python3 final_build.py OUTDIR --lite     # only the lighter copy (after patch_islands.py)
 """
 
 import gc
@@ -150,20 +151,29 @@ def main():
     sp, ip = os.path.join(out, "stems.pkl"), os.path.join(out, "islands.json")
     if not os.path.exists(sp):
         pickle.dump([], open(sp, "wb"))     # the design checks clean; repair rounds add stems if needed
+    if "--lite" in sys.argv:                                # only (re)make the lighter copy
+        return lite(out)
     for _ in range(6):
         subprocess.run([sys.executable, __file__, out, "--round"], check=True)
         if not json.load(open(ip)):
             break
     else:
         sys.exit("islands remain after 6 rounds")
+    lite(out)
+
+
+def lite(out):
+    sp = os.path.join(out, "stems.pkl")
     z = np.load(os.path.join(out, "silversword.npz"))
     full = trimesh.Trimesh(z["v"], z["f"], process=False)
     for tol in (0.025, 0.02, 0.016):
-        lite = separate_twins(decimate(full, tol))
-        if not islands(lite) and not stl_welds(lite):
-            lite.export(os.path.join(out, "silversword_lite.stl"))
-            print(f"lite: {len(lite.faces)} faces at {tol} mm, no islands", flush=True)
+        lt = separate_twins(decimate(full, tol))
+        isl, welds = islands(lt), stl_welds(lt)
+        if not isl and not welds:
+            lt.export(os.path.join(out, "silversword_lite.stl"))
+            print(f"lite: {len(lt.faces)} faces at {tol} mm, no islands", flush=True)
             break
+        print(f"  lite at {tol} mm: {len(isl)} islands {isl[:4]}, {welds} weld faults; trying finer", flush=True)
     json.dump({"stems": len(pickle.load(open(sp, "rb")))}, open(os.path.join(out, "build.json"), "w"))
 
 

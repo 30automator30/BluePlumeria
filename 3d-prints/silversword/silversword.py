@@ -7,7 +7,7 @@ about 150 mm tall. One part, printed straight on the plate:
   rosette  a ball of about 200 silver needle leaves. Upper needles rise and
            curve upward; the lower ones droop out until their tips rest on
            the cinders.
-  spike    the bloom spike, a tall egg-shaped cob covered in about 150
+  spike    the bloom spike, a tall egg-shaped cob covered in about 165
            daisy-like flower heads in a golden spiral. Each head is a cup on
            a short stalk, a domed centre pitted with florets and a ring of
            tubular ray petals; the heads are smaller toward both ends, with
