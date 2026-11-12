@@ -45,6 +45,7 @@ _spec.loader.exec_module(_ob)
 from_mf, islands, separate_twins, stl_welds, to_mf = _ob.from_mf, _ob.islands, _ob.separate_twins, _ob.stl_welds, _ob.to_mf
 
 BODY_VOXEL, FINE_VOXEL, TILE = 0.15, 0.06, 34.0
+TILE_TOL = 0.012   # tiles simplified on joining: well under the printer's ~19 um pixel, ~4x fewer faces
 
 
 def regions():
@@ -116,7 +117,7 @@ def one_round(out):
     gc.collect()
     for n_, (lo, hi) in enumerate(tl):
         lo, hi = lo - 1.0, hi + 1.0
-        part = fine_part(stems, lo, hi, os.path.join(tdir, f"t{n_:03d}.npz"))
+        part = fine_part(stems, lo, hi, os.path.join(tdir, f"t{n_:03d}.npz")).simplify(TILE_TOL)
         cut = mf.Manifold.cube((hi - lo - 2.0).tolist()).translate((lo + 1.0).tolist())
         body = (body - cut) + part
         body.num_tri()                                    # evaluate now, so the CSG tree does not pile up
@@ -157,7 +158,7 @@ def main():
         sys.exit("islands remain after 6 rounds")
     z = np.load(os.path.join(out, "silversword.npz"))
     full = trimesh.Trimesh(z["v"], z["f"], process=False)
-    for tol in (0.012, 0.009, 0.006):
+    for tol in (0.025, 0.02, 0.016):
         lite = separate_twins(decimate(full, tol))
         if not islands(lite) and not stl_welds(lite):
             lite.export(os.path.join(out, "silversword_lite.stl"))
