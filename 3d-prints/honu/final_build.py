@@ -52,6 +52,24 @@ if os.environ.get("HONU_DRY"):            # a quick coarse run of the whole pipe
 TILE_TOL = 0.012   # tiles simplified on joining: well under the printer's ~19 um pixel, ~4x fewer faces
 
 
+def clean_export(mesh, path):
+    """Save as STL the way a slicer will read it back: export, reload (which
+    welds vertices), drop zero-volume slivers left on tile seams (two
+    back-to-back triangles), and save again. Returns the reloaded mesh."""
+    mesh.export(path)
+    r = trimesh.load(path)
+    parts = sorted(r.split(only_watertight=False), key=lambda p: -len(p.faces))
+    extra = [abs(p.volume) for p in parts[1:]]
+    if extra and max(extra) > 1e-3:
+        raise RuntimeError(f"loose pieces with volume {max(extra):.4f} mm^3 after reload")
+    r = parts[0]
+    r.export(path)
+    r = trimesh.load(path)
+    if not r.is_watertight:
+        raise RuntimeError("STL does not reload watertight")
+    return r
+
+
 def regions():
     """Boxes to re-mesh finely: the reef and sea floor, and the honu."""
     _, (tlo, thi), _ = sw.honu(sw.TURTLE["C"], sw.TURTLE["yaw"], sw.TURTLE["pitch"], sw.TURTLE["roll"], sw.CONTACT)
@@ -136,7 +154,7 @@ def one_round(out):
         gc.collect()
     full = from_mf(body)
     full = max(full.split(only_watertight=False), key=lambda p: len(p.faces))
-    full.export(os.path.join(out, "honu.stl"))
+    full = clean_export(full, os.path.join(out, "honu.stl"))
     np.savez(os.path.join(out, "honu.npz"), v=full.vertices, f=full.faces)
     new = islands(full)
     json.dump([[float(a) for a in i] for i in new], open(ip, "w"))
@@ -185,7 +203,7 @@ def lite(out):
         lt = separate_twins(decimate(full, tol))
         isl, welds = islands(lt), stl_welds(lt)
         if not isl and not welds:
-            lt.export(os.path.join(out, "honu_lite.stl"))
+            lt = clean_export(lt, os.path.join(out, "honu_lite.stl"))
             print(f"lite: {len(lt.faces)} faces at {tol} mm, no islands", flush=True)
             break
         print(f"  lite at {tol} mm: {len(isl)} islands {isl[:4]}, {welds} weld faults; trying finer", flush=True)
