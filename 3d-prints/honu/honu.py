@@ -54,8 +54,12 @@ COWRIE = np.array([16.0, -26.0])
 # the honu: centre, heading, nose-down pitch and left-down roll. The pitch
 # and roll put the body's lowest point where the left front flipper leaves
 # the shell, so the whole turtle hangs from that flipper.
-TURTLE = dict(C=np.array([10.0, -14.0, 62.0]), yaw=np.radians(18), pitch=np.radians(10), roll=np.radians(24))
+TURTLE = dict(C=np.array([10.0, -14.0, 54.0]), yaw=np.radians(18), pitch=np.radians(10), roll=np.radians(24))
 TIP_LOCAL = np.array([8.0, 48.0, -6.0])              # left front flipper tip, turtle frame: out and a little down
+REAR_TIP_LOCAL = np.array([-42.0, 27.0, -9.0])       # left rear flipper trails down onto the coral pinnacle
+CAULI2 = np.array([34.0, 12.0])                      # a second, smaller cauliflower clump
+FINGERS2 = np.array([-50.0, 17.0])                   # a small finger clump at the back
+KNOLL = np.array([28.0, -8.0])                       # a small lobe-coral knoll
 
 
 # -------------------------------------------------------------- helpers
@@ -102,6 +106,7 @@ def rot(yaw, pitch, roll):
 
 
 CONTACT = TURTLE["C"] + rot(TURTLE["yaw"], TURTLE["pitch"], TURTLE["roll"]) @ TIP_LOCAL   # where the flipper tip rests
+CONTACT2 = TURTLE["C"] + rot(TURTLE["yaw"], TURTLE["pitch"], TURTLE["roll"]) @ REAR_TIP_LOCAL   # rear flipper on the pinnacle
 
 
 # ------------------------------------------------------------------ sand
@@ -178,18 +183,68 @@ def finger_tubes():
     return tubes
 
 
-def cauli_tubes():
+def small_fingers(where, n, seed):
+    """A small clump of blunt finger coral."""
+    rng = np.random.default_rng(seed)
+    gz = sand(*where) - 2.0
+    out = []
+    for i in range(n):
+        a = 2.39996 * i + rng.uniform(0, 1)
+        rr = 1.5 + 4.5 * np.sqrt((i + 0.5) / n)
+        p0 = np.array([where[0] + rr * np.cos(a), where[1] + rr * np.sin(a), gz])
+        d = unit(np.array([np.cos(a), np.sin(a), 0]) * rng.uniform(0.1, 0.5) + UP)
+        L = rng.uniform(9, 18)
+        r0 = rng.uniform(2.1, 2.6)
+        pts = bezier(p0, p0 + 0.35 * L * d, p0 + 0.7 * L * unit(d + [0, 0, 0.5]), p0 + L * unit(d + [0, 0, 0.35]), n=12)
+        out.append((pts, np.linspace(r0, r0 * 0.88, 12)))
+    return out
+
+
+def pinnacle():
+    """A lobe-coral pinnacle (bommie) rising off the mound to meet the honu's
+    rear flipper: a tapering knobbly column. Lumps sit on its upper flanks
+    only, sunk halfway, so each one's underside stays inside the column."""
+    rng = np.random.default_rng(23)
+    top = CONTACT2 - [0, 0, 2.6]
+    base = np.array([top[0] + 3.0, top[1] + 4.0, sand(top[0] + 3.0, top[1] + 4.0) - 1.0])
+    pts = bezier(base, base + [0, 0, 12], top - [1.5, 2.0, 12], top, n=24)
+    rad = np.linspace(9.0, 4.4, 24)
+    blobs = []
+    for i in range(4, 24, 2):
+        for _ in range(2):
+            a = rng.uniform(0, 2 * np.pi)
+            el = np.radians(rng.uniform(40, 75))
+            dr = np.array([np.cos(a) * np.cos(el), np.sin(a) * np.cos(el), np.sin(el)])
+            rl = rad[i] * rng.uniform(0.45, 0.6)
+            blobs.append((pts[i] + dr * (rad[i] - 0.6 * rl), np.array([rl, rl, rl * 0.9])))
+    blobs.append((top + [0, 0, 0.6], np.array([4.4, 4.4, 3.6])))   # the knob the flipper rests on
+    return (pts, rad), blobs
+
+
+def knoll_blobs():
+    c = np.array([KNOLL[0], KNOLL[1], sand(*KNOLL) - 3.0])
+    out = [(c, np.array([9.0, 7.5, 7.0]))]
+    for i in range(7):
+        a = 2.39996 * i
+        zz = 0.3 + 0.6 * (i + 0.5) / 7
+        q = np.array([np.sqrt(1 - zz ** 2) * np.cos(a), np.sqrt(1 - zz ** 2) * np.sin(a), zz])
+        rl = 3.2 + 0.5 * np.sin(3 * i)
+        out.append((c + q * [9.0, 7.5, 7.0] - unit(q / [9.0, 7.5, 7.0]) * rl * 0.5, np.array([rl, rl, rl * 0.85])))
+    return out
+
+
+def cauli_tubes(where=CAULI, seed=17, sc=1.0):
     """Cauliflower coral: a bouquet of short branches splaying up and out,
     each ending in a blunt flattened lobe."""
-    rng = np.random.default_rng(17)
+    rng = np.random.default_rng(seed)
     tubes = []
-    gz = sand(*CAULI) - 1.5
-    root = np.array([CAULI[0], CAULI[1], gz])
+    gz = sand(*where) - 1.5
+    root = np.array([where[0], where[1], gz])
     for i in range(34):
         a = 2.39996 * i
         el = np.radians(30 + 58 * ((i + 0.5) / 34) ** 0.7)   # outer branches splay low, inner ones climb
         d = np.array([np.cos(a) * np.cos(el), np.sin(a) * np.cos(el), np.sin(el)])
-        L = rng.uniform(8, 12) * (1.25 - 0.4 * np.cos(el))
+        L = rng.uniform(8, 12) * (1.25 - 0.4 * np.cos(el)) * sc
         p0 = root + [rng.normal(0, 1.5), rng.normal(0, 1.5), 0]
         pts = bezier(p0, p0 + 0.4 * L * d, p0 + 0.8 * L * unit(d + UP * 0.4), p0 + L * unit(d + UP * 0.6), n=10)
         tubes.append((pts, np.linspace(2.2, 1.8, 10)))
@@ -373,8 +428,12 @@ def honu(C, yaw, pitch, roll, contact):
     # rear flippers, trailing and lifted
     for side in (1, -1):
         p0 = np.array([-25.0, side * 13.0, -1.5])
-        tip = np.array([-44.0, side * 25.0, 5.5])
-        sp = bezier(p0, p0 + [-6, side * 4, 1], tip + [4, -side * 1, -1.5], tip, n=12)
+        if side == 1:                                     # the low one trails down onto the pinnacle
+            tip = REAR_TIP_LOCAL
+            sp = bezier(p0, p0 + [-6, 4, -1.5], tip + [5, -2, 2.5], tip, n=12)
+        else:
+            tip = np.array([-44.0, -25.0, 5.5])
+            sp = bezier(p0, p0 + [-6, -4, 1], tip + [4, 1, -1.5], tip, n=12)
         c, t = flipper_profile(12, 0, 6.0, 1.7, 1.1, front=False)
         flippers.append(paddle(sp, c, t))
     scutes = scute_segments()
@@ -485,15 +544,18 @@ def build(voxel, stems=(), quiet=False, region=None):
     add(vol, xs, ys, zs, blo, bhi, base_sdf, k=0, chunk=8)
     say(f"  sand {time.time() - t0:.0f}s")
     # coral, built in its own buffer so the polyp pits stay on the coral
-    clo, chi = np.array([-62.0, -36.0, 0.0]), np.array([40.0, 36.0, CONTACT[2] + 3])
+    clo, chi = np.array([-63.0, -38.0, 0.0]), np.array([46.0, 37.0, max(CONTACT[2], CONTACT2[2]) + 3])
     sl = lp.sub(xs, ys, zs, clo, chi)
     if all(s_.stop > s_.start for s_ in sl):
         cx, cy, cz = xs[sl[0]], ys[sl[1]], zs[sl[2]]
         cv = np.full((len(cx), len(cy), len(cz)), 3.0, np.float32)
-        for c, r in lobe_blobs():
-            add(cv, cx, cy, cz, c - r - 1, c + r + 1,
-                lambda x, y, z, c=c, r=r: ell(x - c[0], y - c[1], z - c[2], *r), k=3.0, chunk=16)
-        for pts, rr in finger_tubes() + cauli_tubes():      # plain union: a blend webs leaning
+        (ppts, prad), pblobs = pinnacle()
+        add_tube(cv, cx, cy, cz, ppts, prad, k=0)
+        for c, r in lobe_blobs() + knoll_blobs() + pblobs:
+            add(cv, cx, cy, cz, c - r - 3, c + r + 3,           # pad past the blend, or its fillet is cut flat
+                lambda x, y, z, c=c, r=r: ell(x - c[0], y - c[1], z - c[2], *r), k=2.0, chunk=16)
+        more = small_fingers(FINGERS2, 7, 31) + cauli_tubes(CAULI2, 41, 0.75)
+        for pts, rr in finger_tubes() + cauli_tubes() + more:   # plain union: a blend webs leaning
             add_tube(cv, cx, cy, cz, pts, np.asarray(rr, float), k=0)   # fingers together in mid-air
 
         # carve the polyp cups slab by slab
@@ -520,8 +582,14 @@ def build(voxel, stems=(), quiet=False, region=None):
     tunnels = [(np.array([mc[0], mc[1]]), np.array([-BASE[0] - 3, mc[1] + 4.0])),
                (np.array([mc[0], mc[1]]), np.array([mc[0] - 6.0, -BASE[1] - 3]))]
 
+    (ppts, prad), _ = pinnacle()
+
     def cavity(x, y, z):
         d = ell(x - mc[0], y - mc[1], z - mc[2], *cav_r)
+        # the pinnacle's column stays solid through the cavity, down to the plate
+        k_ = 0
+        ax = np.hypot(x - ppts[k_, 0], y - ppts[k_, 1])
+        d = np.maximum(d, -(ax - prad[0] + 0.5))
         for p, q in tunnels:
             ab = q - p
             h = np.clip(((x - p[0]) * ab[0] + (y - p[1]) * ab[1]) / (ab @ ab), 0, 1)
@@ -549,7 +617,7 @@ def build(voxel, stems=(), quiet=False, region=None):
     return vol, (xs[0], ys[0], zs[0])
 
 
-def trim_crumbs(vol, voxel, zs, max_area=0.03):
+def trim_crumbs(vol, voxel, zs, max_area=0.06):
     """Texture cut into a sloping underside can leave specks a voxel or two
     across that start in mid-air. Working up from the plate, remove any
     piece of a layer under max_area (mm^2) that has nothing under it; the
