@@ -26,5 +26,5 @@ A green sea turtle gliding over a coral head on an oval sand base, about 130 mm 
 
 ## Final build
 - **Full:** 3.36M faces, watertight (and still watertight after an STL save and reload), 0 STL weld faults, 63.2 mL of resin, 130.2 × 102.6 × 81.0 mm.
-  - A 0.05 mm-layer slice check found 4 tiny islands. Three got short posts (0.3, 0.3 and 0.6 mm, listed in `final_pins.json`), and the fourth checked clean on its local crop.
+  - A 0.05 mm-layer slice check found 4 tiny islands. Three got short posts (0.9, 0.9 and 1.2 mm, each including 0.6 mm buried in the solid below; listed in `final_pins.json`), and the fourth checked clean on its local crop.
 - **Lite copy:** being made.

@@ -51,8 +51,8 @@ def main():
             if not left:
                 L += BURY
                 M = M + mf.Manifold.cylinder(L + 0.4, PIN_R, PIN_R, 24).translate([x, y, zi - L])
-                pins.append([zi, x, y, L])
-                print(f"island z={zi:.2f} at ({x:.1f}, {y:.1f}): pinned with a {L} mm post", flush=True)
+                pins.append([zi, x, y, round(L, 2)])
+                print(f"island z={zi:.2f} at ({x:.1f}, {y:.1f}): pinned with a {L:.1f} mm post", flush=True)
                 break
         else:
             sys.exit(f"island z={zi:.2f} at ({x:.1f}, {y:.1f}) needs more than {LENGTHS[-1]} mm: {left}")

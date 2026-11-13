@@ -169,7 +169,7 @@ Every first-round print broke while supports were removed. The support contacts 
 - **Skip empty tiles.** A coarse surface test skips tiles with nothing in them (21 of 56 here).
 - **The tile cache key covers stems only, not the design.** After a design change, build into a fresh folder, or the old tiles come back.
 - **Shapes read as body parts.** Upright smooth fingers with round caps, a round knob on a shaft and beaded algae stalks all read as phallic. Finger coral now tapers, is knobbly along its length and splits into 2–3 rising tips; the flipper rests in a fork; the halimeda segments are wider than tall and fan out.
-- **Pin, don't rebuild (again).** The build script now runs one round, then `patch_islands.py`. Each post grows downward in steps until the spot re-checks clean, so the post is only as long as it needs to be (0.3–0.6 mm here).
+- **Pin, don't rebuild (again).** The build script now runs one round, then `patch_islands.py`. Each post grows downward in steps until the spot re-checks clean, so the post is only as long as it needs to be, then sinks a further 0.6 mm into the solid below. Without that margin the lite simplification shifted surfaces enough to leave a just-landed post floating.
 
 ## 6. Checking CHITUBOX .ctb files
 
