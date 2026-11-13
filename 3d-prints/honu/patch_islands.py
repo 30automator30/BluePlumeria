@@ -22,6 +22,7 @@ fb = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(fb)
 
 PIN_R, CROP = 0.35, 5.0
+BURY = 0.6          # extra length into the solid, so the post still lands after the lite simplification
 LENGTHS = (0.3, 0.6, 1.0, 1.5, 2.5, 4.0, 6.0)
 
 
@@ -48,7 +49,8 @@ def main():
             pin = mf.Manifold.cylinder(L + 0.4, PIN_R, PIN_R, 24).translate([x, y, zi - L])
             left = local(M + pin, x, y, zi)
             if not left:
-                M = M + pin
+                L += BURY
+                M = M + mf.Manifold.cylinder(L + 0.4, PIN_R, PIN_R, 24).translate([x, y, zi - L])
                 pins.append([zi, x, y, L])
                 print(f"island z={zi:.2f} at ({x:.1f}, {y:.1f}): pinned with a {L} mm post", flush=True)
                 break

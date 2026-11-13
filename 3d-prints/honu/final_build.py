@@ -199,7 +199,8 @@ def lite(out):
     sp = os.path.join(out, "stems.pkl")
     z = np.load(os.path.join(out, "honu.npz"))
     full = trimesh.Trimesh(z["v"], z["f"], process=False)
-    for tol in (0.025, 0.02, 0.016):
+    tols = os.environ.get("HONU_LITE_TOLS", "0.025,0.02,0.016")   # e.g. HONU_LITE_TOLS=0.016 to retry one
+    for tol in [float(t) for t in tols.split(",")]:
         lt = separate_twins(decimate(full, tol))
         isl, welds = islands(lt), stl_welds(lt)
         if not isl and not welds:
