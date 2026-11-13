@@ -147,46 +147,81 @@ def lobe_blobs():
     return out
 
 
+def coral_branch(p0, d, L, r0, rng, n=14, tips=None):
+    """One finger-coral branch that reads as coral, not a peg: it tapers,
+    swells and pinches a little along its length, and near the top it splits
+    into two or three short divergent tips instead of ending in one round
+    head. Every tip keeps rising (elevation >= ~40 deg) so nothing overhangs."""
+    d = unit(d)
+    split = rng.uniform(0.62, 0.74)
+    Ls = L * split
+    pts = bezier(p0, p0 + 0.35 * Ls * d, p0 + 0.7 * Ls * unit(d + [0, 0, 0.5]), p0 + Ls * unit(d + [0, 0, 0.35]), n=n)
+    t = np.linspace(0, 1, n)
+    ph = rng.uniform(0, 2 * np.pi)
+    rad = r0 * (1 - 0.2 * t) * (1 + 0.09 * np.sin(ph + 2.6 * np.pi * t))   # knobbly, gently tapering
+    out = [(pts, rad)]
+    top, rt = pts[-1], rad[-1]
+    ax = unit(pts[-1] - pts[-3])
+    side = unit(np.cross(ax, rng.normal(0, 1, 3)))
+    k = tips if tips is not None else (3 if rng.uniform() < 0.35 else 2)
+    for j in range(k):
+        b = 2 * np.pi * j / k + rng.uniform(-0.4, 0.4)
+        perp = side * np.cos(b) + np.cross(ax, side) * np.sin(b)
+        th = np.radians(rng.uniform(24, 36))
+        dt = unit(ax * np.cos(th) + perp * np.sin(th))
+        if dt[2] < 0.65:                                   # keep tips climbing
+            dt = unit(dt + UP * (0.65 - dt[2]) * 2.0)
+        lt = (L - Ls) * rng.uniform(0.9, 1.35)
+        q0 = top - ax * rt * 0.6
+        m = 6
+        tp = np.array([q0 + dt * lt * s_ for s_ in np.linspace(0, 1, m)])
+        tr = np.linspace(rt * 0.82, max(1.1, rt * 0.55), m) * (1 + 0.07 * np.sin(np.linspace(0, np.pi, m)))
+        out.append((tp, tr))
+    return out
+
+
 def finger_tubes():
-    """Blunt finger coral: thick upright fingers that fork, plus the knob
-    the honu's flipper rests on."""
+    """Finger coral: knobbly branching fingers that split into short tips,
+    plus the branch the honu's flipper rests on."""
     rng = np.random.default_rng(11)
     tubes = []
     gz = sand(*FINGERS) - 2.0
-
-    def finger(p0, d, L, r0, r1, n=14):
-        d = unit(d)
-        pts = bezier(p0, p0 + 0.35 * L * d, p0 + 0.7 * L * unit(d + [0, 0, 0.5]), p0 + L * unit(d + [0, 0, 0.35]), n=n)
-        return pts, np.linspace(r0, r1, n)
-    # the tall finger under the flipper tip, ending in a broad knob
-    top = CONTACT - [0, 0, 2.2]
+    # the tall branch under the flipper tip: a knobbly column that splits in
+    # three near the top; one tip runs up under the flipper, the others fan out
+    top = CONTACT - [0, 0, 6.5]
     base = np.array([CONTACT[0] + 3.0, CONTACT[1] - 5.0, gz])
-    pts = bezier(base, base + [0, 0, 14], top - [2.0, 1.0, 12], top, n=20)
-    tubes.append((pts, np.linspace(3.4, 3.0, 20)))
-    tubes.append((np.array([top - [0, 0, 1.5], top + [0, 0, 0.3]]), np.array([3.8, 3.5])))
+    pts = bezier(base, base + [0, 0, 12], top - [2.0, 1.0, 10], top, n=20)
+    t = np.linspace(0, 1, 20)
+    tubes.append((pts, 3.6 * (1 - 0.25 * t) * (1 + 0.08 * np.sin(1.0 + 2.8 * np.pi * t))))
+    rt = 3.6 * 0.75
+    up_tip = CONTACT - [0, 0, 0.6]
+    tubes.append((np.array([top - [0, 0, 1.0], top + (up_tip - top) * 0.5, up_tip]), np.array([rt * 0.9, 2.4, 2.1])))
+    fl = CONTACT - TURTLE["C"]
+    perp = unit(np.cross(UP, unit(fl * [1, 1, 0])))
+    for sgn in (1, -1):                                  # two tips rise beside the flipper: it rests in a fork
+        end = CONTACT + perp * sgn * 4.8 + [0, 0, 1.8]
+        q0 = top - [0, 0, 1.5]
+        tp = bezier(q0, q0 + [0, 0, 3.0], end - unit(end - q0) * 2.0 + [0, 0, -1.0], end, n=8)
+        tubes.append((tp, np.linspace(rt * 0.8, 1.5, 8)))
     for i in range(14):
         a = 2.39996 * i + 0.4
         rr = 2.0 + 10.0 * np.sqrt((i + 0.5) / 14)
         p0 = np.array([FINGERS[0] + rr * np.cos(a), FINGERS[1] + rr * 0.8 * np.sin(a), gz])
         out_ = np.array([np.cos(a), np.sin(a), 0.0])
-        tilt = rng.uniform(0.1, 0.6)
+        tilt = rng.uniform(0.15, 0.6)
         d = unit(out_ * tilt + rng.normal(0, 0.12, 3) * [1, 1, 0] + UP)
-        L = rng.uniform(13, 30) * (1.2 - 0.03 * rr)
-        r0 = rng.uniform(2.3, 2.9)
-        p, r = finger(p0, d, L, r0, r0 * rng.uniform(0.82, 0.95))
-        tubes.append((p, r))
-        for frac in (0.4, 0.62):                          # forks, rising steeply
-            if L > 15 and rng.uniform() < 0.55:
-                k = int(frac * len(p))
-                b = rng.uniform(0, 2 * np.pi)
-                d2 = unit(np.array([np.cos(b), np.sin(b), 0]) * rng.uniform(0.3, 0.7) + UP * 1.3)
-                q0 = p[k] - d2 * r[k] * 0.8
-                tubes.append(finger(q0, d2, L * rng.uniform(0.35, 0.6), r[k] * 0.85, r[k] * 0.75, n=10))
+        L = rng.uniform(12, 27) * (1.2 - 0.03 * rr)
+        tubes += coral_branch(p0, d, L, rng.uniform(2.2, 2.8), rng)
+        if L > 15 and rng.uniform() < 0.5:               # a side branch, rising steeply
+            b = rng.uniform(0, 2 * np.pi)
+            d2 = unit(np.array([np.cos(b), np.sin(b), 0]) * rng.uniform(0.3, 0.6) + UP * 1.3)
+            q0 = p0 + d * L * 0.25 - d2 * 1.6
+            tubes += coral_branch(q0, d2, L * rng.uniform(0.4, 0.6), 1.9, rng, n=10)
     return tubes
 
 
 def small_fingers(where, n, seed):
-    """A small clump of blunt finger coral."""
+    """A small clump of branching finger coral."""
     rng = np.random.default_rng(seed)
     gz = sand(*where) - 2.0
     out = []
@@ -194,11 +229,8 @@ def small_fingers(where, n, seed):
         a = 2.39996 * i + rng.uniform(0, 1)
         rr = 1.5 + 4.5 * np.sqrt((i + 0.5) / n)
         p0 = np.array([where[0] + rr * np.cos(a), where[1] + rr * np.sin(a), gz])
-        d = unit(np.array([np.cos(a), np.sin(a), 0]) * rng.uniform(0.1, 0.5) + UP)
-        L = rng.uniform(9, 18)
-        r0 = rng.uniform(2.1, 2.6)
-        pts = bezier(p0, p0 + 0.35 * L * d, p0 + 0.7 * L * unit(d + [0, 0, 0.5]), p0 + L * unit(d + [0, 0, 0.35]), n=12)
-        out.append((pts, np.linspace(r0, r0 * 0.88, 12)))
+        d = unit(np.array([np.cos(a), np.sin(a), 0]) * rng.uniform(0.2, 0.55) + UP)
+        out += coral_branch(p0, d, rng.uniform(9, 16), rng.uniform(2.0, 2.4), rng, n=12)
     return out
 
 
@@ -309,7 +341,7 @@ def halimeda(where, seed):
     def chain(p, ang, n):
         for _ in range(n):
             d = np.cos(ang) * e1 + np.sin(ang) * UP
-            p = p + 2.5 * d
+            p = p + 2.2 * d
             discs.append(p.copy())
             if rng.uniform() < 0.25 and n > 2:            # fork, both arms climbing at 60 degrees or more
                 chain(p, np.radians(rng.uniform(62, 75)), n - 2)
@@ -318,8 +350,8 @@ def halimeda(where, seed):
                 ang = np.clip(ang + rng.normal(0, 0.12), np.radians(62), np.radians(118))
     base = np.array([where[0], where[1], sand(*where) - 0.6])
     discs.append(base.copy())
-    for k in range(3):
-        chain(base + e1 * rng.normal(0, 0.8), np.radians(70 + 20 * k + rng.uniform(-5, 5)), int(rng.integers(3, 6)))
+    for k in range(4):                                   # a fan of chains, not one stalk
+        chain(base + e1 * rng.normal(0, 0.8), np.radians(64 + 17 * k + rng.uniform(-4, 4)), int(rng.integers(3, 5)))
     D = np.array(discs)
 
     def f(x, y, z):
@@ -328,7 +360,7 @@ def halimeda(where, seed):
             qx, qy, qz = x - c[0], y - c[1], z - c[2]
             u = qx * e1[0] + qy * e1[1]
             w = qx * nrm[0] + qy * nrm[1]
-            d = np.minimum(d, ell(u, qz, w, 2.1, 1.9, 0.8))
+            d = np.minimum(d, ell(u, qz, w, 2.5, 1.45, 0.7))   # wider than tall: flat plates, not beads
         return d
     return f, (D.min(0) - 3, D.max(0) + 3)
 
