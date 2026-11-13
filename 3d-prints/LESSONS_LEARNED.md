@@ -158,6 +158,19 @@ Every first-round print broke while supports were removed. The support contacts 
 - **Late islands: pin, don't rebuild.** The full check takes about 3.5 h at this size, and adding stems changes the tile cache key, so a repair round means rebuilding everything. Two needle tips hovering just above the plinth were fixed by unioning short pins into the finished mesh and re-checking only those spots (`silversword/patch_islands.py`).
 - **Twin vertices with a zero normal** (at a pinch, the face normals cancel) do not move when nudged along the normal. Step them toward their neighbours instead (`separate_twins` in `ohia-bonsai/final_build.py`).
 
+## 5j. Honu over coral: final build notes (not yet printed)
+
+- **Pits make crumbs.** Random corallite pits on curved coral left specks, sealed voids and zero-thickness sheets. What worked: pits placed in columns along the surface normal at a 1.6 mm spacing with little jitter, faded out on overhangs, plus three volume cleanups in `honu.build`: `fill_voids` (air not touching the edge), `drop_specks` (stray solid bits) and `trim_crumbs` (unsupported per-layer pieces of 0.06 mm² or less).
+- **Coral branches: plain union.** A smooth-min blend webs leaning fingers together in mid-air, and the webs print as islands.
+- **Pad blend boxes past the blend width.** When a smooth-min fillet is evaluated in a bounding box smaller than its reach, the box edge clips the fillet and leaves crumbs. Pad each box by more than `k`.
+- **The grid has to hold the overhang.** The build grid first covered only the base, which cut off the flipper that reaches past it. `bounds()` now spans the base plus the turtle box.
+- **Thin bases can't be hollowed.** A 2.6 mm sand base has no room for a cavity with a printable ceiling, so it stays solid. Only the tall coral mound is hollow, with two pitched tunnels to the rim to drain it.
+- **Seam slivers.** Joining tiles left zero-area slivers that reloaded as not watertight, so `clean_export` saves, reloads, keeps the one real piece and asserts watertight.
+- **Skip empty tiles.** A coarse surface test skips tiles with nothing in them (21 of 56 here).
+- **The tile cache key covers stems only, not the design.** After a design change, build into a fresh folder, or the old tiles come back.
+- **Shapes read as body parts.** Upright smooth fingers with round caps, a round knob on a shaft and beaded algae stalks all read as phallic. Finger coral now tapers, is knobbly along its length and splits into 2–3 rising tips; the flipper rests in a fork; the halimeda segments are wider than tall and fan out.
+- **Pin, don't rebuild (again).** The build script now runs one round, then `patch_islands.py`. Each post grows downward in steps until the spot re-checks clean, so the post is only as long as it needs to be (0.3–0.6 mm here).
+
 ## 6. Checking CHITUBOX .ctb files
 
 Claude can read encrypted CHITUBOX `.ctb` files: settings, preview image and every layer. The decryption scheme is the one documented in the open-source UVtools project (AES-CBC settings block, per-layer XOR plus RLE). Workflow:
@@ -190,3 +203,4 @@ Writing `.ctb` files from scratch is possible (use a CHITUBOX file as the templa
 | Fractal lattice sculpture | `fractal-plumeria/` | `lattice_plumeria.py` (bloom + body), `fractal_plumeria.py` (earlier concept), `print_prep.py` (orientation + supports + verification) |
 | ʻŌhiʻa lehua bonsai with ʻiʻiwi | `ohia-bonsai/` | `ohia_bonsai.py` (tree + pot), `final_build.py` (fine blossoms and bird, island repair, lite copy, STL-weld check) |
 | ʻĀhinahina (silversword) with nēnē | `silversword/` | `silversword.py` (spike, rosettes, nēnē, plinth), `final_build.py` (tiled 0.06 mm build, island repair, lite copy), `patch_islands.py` (pin late islands) |
+| Honu over coral | `honu/` | `honu.py` (turtle, coral, limu, sand base), `final_build.py` (tiled 0.08 mm build, lite copy), `patch_islands.py` (shortest-post island pins) |
