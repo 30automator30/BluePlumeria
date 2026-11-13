@@ -60,6 +60,8 @@ REAR_TIP_LOCAL = np.array([-42.0, 27.0, -9.0])       # left rear flipper trails 
 CAULI2 = np.array([34.0, 12.0])                      # a second, smaller cauliflower clump
 FINGERS2 = np.array([-50.0, 17.0])                   # a small finger clump at the back
 KNOLL = np.array([28.0, -8.0])                       # a small lobe-coral knoll
+SEAGRASS = [(50, -4), (-55, -12), (20, 31), (-20, -29), (4, -16), (42, 22), (-14, 33), (52, -14), (-56, 2), (-4, -33)]
+HALIMEDA = [(32, -30), (-26, -31), (-36, 28), (14, -4), (55, 10), (-50, -18)]
 
 
 # -------------------------------------------------------------- helpers
@@ -270,6 +272,65 @@ def corallite_pits(x, y, z, d, n, s=1.6, r=0.42, depth=0.4):
     cell = np.sqrt(np.maximum(np.einsum("...i,...i->...", f, f) - along ** 2, 0)) * s
     wgt = np.clip((n[..., 2] + 0.35) / 0.3, 0, 1)      # fade out on overhangs
     return np.maximum(d, np.minimum(r - cell, d + depth * wgt))
+
+
+def seagrass(where, seed):
+    """A tuft of seagrass: ribbon blades rising from the sand and leaning
+    out, curving gently; each blade climbs all the way so its tip is its
+    highest point."""
+    rng = np.random.default_rng(seed)
+    gz = sand(*where) - 1.2
+    out = []
+    n = rng.integers(5, 9)
+    for i in range(n):
+        a = 2 * np.pi * i / n + rng.uniform(-0.4, 0.4)
+        L = rng.uniform(9, 16)
+        e0, e1 = np.radians(rng.uniform(70, 85)), np.radians(rng.uniform(40, 60))
+        h = np.array([np.cos(a), np.sin(a), 0])
+        d0, d1 = np.cos(e0) * h + np.sin(e0) * UP, np.cos(e1) * h + np.sin(e1) * UP
+        p0 = np.array([where[0] + rng.normal(0, 0.8), where[1] + rng.normal(0, 0.8), gz])
+        sp = bezier(p0, p0 + 0.4 * L * d0, p0 + 0.4 * L * d0 + 0.35 * L * d1, p0 + 0.4 * L * d0 + 0.62 * L * d1, n=12)
+        s_ = np.linspace(0, 1, 12)
+        chord = 1.0 * (0.8 + 0.2 * np.clip(s_ / 0.2, 0, 1)) * np.sqrt(np.clip(1 - (np.clip(s_ - 0.8, 0, 1) / 0.21) ** 2, 0.05, 1))
+        thick = np.full(12, 0.45)
+        out.append(paddle(sp, np.maximum(chord, 0.55), thick))
+    return out
+
+
+def halimeda(where, seed):
+    """Halimeda limu: short branching chains of coin-like segments standing
+    edge-up in one plane, each resting on the one below."""
+    rng = np.random.default_rng(seed)
+    a = rng.uniform(0, np.pi)
+    e1 = np.array([np.cos(a), np.sin(a), 0])
+    nrm = np.cross(UP, e1)
+    discs = []
+
+    def chain(p, ang, n):
+        for _ in range(n):
+            d = np.cos(ang) * e1 + np.sin(ang) * UP
+            p = p + 2.5 * d
+            discs.append(p.copy())
+            if rng.uniform() < 0.25 and n > 2:            # fork, both arms climbing at 60 degrees or more
+                chain(p, np.radians(rng.uniform(62, 75)), n - 2)
+                ang = np.radians(rng.uniform(105, 118))
+            else:
+                ang = np.clip(ang + rng.normal(0, 0.12), np.radians(62), np.radians(118))
+    base = np.array([where[0], where[1], sand(*where) - 0.6])
+    discs.append(base.copy())
+    for k in range(3):
+        chain(base + e1 * rng.normal(0, 0.8), np.radians(70 + 20 * k + rng.uniform(-5, 5)), int(rng.integers(3, 6)))
+    D = np.array(discs)
+
+    def f(x, y, z):
+        d = np.full(x.shape, 3.0)
+        for c in D:
+            qx, qy, qz = x - c[0], y - c[1], z - c[2]
+            u = qx * e1[0] + qy * e1[1]
+            w = qx * nrm[0] + qy * nrm[1]
+            d = np.minimum(d, ell(u, qz, w, 2.1, 1.9, 0.8))
+        return d
+    return f, (D.min(0) - 3, D.max(0) + 3)
 
 
 def urchin_sdf():
@@ -574,6 +635,16 @@ def build(voxel, stems=(), quiet=False, region=None):
     say(f"  coral {time.time() - t0:.0f}s")
     for f, (a, b) in (urchin_sdf(), cowrie_sdf()):
         add(vol, xs, ys, zs, a, b, f, k=0.8, chunk=16)
+    # sea floor plants: seagrass tufts and Halimeda limu
+    for i, w in enumerate(HALIMEDA):
+        f, (a, b) = halimeda(np.array(w, float), 50 + i)
+        add(vol, xs, ys, zs, a, b, f, k=0, chunk=16)
+    for i, w in enumerate(SEAGRASS):
+        for pf, (a, b), _ in seagrass(np.array(w, float), 70 + i):
+            add(vol, xs, ys, zs, a, b,
+                lambda x, y, z, pf=pf: pf(np.stack([x.ravel(), y.ravel(), z.ravel()], -1))[0].reshape(x.shape),
+                k=0, chunk=16)
+    say(f"  seagrass and limu {time.time() - t0:.0f}s")
     # hollow the lobe mound: a domed cavity open to the plate (its roof
     # closes inward, so it needs no support), drained by two tunnels with
     # 45-degree pitched roofs running under the sand to the rim
