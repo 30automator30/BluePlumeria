@@ -80,11 +80,12 @@ def ell(x, y, z, rx, ry, rz):
 # a fraction of the local height. Listed round the outline.
 BARREL = np.array([
     (40, -0.05), (38, 0.0), (32, 0.06), (24, 0.20), (15, 0.42), (8, 0.67), (2.5, 0.86),
-    (-4, 0.975), (-11, 1.0), (-18, 0.965), (-23.5, 0.89), (-27.5, 0.78), (-29, 0.67),
-    (-28, 0.585), (-26, 0.545), (-24.6, 0.575), (-25.2, 0.65), (-23.5, 0.74), (-18, 0.815),
-    (-11, 0.82), (-6.5, 0.76), (-4, 0.64), (-4, 0.50), (-6.5, 0.36), (-11.5, 0.22),
+    (-4, 0.975), (-12, 1.0), (-20, 0.975), (-27, 0.92), (-32.5, 0.83), (-35.5, 0.71),
+    (-36, 0.58), (-34.5, 0.47), (-31.5, 0.40), (-28.5, 0.40), (-27, 0.45), (-28.2, 0.52),
+    (-29.2, 0.60), (-28.5, 0.70), (-25, 0.79), (-19, 0.845), (-12, 0.85), (-7, 0.80),
+    (-4, 0.68), (-4, 0.50), (-6.5, 0.36), (-11.5, 0.22),
     (-18, 0.105), (-26, 0.035), (-36, 0.0), (-40, -0.05)])
-BARREL_LIP = slice(10, 17)
+BARREL_LIP = slice(10, 19)
 SHOULDER = np.array([
     (40, -0.05), (38, 0.0), (32, 0.07), (24, 0.24), (15, 0.47), (8, 0.70), (2.5, 0.87),
     (-4, 0.97), (-10, 1.0), (-15, 0.985), (-19, 0.95), (-21.5, 0.90), (-22.2, 0.85),
@@ -101,7 +102,7 @@ def height(x):
 
 def curl(x):
     """1 where the wave throws a barrel, 0 where the lip only feathers."""
-    return 1 - sstep(-34, 30, x)
+    return 1 - sstep(-24, 42, x)
 
 
 def bend(x):
@@ -411,7 +412,34 @@ def figure():
         p = nc + U * 3.9 * np.cos(t) + Vh * 3.4 * np.sin(t) - Z * 2.2 * hang - Vh * 1.2 * hang
         nrm = 0.6 * (U * np.cos(t) + Vh * np.sin(t)) + 0.8 * Z - 0.5 * Vh * hang
         lei.append((p, nrm / np.linalg.norm(nrm), t))
-    return dict(V=V, faces=P["faces"], shorts=P["shorts"], hair=P["hair"], lei=lei, J=J)
+    g = P["garment"]
+    tubes = [(to_world(a_, O, U, Vh, Z), to_world(b_, O, U, Vh, Z), ra, rb) for a_, b_, ra, rb in g["tubes"]]
+    wp, wn = g["waist"]
+    wn = wn[0] * U + wn[1] * Vh + wn[2] * Z
+    return dict(V=V, faces=P["faces"], shorts=P["shorts"], hair=P["hair"], lei=lei, J=J,
+                garment=dict(tubes=tubes, waist=(to_world(wp, O, U, Vh, Z), wn)))
+
+
+def shorts_sdf(x, y, z, g):
+    """Loose board shorts: tapered tubes with flat ends, blended, cut flat at
+    the waist; the thigh tubes' ends are the hems."""
+    d = np.full(x.shape, 1e9)
+    for k, (a, b, ra, rb) in enumerate(g["tubes"]):
+        ab = b - a
+        L = np.linalg.norm(ab)
+        ax = ab / L
+        px, py, pz = x - a[0], y - a[1], z - a[2]
+        t = px * ax[0] + py * ax[1] + pz * ax[2]
+        r = ra + (rb - ra) * np.clip(t / L, 0, 1)
+        radial = np.sqrt(np.maximum(px ** 2 + py ** 2 + pz ** 2 - t ** 2, 0)) - r
+        if k < 2:                                            # thigh: flat hem, open to the hip
+            dd = np.maximum(np.maximum(radial, t - L), -t - 0.5)
+        else:                                                # pelvis: rounded ends
+            tc = np.clip(t, 0, L)
+            dd = np.sqrt(np.maximum(px ** 2 + py ** 2 + pz ** 2 - 2 * t * tc + tc ** 2, 0)) - r
+        d = smin(d, dd, 1.2)
+    wp, wn = g["waist"]
+    return np.maximum(d, (x - wp[0]) * wn[0] + (y - wp[1]) * wn[1] + (z - wp[2]) * wn[2])
 
 
 def lei_sdf(x, y, z, lei):
@@ -453,7 +481,6 @@ def body_sdf(G, X, Y, Z, spacing=0.05):
     side = np.einsum("ij,ij->i", q - pts[j], nrm[j])
     d = np.where(side < 0, -dist, dist)
     # shorts stand 0.35 mm proud of the skin, with a crisp hem and a waistband
-    d = d - 0.35 * sstep(0.42, 0.58, sh[j])
     # hair: 0.6 mm over the scalp, combed back in fine grooves
     hm = hr[j]
     head = G["J"]["head"]
@@ -501,6 +528,7 @@ def build_surfer(voxel, quiet=False, region=None):
         u, v, w = local(X, Y, Z, C, eu, ev, en)
         board = np.minimum(board_sdf(u, v, w), peg_sdf(u, v, w))
         body = body_sdf(G, X, Y, Z)
+        body = smin(body, shorts_sdf(X, Y, Z, G["garment"]), 0.3)
         body = np.minimum(body, lei_sdf(X, Y, Z, G["lei"]))
         vol[sx] = smin(board, body, 0.4)
     say(f"  surfer {time.time() - t0:.0f}s")

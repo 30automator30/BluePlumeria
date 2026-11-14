@@ -12,7 +12,7 @@ from human import Figure, ik_dir, limb_len, unit
 
 HEIGHT = 62.0           # standing height, mm
 STANCE = 25.0           # between the ankles, along the board
-HIP_H = 21.0            # hips above the deck in the crouch
+HIP_H = 22.5            # hips above the deck in the crouch
 
 
 def pose(tilt_deg, height=HEIGHT):
@@ -44,8 +44,8 @@ def pose(tilt_deg, height=HEIGHT):
         "head": unit([0.12, -0.12, 1.0]),
     }
     fronts = {
-        "spine05": unit([0.10, -1, 0]), "spine04": unit([0.18, -1, 0]), "spine03": unit([0.26, -1, 0]),
-        "spine02": unit([0.32, -1, 0]), "spine01": unit([0.36, -1, 0]),
+        "spine05": unit([0.06, -1, 0]), "spine04": unit([0.09, -1, 0]), "spine03": unit([0.12, -1, 0]),
+        "spine02": unit([0.15, -1, 0]), "spine01": unit([0.18, -1, 0]),
         "neck01": unit([0.6, -1, 0]), "neck02": unit([0.9, -1, 0]), "neck03": unit([1.2, -1, 0]),
         "head": unit([1.5, -0.8, -0.25]),
     }
@@ -85,6 +85,16 @@ def pose(tilt_deg, height=HEIGHT):
     off = np.array([0, 0, z0])
     V = V - off
     J = {k: (a - off, b - off) for k, (a, b) in J.items()}
+    # smooth out the creases skinning leaves where the spine and hips bend
+    # hard (Taubin smoothing, which keeps volume), on the torso, hips and
+    # thighs only; face, hands and feet keep their detail
+    tors = [i for k, i in F.bi.items() if k.startswith(("spine", "root", "pelvis", "upperleg", "breast", "clavicle"))]
+    wmask = np.clip(np.asarray(F.W[:, tors].sum(1)).ravel(), 0, 1)
+    V = taubin(V, F.faces, wmask, iters=12)
+    # loose board shorts, as a garment over the hips and thighs: a pelvis
+    # block from the waist down over the seat, and a tube on each thigh to a
+    # flat hem a little above mid-thigh, each sized from the body inside it
+    shorts_g = shorts_garment(V, J, s, F)
     # where the clothes and hair go, decided on the standing figure
     R = F.v_rest / s
     knee, hip = 17.0, 32.7
@@ -100,7 +110,7 @@ def pose(tilt_deg, height=HEIGHT):
     # to the nape
     line = 59.4 + 0.5 * np.abs(x) / 4.0 - 2.6 * np.clip((y - 1.5) / 3.5, 0, 1)
     hair = np.clip((z - line) / 2.2, 0, 1) ** 0.7 * ramp(6.2 - np.abs(x), 0.8)   # thickening up from the hairline
-    return dict(V=V, faces=F.faces, J=J, shorts=shorts, hair=hair, F=F)
+    return dict(V=V, faces=F.faces, J=J, shorts=shorts, hair=hair, F=F, garment=shorts_g)
 
 
 if __name__ == "__main__":
@@ -109,3 +119,61 @@ if __name__ == "__main__":
     m = P["F"].mesh(P["V"])
     print(len(m.faces), m.is_watertight, np.round(m.bounds, 1))
     m.export(sys.argv[1])
+
+
+def taubin(V, faces, wmask, iters=12, lam=0.5, mu=-0.53):
+    from scipy.sparse import coo_matrix, diags
+    n = len(V)
+    e = np.vstack([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]])
+    e = np.vstack([e, e[:, ::-1]])
+    A = coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)).tocsr()
+    A.data[:] = 1.0
+    deg = np.asarray(A.sum(1)).ravel()
+    deg[deg == 0] = 1
+    P = diags(1 / deg) @ A
+    W = wmask[:, None]
+    V = V.copy()
+    for _ in range(iters):
+        V = V + lam * W * (P @ V - V)
+        V = V + mu * W * (P @ V - V)
+    return V
+
+
+def shorts_garment(V, J, s, F):
+    """Primitives for loose board shorts, in the deck frame: tapered tubes
+    (a, b, ra, rb) on the thighs and a pelvis block, and the waist plane.
+    Each radius is taken from the body inside it, plus ease."""
+    body = np.zeros(len(V), bool)
+    body[np.unique(F.faces)] = True
+
+    def wsum(prefixes):
+        cols = [i for k, i in F.bi.items() if k.startswith(prefixes)]
+        return np.asarray(F.W[:, cols].sum(1)).ravel()
+
+    def radius(a, b, t0, t1, ease, mask, pct=90):
+        ab = b - a
+        L = np.linalg.norm(ab)
+        u = (V - a) @ ab / L ** 2
+        sel = (u > t0) & (u < t1) & (mask > 0.5) & body
+        dist = np.linalg.norm(V - a - np.outer(u, ab), axis=1)
+        return np.percentile(dist[sel], pct) + ease * s
+    tubes = []
+    for side in ("L", "R"):
+        hip = J[f"upperleg01.{side}"][0]
+        knee = J[f"lowerleg01.{side}"][0]
+        hem = hip + 0.58 * (knee - hip)
+        m = wsum((f"upperleg01.{side}", f"upperleg02.{side}"))
+        r_top = radius(hip, knee, 0.15, 0.3, 0.6, m)
+        r_hem = radius(hip, knee, 0.5, 0.58, 0.75, m)
+        tubes.append((hip - 0.1 * (knee - hip), hem, r_top, r_hem))
+    # pelvis: across the hip joints and up to the waist
+    hl, hr = J["upperleg01.L"][0], J["upperleg01.R"][0]
+    waist = J["spine03"][0]
+    mid = (hl + hr) / 2
+    mp = wsum(("root", "pelvis", "spine05"))
+    r_p = radius(hl, hr, 0.0, 1.0, 0.45, mp, 96)
+    r_w = radius(mid, waist, 0.6, 1.0, 0.35, wsum(("spine04", "spine03")), 70)
+    tubes.append((hl, hr, r_p, r_p))
+    tubes.append((mid, waist, r_p, r_w))
+    up = waist - mid
+    return dict(tubes=tubes, waist=(waist - 0.05 * up, up / np.linalg.norm(up)))
