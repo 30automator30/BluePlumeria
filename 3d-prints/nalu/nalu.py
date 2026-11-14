@@ -55,8 +55,8 @@ COWRIE = (62.0, -36.0, np.radians(-25))
 CONE = (-50.0, -42.0, np.radians(15))
 WALL = 2.6                     # wall of the hollow wave
 TUNNELS = (-52.0, -18.0, 16.0, 50.0)   # x of the vent tunnels under the back of the wave
-SURFER_SCALE = 1.15             # the figure against the board and the wave
-BULK = 1.1                     # thicker limbs and torso: a strong, statue-like build
+FIG_HEIGHT = 62.0              # the surfer's standing height, mm
+BOARD_TILT = 0.45              # how far the board stands up off the face toward level (0..1)
 PEG = dict(r=1.6, flat=0.55, L=3.0, clear=0.15, at=(-14.0, 14.0))   # keyed (D) pegs under the board
 
 
@@ -329,6 +329,11 @@ def board_frame():
     en = ns.mean(0)
     en -= (en @ eu) * eu
     en /= np.linalg.norm(en)
+    # a surfer rides with the board flatter than the face: the uphill rail
+    # sets into the face (cut away from the wave), the other stands off it
+    up = np.array([0, 0, 1.0]) - eu[2] * eu
+    en = (1 - BOARD_TILT) * en + BOARD_TILT * up / np.linalg.norm(up)
+    en /= np.linalg.norm(en)
     ev = np.cross(en, eu)
     return pts[1], eu, ev, en
 
@@ -368,142 +373,49 @@ def peg_sdf(u, v, w, grow=0.0, extra=0.0):
 
 # ------------------------------------------------------------- surfer
 
-def ik(S, T, L1, L2, pole):
-    """Elbow or knee for a two-bone limb from S reaching toward T, bending
-    toward pole. Returns (joint, end), the end pulled in if out of reach."""
-    D = T - S
-    dl = min(np.linalg.norm(D), (L1 + L2) * 0.999)
-    Dn = D / np.linalg.norm(D)
-    T = S + Dn * dl
-    a = (L1 ** 2 - L2 ** 2 + dl ** 2) / (2 * dl)
-    h = np.sqrt(max(L1 ** 2 - a ** 2, 0))
-    p = pole - (pole @ Dn) * Dn
-    p /= np.linalg.norm(p)
-    return S + Dn * a + p * h, T
-
-
-def surfer_parts():
-    """Capsule chains and oriented ellipsoids for the surfer, in world
-    coordinates. Body frame: U along the board toward the nose (level), V
-    toward the wave, Z up; origin on the deck between the feet."""
+def figure_frame():
+    """Where the posed figure goes: the deck-frame origin (on the deck's
+    centre line between the feet) and its axes in the world, and the deck's
+    tilt across the board."""
     C, eu, ev, en = board_frame()
-    T = BOARD["T"]
     Z = np.array([0, 0, 1.0])
     U = eu - eu[2] * Z
     U /= np.linalg.norm(U)
-    V = np.cross(Z, U)
-    deck0 = C + en * (T + 0.35)
+    Vh = np.cross(Z, U)                                  # level, toward the wave
+    tilt = np.degrees(np.arctan2(-(en @ Vh), en @ Z))
+    O = C + en * (BOARD["T"] + 0.35 - 0.3) + eu * (-1.0)   # feet sit 0.3 mm into the deck
+    return O, U, Vh, Z, tilt
 
-    def deck(u):
-        return deck0 + eu * u
 
-    O = deck(-1.0)
+def to_world(p, O, U, Vh, Z):
+    p = np.asarray(p, float)
+    return O + p[..., :1] * U + p[..., 1:2] * Vh + p[..., 2:3] * Z
 
-    def P(u, v, w):
-        return O + U * u + V * v + Z * w
 
-    BODY = np.stack([U, V, Z], 1)
-    BOARDR = np.stack([eu, ev, en], 1)
-    chains, ells = [], []
-
-    def E(c, r, R=BODY):
-        ells.append((np.asarray(c, float), R, r))
-
-    # feet across the board, toes toward the viewer, flat on the tilted deck
-    fb, ff = deck(-13.0) + en * 0.8, deck(11.0) + en * 0.8
-    E(fb - ev * 0.8, (1.35, 3.8, 0.95), BOARDR)
-    E(ff - ev * 0.8, (1.35, 3.8, 0.95), BOARDR)
-    ankle_b, ankle_f = fb + ev * 1.6 + en * 1.3, ff + ev * 1.6 + en * 1.3
-    # pelvis and hips
-    pel = P(-0.8, 0.9, 18.0)
-    hip_b, hip_f = P(-3.6, 0.9, 17.8), P(2.0, 0.6, 18.2)
-    # legs, thigh 12.3 and shin 12.0: a deep crouch, the front knee over the
-    # toes, the back knee dropped low and in
-    knee_f, _ = ik(hip_f, ankle_f, 12.3, 12.0, -V * 0.8 + U * 0.6)
-    knee_b, _ = ik(hip_b, ankle_b, 12.3, 12.0, -V * 0.9 + U * 0.5 - Z * 0.3)
-    for hip, knee, ank in ((hip_b, knee_b, ankle_b), (hip_f, knee_f, ankle_f)):
-        th, sh = knee - hip, ank - knee
-        chains.append(([hip, hip + 0.45 * th, knee], [2.7, 2.35, 1.75]))    # thigh
-        chains.append(([knee, knee + 0.3 * sh, ank], [1.9, 2.05, 1.15]))    # shin
-        E(knee + 0.12 * th, (1.9, 1.9, 1.9))                                 # kneecap
-        E(knee + 0.3 * sh + V * 0.7, (1.6, 1.7, 2.6))                        # calf
-    # board shorts over the thighs to just above the knee
-    shorts = [([hip, hip + 0.68 * (knee - hip)], [3.05, 2.65]) for hip, knee in ((hip_b, knee_b), (hip_f, knee_f))]
-    shorts.append(([P(-3.0, 0.9, 18.5), P(1.6, 0.6, 18.8)], [3.2, 3.2]))
-    # torso, leaning toward the nose and a little toward the viewer
-    waist, chest, neck0 = P(0.6, 0.3, 23.0), P(2.6, -0.5, 28.6), P(4.5, -1.2, 33.2)
-    chains.append(([pel, waist, chest, neck0], [3.5, 3.4, 4.1, 1.95]))
-    E(chest + V * 0.3, (5.9, 3.1, 3.9))                                     # ribcage
-    E(P(-1.4, 0.9, 26.8), (2.0, 2.3, 3.6))                                   # lats
-    E(P(6.6, -0.4, 26.4), (2.0, 2.3, 3.6))
-    E(P(0.4, -1.9, 29.6), (2.6, 0.8, 1.6))                                   # pecs, broad and flat
-    E(P(4.9, -2.3, 29.2), (2.6, 0.8, 1.6))
-    E(P(-1.1, 2.0, 18.6), (3.0, 1.5, 2.0))                                   # seat
-    for k in range(3):                                                       # abdominals
-        for s in (-0.9, 0.9):
-            E(P(1.9 + 0.35 * k + s, -2.2 + 0.25 * k, 25.6 - 2.0 * k), (0.9, 0.55, 0.85))
-    # shoulders and arms
-    sh_b, sh_f = P(-3.0, 0.2, 31.3), P(8.8, -1.5, 30.4)
-    chains.append(([sh_b, P(2.8, -0.6, 32.0), sh_f], [2.2, 2.7, 2.2]))
-    E(sh_b + Z * 0.2, (2.5, 2.2, 2.5))                                       # deltoids
-    E(sh_f + Z * 0.2, (2.5, 2.2, 2.5))
-    E(P(3.2, 1.6, 31.0), (4.6, 2.0, 2.6))                                    # upper back
-    # front arm reaching down the line, low; trailing arm out behind toward the wave
-    elb_f, wr_f = ik(sh_f, P(20.0, -6.5, 20.5), 7.8, 7.0, -Z * 0.5 - V * 0.5 + U * 0.2)
-    elb_b, wr_b = ik(sh_b, P(-12.0, 9.5, 27.5), 7.8, 7.0, -Z * 0.7 - U * 0.4)
-    for sh, el, wr in ((sh_f, elb_f, wr_f), (sh_b, elb_b, wr_b)):
-        ua, fa = el - sh, wr - el
-        chains.append(([sh, sh + 0.45 * ua, el], [1.85, 1.95, 1.3]))        # upper arm
-        chains.append(([el, el + 0.3 * fa, wr], [1.35, 1.5, 0.95]))          # forearm
-        dirn = fa / np.linalg.norm(fa)
-        side = np.cross(dirn, Z)
-        side /= np.linalg.norm(side) + 1e-9
-        HR = np.stack([dirn, side, np.cross(dirn, side)], 1)
-        E(wr + dirn * 1.9, (2.1, 1.25, 0.65), HR)                            # open hand
-        E(wr + dirn * 0.9 + side * 0.9, (1.0, 0.45, 0.45), HR)               # thumb
-    # neck and head, the face turned down the line toward the nose
-    head = P(6.6, -2.2, 37.4)
-    chains.append(([neck0, P(5.6, -1.8, 35.0)], [1.75, 1.55]))
-    E(head, (2.85, 2.45, 3.2))
-    E(head + U * 1.6 - Z * 1.9 - V * 0.2, (1.55, 1.75, 1.3))                 # jaw and chin
-    E(head + U * 2.75 - Z * 0.2 - V * 0.25, (0.85, 0.5, 0.8))                # nose
-    E(head + U * 2.25 + Z * 1.05 - V * 0.2, (0.55, 1.75, 0.5))               # brow
-    for s in (-1, 1):
-        E(head - U * 0.2 + V * s * 2.35 - Z * 0.1, (0.7, 0.45, 1.0))         # ears
-    E(head - U * 0.5 + Z * 0.9 + V * 0.1, (3.0, 2.65, 2.55))                 # hair
-    for du, dz, dv in ((-2.4, 1.4, -1.2), (-2.8, 0.6, 0.0), (-2.4, 1.6, 1.2), (-3.0, -0.4, 0.8)):
-        a = head + U * 1.4 + Z * 2.2 + V * dv * 0.6
-        chains.append(([a, head + U * du + Z * dz + V * dv], [0.75, 0.55]))  # swept-back locks
-    # a plumeria lei round the neck, lying on the collarbones, lower on the chest
+def figure():
+    """The posed surfer in world coordinates: vertices, triangles, per-vertex
+    shorts and hair masks, and the lei's flowers."""
+    import surfer
+    O, U, Vh, Z, tilt = figure_frame()
+    P = surfer.pose(tilt, height=FIG_HEIGHT)
+    V = to_world(P["V"], O, U, Vh, Z)
+    J = {k: (to_world(a_, O, U, Vh, Z), to_world(b_, O, U, Vh, Z)) for k, (a_, b_) in P["J"].items()}
+    # a plumeria lei: a ring of blossoms lying round the base of the neck,
+    # lower on the chest than on the back
+    nc = J["neck01"][0] - Z * 0.9
+    fwd = J["head"][1] - J["head"][0]
     lei = []
-    nc = neck0 + Z * 0.4
-    for k in range(11):
-        t = 2 * np.pi * k / 11
-        hang = 0.5 - 0.5 * np.sin(t)                             # 1 at the front (toward the viewer)
-        p = nc + U * 3.8 * np.cos(t) + V * 3.3 * np.sin(t) - Z * 1.6 * hang - V * 0.8 * hang
-        nrm = 0.55 * (U * np.cos(t) + V * np.sin(t)) + 0.85 * Z - 0.4 * V * hang
+    for k in range(12):
+        t = 2 * np.pi * k / 12
+        hang = 0.5 - 0.5 * np.sin(t)                       # 1 at the front (toward the viewer)
+        p = nc + U * 3.9 * np.cos(t) + Vh * 3.4 * np.sin(t) - Z * 2.2 * hang - Vh * 1.2 * hang
+        nrm = 0.6 * (U * np.cos(t) + Vh * np.sin(t)) + 0.8 * Z - 0.5 * Vh * hang
         lei.append((p, nrm / np.linalg.norm(nrm), t))
-    k = SURFER_SCALE
-
-    def sc(p):
-        return O + k * (np.asarray(p) - O)
-    chains = [([sc(p) for p in pts], [r * k * BULK for r in rr]) for pts, rr in chains]
-    ells = [(sc(c), R, tuple(r_ * k * BULK for r_ in r)) for c, R, r in ells]
-    shorts = [([sc(p) for p in pts], [r * k * BULK for r in rr]) for pts, rr in shorts]
-    lei = [(sc(p), n, t) for p, n, t in lei]
-    return dict(chains=chains, ells=ells, shorts=shorts, lei=lei, board=(C, eu, ev, en))
-
-
-def frame_ell(x, y, z, c, R, r):
-    px, py, pz = x - c[0], y - c[1], z - c[2]
-    a = px * R[0, 0] + py * R[1, 0] + pz * R[2, 0]
-    b = px * R[0, 1] + py * R[1, 1] + pz * R[2, 1]
-    g = px * R[0, 2] + py * R[1, 2] + pz * R[2, 2]
-    return ell(a, b, g, *r)
+    return dict(V=V, faces=P["faces"], shorts=P["shorts"], hair=P["hair"], lei=lei, J=J)
 
 
 def lei_sdf(x, y, z, lei):
-    f = plumeria(1.3 * SURFER_SCALE, lift=0.5)
+    f = plumeria(1.45, lift=0.5)
     d = np.full(x.shape, 1e9)
     for p, n, t in lei:
         a = np.cross(n, [0.3, 0.2, 0.9])
@@ -514,53 +426,86 @@ def lei_sdf(x, y, z, lei):
         v = px * b[0] + py * b[1] + pz * b[2]
         w = px * n[0] + py * n[1] + pz * n[2]
         cs, sn = np.cos(t * 1.7), np.sin(t * 1.7)
-        d = np.minimum(d, f(u * cs - v * sn, u * sn + v * cs, w + 0.25))
+        d = np.minimum(d, f(u * cs - v * sn, u * sn + v * cs, w + 0.3))
     return d
 
 
-def surfer_sdf():
-    S = surfer_parts()
-    C, eu, ev, en = S["board"]
+def body_sdf(G, X, Y, Z, spacing=0.05):
+    """Signed distance to the posed body, with board shorts and hair laid
+    over it. Distances are to a dense sampling of the surface; the sign
+    comes from the nearest sample's normal."""
+    if "_tree" not in G:
+        from scipy.spatial import cKDTree
+        import trimesh
+        m = trimesh.Trimesh(G["V"], G["faces"], process=False)
+        pts, fi = trimesh.sample.sample_surface(m, int(m.area / spacing ** 2), seed=3)
+        fv = G["faces"][fi]
+        bary = trimesh.triangles.points_to_barycentric(m.vertices[fv], pts)
 
-    def f(x, y, z):
-        u, v, w = local(x, y, z, C, eu, ev, en)
-        d = np.minimum(board_sdf(u, v, w), peg_sdf(u, v, w))
-        b = np.full(x.shape, 1e9)
-        for pts, rr in S["chains"]:
-            b = smin(b, capsule_chain(x, y, z, np.array(pts), np.array(rr)), 0.7)
-        for c, R, r in S["ells"]:
-            b = smin(b, frame_ell(x, y, z, c, R, r), 0.6)
-        sh = np.full(x.shape, 1e9)
-        for pts, rr in S["shorts"]:
-            sh = smin(sh, capsule_chain(x, y, z, np.array(pts), np.array(rr)), 0.5)
-        b = np.minimum(b, sh)                                    # a crisp hem where the shorts end
-        b = np.minimum(b, lei_sdf(x, y, z, S["lei"]))
-        return smin(d, b, 0.5)
-    pts = np.array([p for pts_, _ in S["chains"] for p in pts_] + [C])
+        def interp(a):
+            return np.einsum("ij,ij->i", bary, a[fv])
+        G["_tree"] = (cKDTree(pts), pts, m.face_normals[fi], interp(G["shorts"]), interp(G["hair"]))
+    tree, pts, nrm, sh, hr = G["_tree"]
+    q = np.stack([X.ravel(), Y.ravel(), Z.ravel()], -1)
+    dist, j = tree.query(q, workers=-1, distance_upper_bound=4.0)
+    far = ~np.isfinite(dist)
+    j[far] = 0
+    side = np.einsum("ij,ij->i", q - pts[j], nrm[j])
+    d = np.where(side < 0, -dist, dist)
+    # shorts stand 0.35 mm proud of the skin, with a crisp hem and a waistband
+    d = d - 0.35 * sstep(0.42, 0.58, sh[j])
+    # hair: 0.6 mm over the scalp, combed back in fine grooves
+    hm = hr[j]
+    head = G["J"]["head"]
+    ax = head[1] - head[0]
+    ax /= np.linalg.norm(ax)
+    rel = q - head[0]
+    side_ax = np.cross(ax, [0, 0, 1.0]) + 1e-9
+    side_ax /= np.linalg.norm(side_ax)
+    g = 0.5 + 0.5 * np.cos(2 * np.pi * (rel @ side_ax + 0.4 * np.sin(rel @ ax * 0.9)) / 0.7)
+    d = d - hm * (1.0 - 0.3 * g ** 4)                    # combed-back waves, thin at the hairline
+    d[far] = 4.0
+    return d.reshape(X.shape).astype(np.float32)
+
+
+def surfer_box():
+    G = figure()
+    C, eu, ev, en = board_frame()
     L = BOARD["L"] / 2 + 4
-    lo = np.minimum(pts.min(0) - 6, C - L)
-    hi = np.maximum(pts.max(0) + 6, C + L)
-    return f, (lo, hi)
+    lo = np.minimum(G["V"].min(0) - 2, C - L)
+    hi = np.maximum(G["V"].max(0) + 2, C + L)
+    return lo, hi
 
 
 # ------------------------------------------------------------------ build
 
 def bounds(part="wave"):
     if part == "surfer":
-        return surfer_sdf()[1]
+        return surfer_box()
     return np.array([-BASE[0] - 3, -BASE[1] - 3, -0.6]), np.array([BASE[0] + 3, BASE[1] + 3, HMAX + 6])
 
 
 def build_surfer(voxel, quiet=False, region=None):
-    lo, hi = bounds("surfer") if region is None else (np.asarray(region[0]), np.asarray(region[1]))
+    say = (lambda *a: None) if quiet else print
+    t0 = time.time()
+    G = figure()
+    C, eu, ev, en = board_frame()
+    lo, hi = surfer_box() if region is None else (np.asarray(region[0]), np.asarray(region[1]))
     xs = np.arange(lo[0], hi[0], voxel, dtype=np.float32)
     ys = np.arange(lo[1], hi[1], voxel, dtype=np.float32)
     zs = np.arange(lo[2], hi[2], voxel, dtype=np.float32)
     vol = np.full((len(xs), len(ys), len(zs)), 3.0, np.float32)
-    f, _ = surfer_sdf()
-    add(vol, xs, ys, zs, lo, hi, f, k=0, chunk=6)
+    for i in range(0, len(xs), 24):
+        sx = slice(i, min(i + 24, len(xs)))
+        X, Y, Z = np.meshgrid(xs[sx], ys, zs, indexing="ij")
+        u, v, w = local(X, Y, Z, C, eu, ev, en)
+        board = np.minimum(board_sdf(u, v, w), peg_sdf(u, v, w))
+        body = body_sdf(G, X, Y, Z)
+        body = np.minimum(body, lei_sdf(X, Y, Z, G["lei"]))
+        vol[sx] = smin(board, body, 0.4)
+    say(f"  surfer {time.time() - t0:.0f}s")
     fill_voids(vol)
-    drop_specks(vol, voxel, (lambda *a: None) if quiet else print)
+    drop_specks(vol, voxel, say)
     return vol, (xs[0], ys[0], zs[0])
 
 
