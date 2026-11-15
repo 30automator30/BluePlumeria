@@ -463,7 +463,7 @@ def body_sdf(G, X, Y, Z, spacing=0.05):
     side_ax = np.cross(ax, [0, 0, 1.0]) + 1e-9
     side_ax /= np.linalg.norm(side_ax)
     g = 0.5 + 0.5 * np.cos(2 * np.pi * (rel @ side_ax + 0.4 * np.sin(rel @ ax * 0.9)) / 0.7)
-    d = d - hm * (1.0 - 0.3 * g ** 4)                    # combed-back waves, thin at the hairline
+    d = d - hm * (0.9 - 0.25 * g ** 4)                   # a carved cap of hair, combed back
     d[far] = 4.0
     G["_last_shorts"] = np.where(far, 0.0, sh[j]).reshape(X.shape).astype(np.float32)
     return d.reshape(X.shape).astype(np.float32)
@@ -528,8 +528,8 @@ def build_surfer(voxel, quiet=False, region=None):
         body = np.minimum(body, lei_sdf(X, Y, Z, G["lei"]))
         vol[sx] = smin(board, body, 0.4)
     say(f"  surfer {time.time() - t0:.0f}s")
-    drape(vol, shorts, voxel)
-    say(f"  shorts draped {time.time() - t0:.0f}s")
+    drape(vol, np.ones_like(vol), voxel, r=0.7)        # carved look: fingers and toes fused, crevices softened
+    say(f"  carved {time.time() - t0:.0f}s")
     fill_voids(vol)
     drop_specks(vol, voxel, say)
     return vol, (xs[0], ys[0], zs[0])

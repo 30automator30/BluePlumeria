@@ -86,54 +86,39 @@ def pose(tilt_deg, height=HEIGHT):
     off = np.array([0, 0, z0])
     V = V - off
     J = {k: (a - off, b - off) for k, (a, b) in J.items()}
-    # smooth out the creases skinning leaves where the spine and hips bend
-    # hard (Taubin smoothing, which keeps volume), on the torso, hips and
-    # thighs only; face, hands and feet keep their detail
-    tors = [i for k, i in F.bi.items() if k.startswith(("spine", "root", "pelvis", "upperleg", "breast", "clavicle"))]
-    knee = [i for k, i in F.bi.items() if k.startswith("lowerleg01")]
-    wmask = np.clip(np.asarray(F.W[:, tors].sum(1)).ravel() + 0.6 * np.asarray(F.W[:, knee].sum(1)).ravel(), 0, 1)
-    V = taubin(V, F.faces, wmask, iters=12)
-    chest = [i for k, i in F.bi.items() if k.startswith(("breast", "spine02", "spine01"))]
-    cm = np.clip(np.asarray(F.W[:, chest].sum(1)).ravel() * 1.5, 0, 1)
-    cm *= (F.v_rest[:, 1] / s < 2.5)                                  # the front of the chest only
-    V = taubin(V, F.faces, cm, iters=40)
-    # where the clothes and hair go, decided on the standing figure
+    # STYLIZED, like a carved bronze or wood figure: the skin smoothed so
+    # only the big forms remain (Taubin smoothing keeps volume). Harder on
+    # the chest (flat, no pecs), the hips and seat, and the hands; lighter on
+    # the head so the face still reads.
+    def wsum(prefixes):
+        cols = [i for k, i in F.bi.items() if k.startswith(prefixes)]
+        return np.clip(np.asarray(F.W[:, cols].sum(1)).ravel(), 0, 1)
+    head = wsum(("head", "neck", "jaw", "eye", "special", "levator", "oris", "orbicularis", "temporalis", "tongue"))
+    body = 1 - head
+    V = taubin(V, F.faces, body, iters=25)
+    V = taubin(V, F.faces, 0.5 * head + body * 0, iters=6)
+    chest = wsum(("breast", "spine02", "spine01", "clavicle")) * (F.v_rest[:, 1] / s < 2.8)
+    V = taubin(V, F.faces, chest, iters=80)
+    seat = wsum(("root", "pelvis", "spine05", "upperleg01"))
+    V = taubin(V, F.faces, seat, iters=60)
+    hands = wsum(("finger", "metacarpal", "wrist"))
+    V = taubin(V, F.faces, hands, iters=30)
+    # where the shorts and hair go, decided on the standing figure
     R = F.v_rest / s
     knee, hip = 17.0, 32.7
     x, y, z = R[:, 0], R[:, 1], R[:, 2]
 
     def ramp(a, w=0.35):
         return np.clip(a / w + 0.5, 0, 1)
-    # board shorts: from the waist to a hem a little above mid-thigh (the hem
-    # dips at the outside of the leg); not the arms or hands
-    hem = knee + 0.38 * (hip - knee) - 0.8 * np.clip((np.abs(x) - 4.0) / 3.0, 0, 1)
+    # board shorts: one clean form from the waist to a hem a little above
+    # mid-thigh, standing proud of the skin with a crisp hem
+    hem = knee + 0.4 * (hip - knee) - 0.8 * np.clip((np.abs(x) - 4.0) / 3.0, 0, 1)
     shorts = ramp(z - hem, 0.15) * ramp(35.4 - z, 0.15) * ramp(10.5 - np.abs(x), 1.0)
-    # fabric: folds round the thighs and up from the crotch, cut into the cloth
-    folds = np.abs(np.sin(np.pi * (z + 0.7 * np.sin(1.3 * x) + 0.5 * np.abs(x)) / 1.9)) ** 10
-    folds *= np.clip((31.0 - z) / 3.0, 0, 1)
-    band = np.clip(1 - np.abs(z - 34.9) / 0.5, 0, 1)                 # the waistband
-    cloth = shorts * (1.0 - 0.45 * folds + 0.3 * band)
-    # hair: above a hairline that sweeps from the brow down behind the ears
-    # to the nape
+    # hair: a simple cap above a hairline that sweeps down behind the ears
     line = 59.4 + 0.5 * np.abs(x) / 4.0 - 2.6 * np.clip((y - 1.5) / 3.5, 0, 1)
-    hair = np.clip((z - line) / 2.2, 0, 1) ** 0.7 * ramp(6.2 - np.abs(x), 0.8)   # thickening up from the hairline
-    # board shorts as cloth. Subdivide twice first so the cloth is smooth
-    # on the coarse base mesh; smooth the skin under the shorts hard so the
-    # cloth spans the seat and the crotch; then lay the cloth on, 0.9 mm
-    # thick with soft folds, a waistband and a crisp hem
-    import trimesh
-    used = np.unique(F.faces)
-    remap = -np.ones(len(V), int)
-    remap[used] = np.arange(len(used))
-    faces = remap[F.faces]
-    V, at = V[used], np.stack([shorts[used], hair[used], cloth[used]], 1)
-    for _ in range(2):
-        V, faces, attrs = trimesh.remesh.subdivide(V, faces, vertex_attributes=dict(a=at))
-        at = attrs["a"]
-    shorts, hair, cloth = at[:, 0], at[:, 1], at[:, 2]
-    cloth = smooth_attr(cloth, faces, iters=6) * (shorts > 0.02)
-    V = V + vertex_normals(V, faces) * (1.0 * s * cloth)[:, None]
-    return dict(V=V, faces=faces, J=J, shorts=shorts, hair=hair, F=F)
+    hair = np.clip((z - line) / 2.2, 0, 1) ** 0.7 * ramp(6.2 - np.abs(x), 0.8)
+    V = V + vertex_normals(V, F.faces) * (0.6 * s * shorts)[:, None]
+    return dict(V=V, faces=F.faces, J=J, shorts=shorts, hair=hair, F=F)
 
 
 def smooth_attr(a, faces, iters=6):
