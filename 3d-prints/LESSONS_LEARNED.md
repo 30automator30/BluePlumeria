@@ -204,3 +204,19 @@ Writing `.ctb` files from scratch is possible (use a CHITUBOX file as the templa
 | ʻŌhiʻa lehua bonsai with ʻiʻiwi | `ohia-bonsai/` | `ohia_bonsai.py` (tree + pot), `final_build.py` (fine blossoms and bird, island repair, lite copy, STL-weld check) |
 | ʻĀhinahina (silversword) with nēnē | `silversword/` | `silversword.py` (spike, rosettes, nēnē, plinth), `final_build.py` (tiled 0.06 mm build, island repair, lite copy), `patch_islands.py` (pin late islands) |
 | Honu over coral | `honu/` | `honu.py` (turtle, coral, limu, sand base), `final_build.py` (tiled 0.08 mm build, lite copy), `patch_islands.py` (shortest-post island pins) |
+
+### 5k. Nalu (surfer on a wave): on hold
+
+- **Human figures are the weak spot of SDF modelling.** Capsule-and-ellipsoid
+  people read as mannequins. The MakeHuman CC0 base mesh with skin weights,
+  bone-aim posing and IK got real proportions, but clothes (board shorts) laid
+  on the skin by offsets, tubes or morphological closing never looked right on
+  a deep crouch. Before modelling a person, offer a licensed pro sculpt or a
+  non-human subject.
+- **Two-part pieces for two resin colours:** keyed D-pegs with 0.15 mm
+  clearance, the mating face recessed to the board's shape, the hollow kept
+  solid round the sockets, and a clearance check of the rider against the
+  wave SDF.
+- **Waves:** a profile polygon per x-slice, SDF-blended between a barrel and a
+  shoulder profile, reads well; the spiral lip (thrown out and down, curling
+  back in) was what "more curl" meant.
