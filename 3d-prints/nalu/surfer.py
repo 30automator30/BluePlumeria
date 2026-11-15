@@ -95,14 +95,14 @@ def pose(tilt_deg, height=HEIGHT):
         return np.clip(np.asarray(F.W[:, cols].sum(1)).ravel(), 0, 1)
     head = wsum(("head", "neck", "jaw", "eye", "special", "levator", "oris", "orbicularis", "temporalis", "tongue"))
     body = 1 - head
-    V = taubin(V, F.faces, body, iters=25)
-    V = taubin(V, F.faces, 0.5 * head + body * 0, iters=6)
+    V = taubin(V, F.faces, body, iters=10)
+    V = taubin(V, F.faces, 0.5 * head, iters=2)
     chest = wsum(("breast", "spine02", "spine01", "clavicle")) * (F.v_rest[:, 1] / s < 2.8)
-    V = taubin(V, F.faces, chest, iters=80)
+    V = taubin(V, F.faces, chest, iters=60)        # flat chest, no pecs
     seat = wsum(("root", "pelvis", "spine05", "upperleg01"))
-    V = taubin(V, F.faces, seat, iters=60)
+    V = taubin(V, F.faces, seat, iters=30)
     hands = wsum(("finger", "metacarpal", "wrist"))
-    V = taubin(V, F.faces, hands, iters=30)
+    V = taubin(V, F.faces, hands, iters=8)
     # where the shorts and hair go, decided on the standing figure
     R = F.v_rest / s
     knee, hip = 17.0, 32.7
