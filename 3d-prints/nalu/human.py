@@ -53,7 +53,24 @@ def apply_targets(v, muscle=0.75):
     add("universal-male-young-maxmuscle-averageweight", m_max)
     add("proportions__male-young-averagemuscle-averageweight-idealproportions", 1 - m_max)
     add("proportions__male-young-maxmuscle-averageweight-idealproportions", m_max)
+    # a surfer's build: broad shoulders and a V-shaped back, flat square
+    # pecs, a hard stomach, narrow hips, strong calves, shoulders and arms
+    for name, w in SHAPE.items():
+        add(name, w)
     return v
+
+
+SHAPE = {
+    "torso-vshape-incr": 0.9, "measure-shoulder-dist-incr": 0.7, "torso-muscle-dorsi-incr": 0.7,
+    "breast-point-decr": 1.0, "breast-volume-vert-up": 0.6, "breast-trans-up": 0.4,
+    "measure-bust-circ-decr": 0.6, "torso-muscle-pectoral-decr": 1.0,
+    "stomach-tone-incr": 1.0, "hip-scale-horiz-decr": 0.9,
+    "buttocks-volume-decr": 1.0,
+    "l-lowerleg-muscle-incr": 0.7, "r-lowerleg-muscle-incr": 0.7,
+    "l-upperarm-muscle-incr": 0.5, "r-upperarm-muscle-incr": 0.5,
+    "l-upperarm-shoulder-muscle-incr": 0.6, "r-upperarm-shoulder-muscle-incr": 0.6,
+    "measure-neck-circ-incr": 0.4,
+}
 
 
 def to_world(v):

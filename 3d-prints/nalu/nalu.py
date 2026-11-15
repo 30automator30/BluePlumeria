@@ -412,34 +412,7 @@ def figure():
         p = nc + U * 3.9 * np.cos(t) + Vh * 3.4 * np.sin(t) - Z * 2.2 * hang - Vh * 1.2 * hang
         nrm = 0.6 * (U * np.cos(t) + Vh * np.sin(t)) + 0.8 * Z - 0.5 * Vh * hang
         lei.append((p, nrm / np.linalg.norm(nrm), t))
-    g = P["garment"]
-    tubes = [(to_world(a_, O, U, Vh, Z), to_world(b_, O, U, Vh, Z), ra, rb) for a_, b_, ra, rb in g["tubes"]]
-    wp, wn = g["waist"]
-    wn = wn[0] * U + wn[1] * Vh + wn[2] * Z
-    return dict(V=V, faces=P["faces"], shorts=P["shorts"], hair=P["hair"], lei=lei, J=J,
-                garment=dict(tubes=tubes, waist=(to_world(wp, O, U, Vh, Z), wn)))
-
-
-def shorts_sdf(x, y, z, g):
-    """Loose board shorts: tapered tubes with flat ends, blended, cut flat at
-    the waist; the thigh tubes' ends are the hems."""
-    d = np.full(x.shape, 1e9)
-    for k, (a, b, ra, rb) in enumerate(g["tubes"]):
-        ab = b - a
-        L = np.linalg.norm(ab)
-        ax = ab / L
-        px, py, pz = x - a[0], y - a[1], z - a[2]
-        t = px * ax[0] + py * ax[1] + pz * ax[2]
-        r = ra + (rb - ra) * np.clip(t / L, 0, 1)
-        radial = np.sqrt(np.maximum(px ** 2 + py ** 2 + pz ** 2 - t ** 2, 0)) - r
-        if k < 2:                                            # thigh: flat hem, open to the hip
-            dd = np.maximum(np.maximum(radial, t - L), -t - 0.5)
-        else:                                                # pelvis: rounded ends
-            tc = np.clip(t, 0, L)
-            dd = np.sqrt(np.maximum(px ** 2 + py ** 2 + pz ** 2 - 2 * t * tc + tc ** 2, 0)) - r
-        d = smin(d, dd, 1.2)
-    wp, wn = g["waist"]
-    return np.maximum(d, (x - wp[0]) * wn[0] + (y - wp[1]) * wn[1] + (z - wp[2]) * wn[2])
+    return dict(V=V, faces=P["faces"], shorts=P["shorts"], hair=P["hair"], lei=lei, J=J)
 
 
 def lei_sdf(x, y, z, lei):
@@ -492,6 +465,7 @@ def body_sdf(G, X, Y, Z, spacing=0.05):
     g = 0.5 + 0.5 * np.cos(2 * np.pi * (rel @ side_ax + 0.4 * np.sin(rel @ ax * 0.9)) / 0.7)
     d = d - hm * (1.0 - 0.3 * g ** 4)                    # combed-back waves, thin at the hairline
     d[far] = 4.0
+    G["_last_shorts"] = np.where(far, 0.0, sh[j]).reshape(X.shape).astype(np.float32)
     return d.reshape(X.shape).astype(np.float32)
 
 
@@ -512,6 +486,27 @@ def bounds(part="wave"):
     return np.array([-BASE[0] - 3, -BASE[1] - 3, -0.6]), np.array([BASE[0] + 3, BASE[1] + 3, HMAX + 6])
 
 
+def drape(vol, shorts, voxel, r=2.6):
+    """Board shorts hang like cloth: over the shorts, fill every hollow a
+    ball of radius r can't reach into (a morphological closing), so the
+    cloth spans the seat, the crotch and the fold under the seat instead of
+    following the skin. The hem stays where the shorts end."""
+    from scipy import ndimage as ndi
+    occ = vol < 0
+    dil = ndi.distance_transform_edt(~occ) * voxel <= r
+    close = ndi.distance_transform_edt(dil) * voxel > r
+    region = ndi.maximum_filter(shorts, size=max(3, int(round(r / voxel)))) > 0.5
+    region &= ndi.distance_transform_edt(~occ) * voxel < r
+    add_ = close & region & ~occ
+    if not add_.any():
+        return
+    newocc = occ | add_
+    sd = (ndi.distance_transform_edt(~newocc) - ndi.distance_transform_edt(newocc)) * voxel
+    sd = ndi.gaussian_filter(sd, 0.8)
+    near = ndi.binary_dilation(add_, iterations=3)
+    vol[near] = np.minimum(vol[near], sd[near])
+
+
 def build_surfer(voxel, quiet=False, region=None):
     say = (lambda *a: None) if quiet else print
     t0 = time.time()
@@ -522,16 +517,19 @@ def build_surfer(voxel, quiet=False, region=None):
     ys = np.arange(lo[1], hi[1], voxel, dtype=np.float32)
     zs = np.arange(lo[2], hi[2], voxel, dtype=np.float32)
     vol = np.full((len(xs), len(ys), len(zs)), 3.0, np.float32)
+    shorts = np.zeros_like(vol)
     for i in range(0, len(xs), 24):
         sx = slice(i, min(i + 24, len(xs)))
         X, Y, Z = np.meshgrid(xs[sx], ys, zs, indexing="ij")
         u, v, w = local(X, Y, Z, C, eu, ev, en)
         board = np.minimum(board_sdf(u, v, w), peg_sdf(u, v, w))
         body = body_sdf(G, X, Y, Z)
-        body = smin(body, shorts_sdf(X, Y, Z, G["garment"]), 0.3)
+        shorts[sx] = G["_last_shorts"]
         body = np.minimum(body, lei_sdf(X, Y, Z, G["lei"]))
         vol[sx] = smin(board, body, 0.4)
     say(f"  surfer {time.time() - t0:.0f}s")
+    drape(vol, shorts, voxel)
+    say(f"  shorts draped {time.time() - t0:.0f}s")
     fill_voids(vol)
     drop_specks(vol, voxel, say)
     return vol, (xs[0], ys[0], zs[0])
