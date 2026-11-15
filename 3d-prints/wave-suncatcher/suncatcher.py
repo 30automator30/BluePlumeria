@@ -5,10 +5,11 @@ Printed clear, then painted by hand with glass paint. The picture is a
 flat clear pane crossed by raised "lead" lines; the lines close every cell,
 so each cell holds its own colour like a little dam.
 
-The scene: a curling wave breaking to the left (the barrel profile from
-nalu/), white water on its lip, a sun setting on the horizon at the right
-with rays across the sky, the sea broken into shards, and plumeria,
-hibiscus and ti leaves along the bottom.
+The scene, in a hand-cut glass style: a jungle-topped cliff on the left,
+white water crashing at its foot, the sun setting on the horizon with rays,
+the sea in long streaks, and hibiscus, plumeria and leaves at the bottom.
+Large areas are cut into irregular pieces (a warped, stretched Voronoi
+pattern) that lie along the way each thing flows.
 
 How it is made: the scene is drawn as a map of labelled regions (painter's
 order, later shapes on top). Connected regions become cells; cells too small
@@ -46,8 +47,8 @@ PANE_T = 1.6                   # the clear pane
 LINE_W, LINE_H = 1.0, 1.0      # lead lines: width, height above the pane
 LOOP = dict(r=4.0, tube=2.0)   # hanging loop: hole radius, tube radius
 
-HORIZON = 9.0
-SUN = np.array([24.0, HORIZON]), 12.0
+HORIZON = 12.0
+SUN = np.array([24.0, HORIZON]), 11.0
 WAVE = dict(H=60.0, foot=-30.0, x=-9.0, sx=1.75)
 
 MIN_AREA = 5.0                 # mm^2: smaller cells are merged
@@ -55,21 +56,29 @@ MIN_HALF = 1.15                # mm: cells thinner than 2x this are merged
 
 # paint colours for the guide (glass-paint names), by category
 PALETTE = {
-    "sky": [(0.98, 0.80, 0.35), (0.99, 0.66, 0.30), (0.97, 0.52, 0.30), (0.90, 0.42, 0.45), (0.62, 0.40, 0.62)],
-    "sun": [(1.0, 0.93, 0.45)],
-    "glow": [(1.0, 0.82, 0.30)],
-    "sea": [(0.10, 0.45, 0.70), (0.14, 0.58, 0.78), (0.20, 0.36, 0.66), (0.12, 0.66, 0.72)],
-    "wave": [(0.06, 0.55, 0.62), (0.10, 0.66, 0.70), (0.16, 0.48, 0.70), (0.30, 0.74, 0.76)],
-    "tube": [(0.62, 0.88, 0.86)],
-    "foam": [(0.96, 0.97, 0.98), (0.88, 0.94, 0.97)],
-    "leaf": [(0.16, 0.55, 0.22), (0.30, 0.68, 0.24)],
-    "plumeria": [(0.99, 0.97, 0.90)],
-    "plum_c": [(1.0, 0.80, 0.25)],
-    "hibiscus": [(0.88, 0.16, 0.22), (0.95, 0.30, 0.36)],
+    "sky_hi": [(0.35, 0.55, 0.85), (0.45, 0.62, 0.88), (0.30, 0.45, 0.78)],
+    "sky_mid": [(0.62, 0.70, 0.92), (0.95, 0.70, 0.55), (0.80, 0.62, 0.80)],
+    "sky_lo": [(0.99, 0.80, 0.45), (0.98, 0.68, 0.42), (0.97, 0.86, 0.60)],
+    "sky_sun": [(1.0, 0.88, 0.45), (0.99, 0.78, 0.38)],
+    "ray": [(1.0, 0.86, 0.35), (1.0, 0.74, 0.30), (0.99, 0.93, 0.55)],
+    "sun": [(1.0, 0.95, 0.55)],
+    "rock": [(0.60, 0.34, 0.18), (0.72, 0.44, 0.22), (0.50, 0.28, 0.16), (0.80, 0.55, 0.30)],
+    "rock_dk": [(0.48, 0.26, 0.14), (0.62, 0.36, 0.20), (0.70, 0.42, 0.22)],
+    "leaf": [(0.16, 0.55, 0.22), (0.30, 0.68, 0.24), (0.22, 0.48, 0.18)],
+    "leaf_dk": [(0.10, 0.40, 0.18), (0.18, 0.52, 0.20), (0.36, 0.62, 0.20)],
+    "sea_far": [(0.18, 0.30, 0.66), (0.24, 0.36, 0.72), (0.30, 0.30, 0.62)],
+    "sea_mid": [(0.12, 0.42, 0.72), (0.16, 0.55, 0.78), (0.22, 0.40, 0.70)],
+    "sea_near": [(0.10, 0.62, 0.72), (0.18, 0.70, 0.78), (0.12, 0.50, 0.70), (0.30, 0.76, 0.80)],
+    "glint": [(1.0, 0.88, 0.50), (0.98, 0.95, 0.75)],
+    "foam": [(0.97, 0.98, 0.99), (0.92, 0.95, 0.98)],
+    "foam_sh": [(0.78, 0.86, 0.94)],
+    "plumeria": [(0.99, 0.98, 0.92)],
+    "pink": [(0.96, 0.55, 0.72), (0.94, 0.48, 0.66)],
+    "plum_c": [(1.0, 0.82, 0.30)],
+    "hibiscus": [(0.88, 0.14, 0.20), (0.95, 0.26, 0.30)],
     "hib_c": [(0.55, 0.05, 0.12)],
-    "pink": [(0.96, 0.55, 0.72), (0.92, 0.42, 0.62)],
-    "rock": [(0.62, 0.36, 0.20), (0.75, 0.46, 0.24), (0.52, 0.30, 0.18)],
-    "glint": [(1.0, 0.85, 0.40), (0.98, 0.72, 0.35)],
+    "hib_or": [(0.99, 0.62, 0.18), (1.0, 0.72, 0.25)],
+    "hib_or_c": [(0.85, 0.20, 0.15)],
 }
 
 
@@ -158,6 +167,80 @@ def local(X, Y, C, a):
     return dx * np.cos(a) + dy * np.sin(a), -dx * np.sin(a) + dy * np.cos(a)
 
 
+def warp(X, Y, amp, s=1.0):
+    """A gentle domain warp, so cut lines bow like hand-cut glass."""
+    wx = amp * (np.sin(Y / (6.3 * s) + 1.3) + 0.6 * np.sin((X + Y) / (4.1 * s)))
+    wy = amp * (np.sin(X / (5.7 * s) + 0.4) + 0.6 * np.sin((X - Y) / (3.7 * s) + 2.0))
+    return X + wx, Y + wy
+
+
+def shatter(M, mask, cat, spacing, ang=0.0, stretch=1.0, amp=1.0, seed=0, tf=None):
+    """Cut a region into irregular glass pieces: a Voronoi pattern of
+    well-spaced seeds, measured in a warped, stretched space (long pieces
+    lie along angle ang). tf, if given, maps (u, v) to a space where the
+    pieces should be even (e.g. perspective for the sea). cat may be a
+    function of the piece's centre giving its category."""
+    from scipy.spatial import cKDTree
+    idx = np.flatnonzero(mask)
+    if len(idx) == 0:
+        return
+    X, Y = M.X.ravel()[idx], M.Y.ravel()[idx]
+    Xw, Yw = warp(X, Y, amp)
+    u = Xw * np.cos(ang) + Yw * np.sin(ang)
+    v = -Xw * np.sin(ang) + Yw * np.cos(ang)
+    if tf is not None:
+        u, v = tf(u, v)
+    Q = np.stack([u / stretch, v], 1)
+    rng = np.random.default_rng(seed)
+    cand = rng.permutation(len(idx))[:40000]
+    seeds = []
+    grid = {}
+    cs = spacing / np.sqrt(2)
+    for c in cand:
+        q = Q[c]
+        gx, gy = int(q[0] // cs), int(q[1] // cs)
+        ok = True
+        for i in range(gx - 2, gx + 3):
+            for j in range(gy - 2, gy + 3):
+                s = grid.get((i, j))
+                if s is not None and (s[0] - q[0]) ** 2 + (s[1] - q[1]) ** 2 < spacing ** 2:
+                    ok = False
+                    break
+            if not ok:
+                break
+        if ok:
+            grid[(gx, gy)] = q
+            seeds.append(c)
+    S = Q[seeds]
+    _, near = cKDTree(S).query(Q)
+    for k in np.unique(near):
+        m = np.zeros(M.X.size, bool)
+        sel = near == k
+        m[idx[sel]] = True
+        c = cat(X[sel].mean(), Y[sel].mean()) if callable(cat) else cat
+        M.paint(m.reshape(M.X.shape), c)
+
+
+def blob_poly(C, R, n=60, jag=0.0, seed=0):
+    rng = np.random.default_rng(seed)
+    t = np.linspace(0, 2 * np.pi, n, endpoint=False)
+    ph = rng.uniform(0, 6.3, 3)
+    rad = R * (1 + jag * (np.sin(3 * t + ph[0]) * 0.5 + np.sin(5 * t + ph[1]) * 0.3 + np.sin(8 * t + ph[2]) * 0.2))
+    P = np.stack([C[0] + rad * np.cos(t), C[1] + rad * np.sin(t)], 1)
+    return np.vstack([P, P[:1]])
+
+
+def hib_petal(C, R, a, w=np.radians(42), ruffle=0.05, n=50):
+    """A hibiscus petal: a broad fan from the centre, rounded and frilled."""
+    ph = np.linspace(-w, w, n)
+    s = ph / w
+    rad = R * (0.62 + 0.38 * np.sqrt(np.clip(1 - s ** 2, 0, 1))) * (1 + ruffle * np.sin(ph * 26 + a * 3))
+    rad *= 1 - 0.08 * np.exp(-((s) / 0.12) ** 2)                 # a small notch at the tip
+    P = np.stack([C[0] + rad * np.cos(a + ph), C[1] + rad * np.sin(a + ph)], 1)
+    P = np.vstack([[C], P, [C]])
+    return P
+
+
 def design(res):
     """The scene on a grid of pitch res. Returns xs, the region map
     (0 = outside the pane), each region's category, and the distance to the
@@ -167,155 +250,156 @@ def design(res):
     M = Map(X, Y)
     r = np.hypot(X, Y)
     dfree = np.full(X.shape, 1e9)
-
-    # sky: rays from the sun, split by arcs
+    H0 = HORIZON
     S, sr = SUN
+
+    # ---- sky: long soft streaks of sunset, finer near the sun
+    sky = Y >= H0
+
+    def sky_cat(x, y):
+        h = (y - H0) / (R_IN - H0)
+        d = np.hypot(x - S[0], y - S[1])
+        if d < 30:
+            return "sky_sun"
+        return "sky_lo" if h < 0.35 else ("sky_mid" if h < 0.7 else "sky_hi")
+    shatter(M, sky, sky_cat, 9.0, ang=np.radians(4), stretch=2.6, amp=1.6, seed=1)
+    # sun rays: irregular wedges round the sun
     rs = np.hypot(X - S[0], Y - S[1])
-    th = np.degrees(np.arctan2(Y - S[1], X - S[0]))
-    ray = np.floor((th + 4) / 11.0).astype(int)
-    arcs = np.cumsum([21.0, 11.0, 12.0, 13.0, 14.0, 16.0])
-    ring = np.digitize(rs + 1.6 * np.sin(np.radians(th) * 3 + rs / 9), arcs)
-    sky = Y >= HORIZON
-    M.paint_split(sky, ray * 10 + ring, "sky")
-    # sun: rings of glow, the disc in sunset bands
-    M.paint_split(sky & (rs < sr + 8), np.floor((th + 4) / 22.0).astype(int), "glow")
-    M.paint_split(sky & (rs < sr + 3.5), np.floor((th + 4) / 30.0).astype(int) + 100, "glow")
-    M.paint_split(sky & (rs < sr), np.floor((Y - HORIZON) / (sr / 3)).astype(int), "sun")
+    th = np.arctan2(Y - S[1], X - S[0])
+    rays = sky & (rs < sr + 17 + 1.5 * np.sin(th * 7))
+    tw = th + 0.06 * np.sin(rs / 3.0)
+    edges = np.radians(np.array([0, 17, 31, 48, 62, 79, 95, 110, 128, 146, 163, 180]) - 0.5)
+    M.paint_split(rays, np.digitize(tw, edges) * 10 + (rs > sr + 7 + 2 * np.sin(th * 5)), "ray")
+    M.paint_split(sky & (rs < sr), np.digitize(Y - H0, [sr * 0.45]), "sun")
 
-    # a headland at the right: green top, rocky face
-    hx = 45.0
-    ridge = HORIZON + np.clip((X - hx) / 16.0, 0, 1) ** 0.6 * 34 + 1.5 * np.sin(X / 2.2)
-    land = (X > hx - 0.0) & (Y > HORIZON - 0.01) & (Y < ridge)
-    green = land & (Y > ridge - 5 - 1.2 * np.sin(X / 1.7))
-    rock_key = np.floor((X + 0.35 * Y + 1.5 * np.sin(Y / 3)) / 5.0).astype(int) * 10 + np.floor((Y - HORIZON + 2 * np.sin(X / 2.5)) / 8.0).astype(int)
-    M.paint_split(land, rock_key, "rock")
-    M.paint_split(green, np.floor(X / 5.0).astype(int), "leaf")
+    # ---- the cliff on the left, jungle on top
+    top = 40 + 3.5 * np.sin(X / 9.0) + 1.5 * np.sin(X / 3.3) - 0.10 * (X + 70)
+    face = -24 + 0.30 * (40 - Y) + 2.2 * np.sin(Y / 4.0) + 1.2 * np.sin(Y / 1.7)
+    cliff = (X < face) & (Y < top) & (Y > -34 + 6 * np.sin((X + 70) / 18.0) + 0.25 * (X + 70))
+    shatter(M, cliff, lambda x, y: "rock_dk" if x > -40 else "rock", 6.0, ang=np.radians(80), stretch=2.4,
+            amp=1.0, seed=2)
+    green = cliff & ((Y > top - 13 - 3 * np.sin(X / 4.0)) | ((X > face - 6 - 2 * np.sin(Y / 3)) & (Y > 18) & (Y < top)))
+    jungle_x = [(-64, 44, 11, 60), (-54, 47, 12, 85), (-44, 45, 11, 70), (-34, 41, 10, 30), (-60, 36, 9, 150),
+                (-27, 33, 8, -20), (-49, 37, 9, 120), (-22, 26, 7, -40)]
+    shatter(M, green, "leaf_dk", 5.0, ang=np.radians(35), stretch=2.0, amp=1.2, seed=3)
+    for k, (x0, y0, L, ang) in enumerate(jungle_x):
+        a = np.radians(ang)
+        u, v = local(X, Y, np.array([x0, y0], float), a)
+        for h in leaf_poly(np.array([x0, y0], float), a, L, L * 0.42, 0.1):
+            m = nalu.poly_sdf(X, Y, h) < 0
+            M.paint_split(m & (Y < top + 6), np.floor((u - 0.8 * np.abs(v)) / 4.5).astype(int), "leaf")
 
-    # sea: small shards in bands that widen toward the viewer
-    depth = HORIZON - Y
-    wob = 1.2 * np.sin(X / 7.0 + 0.4 * depth) + 0.7 * np.sin(X / 3.1 - 1.0)
-    edges = np.cumsum(np.linspace(3.3, 7.5, 16))
-    band = np.digitize(depth + wob * np.sqrt(np.clip(depth, 0, None)) / 3.0, edges)
-    shard = np.floor((X + 3.0 * band + 0.45 * depth + 5 * (band % 2)) / (9 + 0.9 * band)).astype(int)
-    M.paint_split(~sky, band * 100 + shard, "sea")
-    # the sun's path on the water: a column of finer, golden shards
-    glint = (~sky) & (np.abs(X - S[0]) < 3.0 + 0.35 * depth) & (depth < 20)
-    gk = band * 100 + np.floor((X - S[0] + 2.0 * (band % 2)) / (4.0 + 0.3 * band)).astype(int)
-    M.paint_split(glint, gk, "glint")
+    # ---- the sea: long streaks, larger toward the viewer
+    sea = (~sky) & ~cliff & (M.lab == 0)
 
-    # the wave
-    P = wave_poly()
-    dw = nalu.poly_sdf(X, Y, P)
-    inw = dw < 0
-    above = np.flip(np.maximum.accumulate(np.flip(inw, 1), 1), 1)
-    cand = (dw > 0) & above & (Y > WAVE["foot"] + 8) & (X < WAVE["x"] + 10)
-    i = np.argmax(np.where(cand, dw, -1))
-    C, room = np.array([X.ravel()[i], Y.ravel()[i]]), dw.ravel()[i]
-    rr = np.hypot(X - C[0], Y - C[1])
-    tt = np.arctan2(Y - C[1], X - C[0])
-    phase = rr / 4.6 + tt / (2 * np.pi)
-    bandw = np.floor(phase).astype(int)
-    cut = np.floor((np.degrees(tt) + 180 + 17 * bandw) / (34.0 - 0.8 * np.clip(bandw, 0, 12))).astype(int)
-    M.paint_split(inw, bandw * 100 + cut, "wave")
-    # the tube: rings spiralling into the barrel
-    tube = rr < room * 1.08
-    M.paint(tube, "tube")
-    # one spiral lead line winding into the barrel (a free line, no seam)
-    sp = room * 0.36
-    f = np.mod(rr / sp + tt / (2 * np.pi), 1.0)
-    spiral = np.minimum(f, 1 - f) * sp
-    dfree = np.where(tube & (rr > 0.5 * sp), np.minimum(dfree, spiral), dfree)
-    crest_x = P[np.argmax(P[:, 1]), 0]
-    # white water: a scalloped band along the lip, in small pieces
-    scal = 4.6 + 1.6 * np.sin(tt * 9 + rr / 3.0)
-    foam = inw & (-dw < scal) & (X < crest_x + 8) & (Y > WAVE["foot"] + 14)
-    fk = np.floor((np.degrees(tt) + 180) / 18.0).astype(int) * 10 + (-dw > scal * 0.5)
-    M.paint_split(foam, fk, "foam")
-    # spray droplets off the lip
-    rng = np.random.default_rng(7)
-    lip = P[(P[:, 1] > WAVE["foot"] + 0.55 * WAVE["H"]) & (P[:, 0] < crest_x)]
-    drops = 0
-    for _ in range(400):
-        q = lip[rng.integers(len(lip))]
-        nrm = q - C
-        nrm = nrm / np.linalg.norm(nrm)
-        c = q + nrm * rng.uniform(3.0, 9.0)
-        rad = rng.uniform(1.6, 2.4)
-        if nalu.poly_sdf(np.array([c[0]]), np.array([c[1]]), P)[0] < rad + 1.6 or np.hypot(*c) > R_IN - 4:
-            continue
-        m = np.hypot(X - c[0], Y - c[1]) < rad
-        if (M.lab[m] < 0).any():
-            continue
-        M.paint(m, "foam")
-        drops += 1
-        if drops >= 9:
-            break
-    # whitewater where the wave meets the sea
-    sea_line = WAVE["foot"] + 3 + 1.4 * np.sin(X / 3.0)
-    wash = (Y < sea_line) & (Y > WAVE["foot"] - 4 - 1.5 * np.sin(X / 4.5 + 1)) & (X < crest_x + 22) & (X > -66)
-    M.paint_split(wash, np.floor((X + 1.5 * np.sin(Y / 2.0)) / 6.5).astype(int), "foam")
+    def persp(u, v):
+        dep = np.clip(H0 - v, 0, None)
+        k = 1.0 / (1.0 + dep / 60.0)
+        return u * k, -np.log1p(dep / 60.0) * 60.0
 
-    # ti leaves along the bottom, behind the flowers, each split by its
-    # midrib and slanting side veins
-    leaves = [((-58, -46), 48, 40, 15, 0.12), ((-36, -70), 92, 38, 14, -0.12),
-              ((-10, -73), 72, 34, 12, 0.12), ((18, -74), 108, 34, 13, -0.10),
-              ((56, -48), 122, 38, 15, -0.12), ((66, -30), 158, 26, 11, -0.12),
-              ((-66, -28), 25, 26, 11, 0.12), ((40, -68), 80, 30, 11, 0.12)]
+    def sea_cat(x, y):
+        dep = H0 - y
+        return "sea_far" if dep < 9 else ("sea_mid" if dep < 26 else "sea_near")
+    shatter(M, sea, sea_cat, 4.4, stretch=3.0, amp=1.2, seed=4, tf=persp)
+    # sun path on the water
+    glint = sea & (np.abs(X - S[0] - 0.6 * np.sin(Y / 1.5)) < 1.8 + 0.22 * (H0 - Y)) & (Y > H0 - 14)
+    shatter(M, glint, "glint", 2.4, stretch=2.5, amp=0.5, seed=5, tf=persp)
+
+    # ---- surf: a mass of white water crashing on the cliff foot and
+    # rolling in toward the viewer (billowed edge, cut into big pieces), and
+    # a thin breaking crest out on the sea
+    rng = np.random.default_rng(11)
+    pth = np.array([[-26, 4], [-16, -6], [-9, -16], [-8, -27], [-12, -39], [-18, -50], [-22, -64]], float)
+    seg = np.cumsum(np.r_[0, np.linalg.norm(np.diff(pth, axis=0), axis=1)])
+    foam = np.zeros(X.shape, bool)
+    for s_ in np.arange(0, seg[-1], 2.2):
+        p = np.array([np.interp(s_, seg, pth[:, 0]), np.interp(s_, seg, pth[:, 1])])
+        wid = 15.0 - 5.0 * s_ / seg[-1]
+        for _ in range(2):
+            R = rng.uniform(0.35, 0.6) * wid
+            c = p + rng.normal(0, wid * 0.35, 2)
+            foam |= np.hypot(X - c[0], Y - c[1]) < R
+    foam &= (Y < H0 + 1.5) & ((X > face - 1.5) | (Y < -32))
+    shatter(M, foam, lambda x, y: "foam" if rng.random() < 0.7 else "foam_sh", 6.0, ang=np.radians(-60),
+            stretch=1.6, amp=1.6, seed=6)
+    # the crest: a white streak along the swell with a scalloped top
+    cx = np.array([-18, 0, 18, 36, 54, 72.0])
+    cy = np.array([7, 4.5, 3, 0.5, 2, -1.0])
+    yc = np.interp(X, cx, cy)
+    th_ = 1.2 + 1.6 * np.clip((X + 18) / 30, 0, 1) * (1 - np.clip((X - 40) / 32, 0, 1)) + 0.4
+    scal = 0.9 * np.abs(np.sin(X / 2.6))
+    crest = (Y < yc + th_ / 2 + scal) & (Y > yc - th_ / 2) & (X > -20) & (M.lab > 0)
+    M.paint_split(crest, np.floor((X + 1.5 * np.sin(Y)) / 9.0).astype(int), "foam")
+
+    # ---- flowers and leaves, bottom right, and a few at the cliff foot
+    leaves = [((62, -40), 150, 34, 13, -0.15), ((50, -66), 115, 34, 13, 0.12), ((22, -72), 75, 32, 12, -0.10),
+              ((68, -20), 185, 26, 11, 0.10), ((36, -36), 40, 28, 11, 0.15),
+              ((-60, -40), 40, 28, 12, 0.12), ((-40, -66), 70, 30, 12, -0.12), ((-66, -24), 10, 24, 10, 0.1)]
     for base, ang, L, Wd, bend in leaves:
         a = np.radians(ang)
         u, v = local(X, Y, np.array(base, float), a)
-        for k, h in enumerate(leaf_poly(np.array(base, float), a, L, Wd, bend)):
+        for h in leaf_poly(np.array(base, float), a, L, Wd, bend):
             m = nalu.poly_sdf(X, Y, h) < 0
-            M.paint_split(m, np.floor((u - 0.9 * np.abs(v)) / 6.0).astype(int), "leaf")
+            M.paint_split(m, np.floor((u - 0.9 * np.abs(v)) / 5.0).astype(int), "leaf")
+    # rocks at the cliff foot, under the surf line
+    for k, (c, R) in enumerate([((-50, -46), 9), ((-36, -52), 7), ((-58, -58), 6)]):
+        P = blob_poly(np.array(c, float), R, jag=0.12, seed=k)
+        shatter(M, nalu.poly_sdf(X, Y, P) < 0, "rock", 5.0, amp=0.6, seed=20 + k)
 
-    # flowers
-    def petal_split(Cf, R, a, Pp, cat, inner_cat, inner=0.42):
-        """A petal in four: each side of its vein, inner throat and outer."""
-        m = nalu.poly_sdf(X, Y, Pp) < 0
-        off = 0.15 * R
-        c = Cf + np.array([-off * np.sin(a), off * np.cos(a)])
-        u, v = local(X, Y, c, a)
-        rr_ = np.hypot(X - Cf[0], Y - Cf[1])
-        side = (v > 0.12 * R * np.sin(np.pi * np.clip(u / R, 0, 1))).astype(int)
-        throat = rr_ < inner * R * (1 + 0.15 * np.sin(4 * np.arctan2(v, u)))
-        M.paint_split(m & ~throat, side, cat)
-        M.paint_split(m & throat, side, inner_cat)
-
-    def plumeria(Cf, R, rot, cat="plumeria", throat="plum_c"):
-        for k in range(5):
-            a = 2 * np.pi * k / 5 + rot
-            petal_split(Cf, R, a, petal_poly(R, a) + Cf, cat, throat, inner=0.45)
-        M.paint(np.hypot(X - Cf[0], Y - Cf[1]) < 0.16 * R, throat)
-
-    def hibiscus(Cf, R, rot, cat="hibiscus"):
-        for k in range(5):
-            a = 2 * np.pi * k / 5 + rot
-            petal_split(Cf, R, a, petal_poly(R, a, ruffle=0.05, width=0.62) + Cf, cat, "hib_c", inner=0.4)
-        M.paint(np.hypot(X - Cf[0], Y - Cf[1]) < 0.14 * R, "hib_c")
-
-    def stamen(Cf, R, ang):
+    def hibiscus(C, R, rot, cat, eye):
         nonlocal dfree
-        a = np.radians(ang)
-        tip = Cf + 0.98 * R * np.array([np.cos(a), np.sin(a)])
-        dfree = np.minimum(dfree, seg_dist(X, Y, Cf + 0.16 * R * np.array([np.cos(a), np.sin(a)]), tip))
+        C = np.array(C, float)
         for k in range(5):
-            b = a + np.radians(-56 + 28 * k)
-            q = tip + 0.17 * R * np.array([np.cos(b), np.sin(b)])
-            dfree = np.minimum(dfree, np.hypot(X - q[0], Y - q[1]) - 0.45)
+            a = rot + 2 * np.pi * k / 5
+            P = hib_petal(C, R, a)
+            m = nalu.poly_sdf(X, Y, P) < 0
+            rr = np.hypot(X - C[0], Y - C[1])
+            u, v = local(X, Y, C, a)
+            inner = rr < R * (0.36 + 0.06 * np.sin(np.arctan2(v, u) * 9))
+            side = (v > 0).astype(int)
+            M.paint(m & ~inner, cat)
+            M.paint(m & inner, eye)
+            for dv in (0.0,):                         # the petal's vein
+                aa = a + dv * np.radians(30)
+                dfree = np.minimum(dfree, seg_dist(X, Y, C + 0.42 * R * np.array([np.cos(aa), np.sin(aa)]),
+                                                   C + 0.74 * R * np.array([np.cos(aa), np.sin(aa)])))
+        M.paint(np.hypot(X - C[0], Y - C[1]) < 0.12 * R, eye)
+        # the staminal column, curving out, with its pollen
+        sa = rot + np.radians(20)
+        t = np.linspace(0.12, 1.05, 12)
+        pts = C + R * np.stack([t * np.cos(sa + 0.25 * t), t * np.sin(sa + 0.25 * t)], 1)
+        for p0, p1 in zip(pts[:-1], pts[1:]):
+            dfree = np.minimum(dfree, seg_dist(X, Y, p0, p1))
+        tip = pts[-1]
+        for k in range(6):
+            b = sa + np.radians(-75 + 30 * k)
+            q = tip + 0.12 * R * np.array([np.cos(b), np.sin(b)])
+            dfree = np.minimum(dfree, np.hypot(X - q[0], Y - q[1]) - 0.55)
 
-    hibs = [((27.0, -44.0), 18.0, 0.5, 62), ((54.0, -24.0), 11.0, 1.4, 120)]
-    for c, R, rot, sa in hibs:
-        hibiscus(np.array(c), R, rot, cat="hibiscus" if R > 12 else "pink")
-    plumeria(np.array([-24.0, -47.0]), 14.5, 0.2)
-    plumeria(np.array([2.0, -59.0]), 10.5, 1.1, cat="pink")
-    plumeria(np.array([-47.0, -33.0]), 10.0, 0.7)
-    plumeria(np.array([-4.0, -38.0]), 8.0, 0.4)
-    plumeria(np.array([47.0, -55.0]), 8.5, 0.9, cat="pink")
-    for c, R, rot, sa in hibs:
-        stamen(np.array(c), R, sa)
+    def plumeria(C, R, rot, cat="plumeria"):
+        C = np.array(C, float)
+        for k in range(5):
+            a = 2 * np.pi * k / 5 + rot
+            P = petal_poly(R, a, width=0.47) + C
+            m = nalu.poly_sdf(X, Y, P) < 0
+            off = 0.15 * R
+            c = C + np.array([-off * np.sin(a), off * np.cos(a)])
+            u, v = local(X, Y, c, a)
+            throat = np.hypot(X - C[0], Y - C[1]) < 0.40 * R * (1 + 0.12 * np.sin(4 * np.arctan2(v, u)))
+            M.paint(m & ~throat, cat)
+            M.paint(m & throat, "plum_c")
+        M.paint(np.hypot(X - C[0], Y - C[1]) < 0.13 * R, "plum_c")
 
-    # outside the frame opening
+    plumeria((44, -20), 9.5, 0.6)
+    hibiscus((52, -40), 15.0, 0.9, "hib_or", "hib_or_c")
+    hibiscus((22, -50), 18.5, 0.3, "hibiscus", "hib_c")
+    plumeria((50, -60), 10.0, 1.2, "pink")
+    plumeria((2, -62), 10.5, 0.2)
+    plumeria((-28, -58), 9.0, 0.9, "pink")
+    plumeria((-48, -32), 8.5, 0.4)
+
     M.lab[r > R_IN + 0.4] = 0
+    dfree[r > R_IN] = 1e9
     return xs, M.lab, M.cat, dfree
 
 
