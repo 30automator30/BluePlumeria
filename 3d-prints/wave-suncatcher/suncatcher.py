@@ -63,6 +63,10 @@ PALETTE = {
     "ray": [(1.0, 0.86, 0.35), (1.0, 0.74, 0.30), (0.99, 0.93, 0.55)],
     "sun": [(1.0, 0.95, 0.55)],
     "rock": [(0.60, 0.34, 0.18), (0.72, 0.44, 0.22), (0.50, 0.28, 0.16), (0.80, 0.55, 0.30)],
+    "rock_lit": [(0.86, 0.58, 0.30), (0.92, 0.66, 0.36), (0.80, 0.50, 0.26)],
+    "rock_far": [(0.62, 0.48, 0.55), (0.70, 0.55, 0.60)],
+    "leaf_far": [(0.42, 0.58, 0.45), (0.50, 0.65, 0.48)],
+    "glow": [(1.0, 0.84, 0.30)],
     "rock_dk": [(0.48, 0.26, 0.14), (0.62, 0.36, 0.20), (0.70, 0.42, 0.22)],
     "leaf": [(0.16, 0.55, 0.22), (0.30, 0.68, 0.24), (0.22, 0.48, 0.18)],
     "leaf_dk": [(0.10, 0.40, 0.18), (0.18, 0.52, 0.20), (0.36, 0.62, 0.20)],
@@ -253,34 +257,58 @@ def design(res):
     H0 = HORIZON
     S, sr = SUN
 
-    # ---- sky: long soft streaks of sunset, finer near the sun
+    # ---- sky: rays fanning out from the sun across the whole sky, each ray
+    # cut into a few pieces by wavy arcs; warm near the sun, cooler out
     sky = Y >= H0
-
-    def sky_cat(x, y):
-        h = (y - H0) / (R_IN - H0)
-        d = np.hypot(x - S[0], y - S[1])
-        if d < 30:
-            return "sky_sun"
-        return "sky_lo" if h < 0.35 else ("sky_mid" if h < 0.7 else "sky_hi")
-    shatter(M, sky, sky_cat, 9.0, ang=np.radians(4), stretch=2.6, amp=1.6, seed=1)
-    # sun rays: irregular wedges round the sun
     rs = np.hypot(X - S[0], Y - S[1])
     th = np.arctan2(Y - S[1], X - S[0])
-    rays = sky & (rs < sr + 17 + 1.5 * np.sin(th * 7))
-    tw = th + 0.06 * np.sin(rs / 3.0)
-    edges = np.radians(np.array([0, 17, 31, 48, 62, 79, 95, 110, 128, 146, 163, 180]) - 0.5)
-    M.paint_split(rays, np.digitize(tw, edges) * 10 + (rs > sr + 7 + 2 * np.sin(th * 5)), "ray")
+    rng = np.random.default_rng(5)
+    widths = rng.uniform(9, 16, 30)
+    edges = np.radians(np.cumsum(np.r_[-1.0, widths]) - 0.0)
+    tw = th + 0.035 * np.sin(rs / 5.0 + 1.0) + 0.02 * np.sin(rs / 2.3)
+    ray = np.digitize(tw, edges)
+    arc = np.zeros(X.shape, int)
+    for k in range(len(edges) + 1):
+        m = ray == k
+        cuts = sr + np.cumsum(rng.uniform(8, 13, 6) * np.array([1.0, 1.15, 1.3, 1.45, 1.6, 1.8]))
+        wob = 1.6 * np.sin(th[m] * 9 + k)
+        arc[m] = np.digitize(rs[m] + wob, cuts)
+
+    def sky_cat_k(a_):
+        return ["ray", "ray", "sky_lo", "sky_lo", "sky_mid", "sky_hi", "sky_hi"][min(a_, 6)]
+    for a_ in np.unique(arc[sky]):
+        M.paint_split(sky & (arc == a_), ray, sky_cat_k(a_))
+    M.paint_split(sky & (rs < sr + 4 + 1.0 * np.sin(th * 11)), np.floor(np.degrees(th) / 30).astype(int), "glow")
     M.paint_split(sky & (rs < sr), np.digitize(Y - H0, [sr * 0.45]), "sun")
 
-    # ---- the cliff on the left, jungle on top
-    top = 40 + 3.5 * np.sin(X / 9.0) + 1.5 * np.sin(X / 3.3) - 0.10 * (X + 70)
-    face = -24 + 0.30 * (40 - Y) + 2.2 * np.sin(Y / 4.0) + 1.2 * np.sin(Y / 1.7)
+    # ---- a far headland behind the cliff (paler, for depth)
+    far_top = H0 + 24 - 0.5 * np.clip(X + 30, 0, None) + 2.5 * np.abs(np.sin(X / 3.1)) - 0.012 * (X + 30) ** 2 * (X < -30)
+    far = sky & (Y < far_top) & (X < 20)
+    shatter(M, far, lambda x, y: "leaf_far" if y > H0 + 15 else "rock_far", 6.5, ang=np.radians(70), stretch=1.8,
+            amp=1.0, seed=8)
+
+    # ---- the cliff on the left: jagged crags, lit faces and shadowed
+    # buttresses, jungle on top
+    def tri(t):
+        return 2 * np.abs(t - np.floor(t + 0.5))
+    top = 42 - 0.10 * (X + 70) + 7 * tri(X / 9.0 + 0.3) + 2.2 * tri(X / 3.1) + 1.5 * np.sin(X / 7)
+    face = -25 + 0.30 * (40 - Y) + 3.2 * tri(Y / 7.0) + 1.4 * tri(Y / 2.6) + 1.0 * np.sin(Y / 4.0)
     cliff = (X < face) & (Y < top) & (Y > -34 + 6 * np.sin((X + 70) / 18.0) + 0.25 * (X + 70))
-    shatter(M, cliff, lambda x, y: "rock_dk" if x > -40 else "rock", 6.0, ang=np.radians(80), stretch=2.4,
-            amp=1.0, seed=2)
-    green = cliff & ((Y > top - 13 - 3 * np.sin(X / 4.0)) | ((X > face - 6 - 2 * np.sin(Y / 3)) & (Y > 18) & (Y < top)))
-    jungle_x = [(-64, 44, 11, 60), (-54, 47, 12, 85), (-44, 45, 11, 70), (-34, 41, 10, 30), (-60, 36, 9, 150),
-                (-27, 33, 8, -20), (-49, 37, 9, 120), (-22, 26, 7, -40)]
+    colc = (X + 0.42 * (40 - Y) + 3.0 * tri(Y / 9.0) + 0.8 * tri(Y / 4.3)) / 12.5
+    col = np.floor(colc).astype(int)
+    lit = (colc - col) < 0.42
+    ledge = np.floor((Y + 0.35 * X + 2.5 * tri(X / 8.0)) / 21.0).astype(int)
+    for k in np.unique(col[cliff]):
+        for li in (True, False):
+            for lg in np.unique(ledge[cliff & (col == k)]):
+                m = cliff & (col == k) & (lit == li) & (ledge == lg)
+                if m.sum() * res * res < 4:
+                    continue
+                shatter(M, m, "rock_lit" if li else "rock_dk", 6.0, ang=np.radians(78), stretch=2.4, amp=0.6,
+                        seed=100 + 7 * int(k) + 3 * int(lg) + int(li))
+    green = cliff & ((Y > top - 11 - 3 * np.sin(X / 4.0)) | ((X > face - 5 - 2 * np.sin(Y / 3)) & (Y > 24) & (Y < top)))
+    jungle_x = [(-64, 47, 11, 60), (-54, 50, 12, 85), (-44, 49, 11, 70), (-34, 45, 10, 30), (-60, 38, 9, 150),
+                (-27, 37, 8, -20), (-49, 41, 9, 120), (-22, 30, 7, -40)]
     shatter(M, green, "leaf_dk", 5.0, ang=np.radians(35), stretch=2.0, amp=1.2, seed=3)
     for k, (x0, y0, L, ang) in enumerate(jungle_x):
         a = np.radians(ang)
