@@ -204,6 +204,7 @@ Writing `.ctb` files from scratch is possible (use a CHITUBOX file as the templa
 | ʻŌhiʻa lehua bonsai with ʻiʻiwi | `ohia-bonsai/` | `ohia_bonsai.py` (tree + pot), `final_build.py` (fine blossoms and bird, island repair, lite copy, STL-weld check) |
 | ʻĀhinahina (silversword) with nēnē | `silversword/` | `silversword.py` (spike, rosettes, nēnē, plinth), `final_build.py` (tiled 0.06 mm build, island repair, lite copy), `patch_islands.py` (pin late islands) |
 | Honu over coral | `honu/` | `honu.py` (turtle, coral, limu, sand base), `final_build.py` (tiled 0.08 mm build, lite copy), `patch_islands.py` (shortest-post island pins) |
+| Coast suncatcher (stained glass, painted) | `wave-suncatcher/` | `suncatcher.py` (region map, warped-Voronoi cut pattern, lead lines, paint guide) |
 
 ### 5k. Nalu (surfer on a wave): on hold
 
@@ -220,3 +221,24 @@ Writing `.ctb` files from scratch is possible (use a CHITUBOX file as the templa
 - **Waves:** a profile polygon per x-slice, SDF-blended between a barrel and a
   shoulder profile, reads well; the spiral lip (thrown out and down, curling
   back in) was what "more curl" meant.
+
+### 5l. Stained-glass suncatcher (print clear, paint by hand)
+
+- **Raised lead lines on a clear pane, in closed pieces:** draw the picture
+  as a map of labelled regions, split each region into connected pieces,
+  merge pieces too small or thin to paint (under 5 mm² or about 2.3 mm
+  across), and put a line along every boundary. Lines are 1.0 mm wide and
+  1.0 mm tall, with rounded tops and straight sides; the pane is 1.6 mm with
+  a flat back. Every piece is closed by construction.
+- **"Like real stained glass" means hand-cut, not geometric.** Grids, radial
+  sectors, even bands and spirals read as computer-made, and Amy rejected
+  them. What worked: a Voronoi cut pattern measured in a gently warped space
+  and stretched along each thing's flow (long streaks in the sea, billows in
+  the surf), and realistic flowers with overlapping petals. Follow her
+  markup literally: the cliff she drew as long vertical strips with a few
+  slanted cuts, not as many small jagged facets.
+- **Show a painted mock-up next to the line drawing.** A clear-print render
+  barely shows the design; the coloured guide is what she judges.
+- **Keep the approved cut pattern at the final resolution.** The pattern
+  depends on the drawing pitch, so draw it at the preview pitch and resample
+  the (lightly smoothed) line-distance field onto the finer mesh grid.

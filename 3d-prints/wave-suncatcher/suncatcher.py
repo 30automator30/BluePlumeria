@@ -20,7 +20,7 @@ a rounded frame ring, and a hanging loop at the top.
 
 Usage
   python3 suncatcher.py --voxel 0.2 --preview      # quick look
-  python3 suncatcher.py --voxel 0.08               # final (decimated)
+  python3 suncatcher.py --voxel 0.1                # final (decimated)
   python3 suncatcher.py --guide-only               # paint guide images only
 """
 
@@ -520,13 +520,19 @@ def line_distance(cid, dfree, res):
 
 # ---------------------------------------------------------------- build --
 
+DESIGN_RES = 0.2   # the pitch the design is drawn at (the cut pattern depends on it; keep it fixed)
+
+
 def build(voxel):
     t0 = time.time()
-    xs, lab, cat, dfree = design(voxel)
-    cid, src = cells(lab, voxel)
+    dr = DESIGN_RES
+    xs, lab, cat, dfree = design(dr)
+    cid, src = cells(lab, dr)
     ncell = cid.max()
     print(f"  {ncell} cells, design {time.time() - t0:.0f}s")
-    dline = line_distance(cid, dfree, voxel)
+    dline = line_distance(cid, dfree, dr)
+    # soften the pixel steps of the boundaries before resampling
+    dsmooth = ndi.gaussian_filter(dline, 1.0)
     # extend the 2D fields to the full grid (frame and loop above it)
     lo = np.array([-R_OUT - 1.0, -R_OUT - 1.0, -0.4])
     ys_top = R_OUT + 2 * LOOP["r"] + 2 * LOOP["tube"] + 2
@@ -535,10 +541,10 @@ def build(voxel):
     gz = np.arange(lo[2], RING_T + 0.4, voxel)
     X, Y = np.meshgrid(gx, gy, indexing="ij")
     r = np.hypot(X, Y)
-    # resample dline onto the full grid (same pitch, offset origin)
-    ix = np.clip(np.round((gx - xs[0]) / voxel).astype(int), 0, len(xs) - 1)
-    iy = np.clip(np.round((gy - xs[0]) / voxel).astype(int), 0, len(xs) - 1)
-    DL = dline[np.ix_(ix, iy)]
+    # resample the line distance onto the mesh grid (bilinear)
+    fi = (X - xs[0]) / dr
+    fj = (Y - xs[0]) / dr
+    DL = ndi.map_coordinates(dsmooth, [fi.ravel(), fj.ravel()], order=1, mode="nearest").reshape(X.shape)
     hw, rr = LINE_W / 2, 0.45                       # half-width, top rounding
     top = PANE_T + LINE_H
     open_ = R_IN + 0.5 - r                          # >0 inside the frame's opening
@@ -607,10 +613,10 @@ def main():
     args = ap.parse_args()
     t0 = time.time()
     if args.guide_only:
-        xs, lab, cat, dfree = design(args.voxel)
-        cid, src = cells(lab, args.voxel)
+        xs, lab, cat, dfree = design(DESIGN_RES)
+        cid, src = cells(lab, DESIGN_RES)
         print(f"{cid.max()} cells")
-        guide(xs, cid, src, cat, line_distance(cid, dfree, args.voxel), os.path.join(args.outdir, "paint_guide.png"))
+        guide(xs, cid, src, cat, line_distance(cid, dfree, DESIGN_RES), os.path.join(args.outdir, "paint_guide.png"))
         return
     vol, origin, g = build(args.voxel)
     mesh = mesh_volume(vol, args.voxel, origin)
