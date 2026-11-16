@@ -26,31 +26,6 @@
       "published": true
     },
     {
-      "sku": "BP-N-030",
-      "name": "Blue Glass & Starfish Necklace",
-      "price": 55.0,
-      "collection": "sea-shore",
-      "tier": "signature",
-      "label": "Signature Series",
-      "maxQuantity": 1,
-      "itemUrl": "/shop.html",
-      "cartImage": "images/featured/bp-n-030-detail.jpg",
-      "images": [
-        {
-          "url": "images/featured/bp-n-030-worn.jpg",
-          "alt": "Blue Glass & Starfish Necklace — worn"
-        },
-        {
-          "url": "images/featured/bp-n-030-detail.jpg",
-          "alt": "Blue Glass & Starfish Necklace — detail"
-        }
-      ],
-      "available": true,
-      "aiNote": true,
-      "position": 20,
-      "published": true
-    },
-    {
       "sku": "BP-E-011",
       "name": "Emerald Crystal & Glass Pearl Earrings",
       "price": 38.0,
@@ -76,23 +51,23 @@
       "published": true
     },
     {
-      "sku": "BP-N-010",
-      "name": "Shells, Howlite & Tiger's Eye Necklace",
-      "price": 65.0,
+      "sku": "BP-N-030",
+      "name": "Blue Glass & Starfish Necklace",
+      "price": 55.0,
       "collection": "sea-shore",
       "tier": "signature",
       "label": "Signature Series",
       "maxQuantity": 1,
       "itemUrl": "/shop.html",
-      "cartImage": "images/featured/bp-n-010-detail.jpg",
+      "cartImage": "images/featured/bp-n-030-detail.jpg",
       "images": [
         {
-          "url": "images/featured/bp-n-010-worn.jpg",
-          "alt": "Shells, Howlite & Tiger's Eye Necklace — worn"
+          "url": "images/featured/bp-n-030-worn.jpg",
+          "alt": "Blue Glass & Starfish Necklace — worn"
         },
         {
-          "url": "images/featured/bp-n-010-detail.jpg",
-          "alt": "Shells, Howlite & Tiger's Eye Necklace — detail"
+          "url": "images/featured/bp-n-030-detail.jpg",
+          "alt": "Blue Glass & Starfish Necklace — detail"
         }
       ],
       "available": true,
@@ -126,23 +101,23 @@
       "published": true
     },
     {
-      "sku": "BP-B-003",
-      "name": "Cream Pearl & Shell Coil Bracelet",
-      "price": 42.0,
+      "sku": "BP-N-010",
+      "name": "Shells, Howlite & Tiger's Eye Necklace",
+      "price": 65.0,
       "collection": "sea-shore",
       "tier": "signature",
       "label": "Signature Series",
       "maxQuantity": 1,
       "itemUrl": "/shop.html",
-      "cartImage": "images/featured/bp-b-003-detail.jpg",
+      "cartImage": "images/featured/bp-n-010-detail.jpg",
       "images": [
         {
-          "url": "images/featured/bp-b-003-worn.jpg",
-          "alt": "Cream Pearl & Shell Coil Bracelet — worn"
+          "url": "images/featured/bp-n-010-worn.jpg",
+          "alt": "Shells, Howlite & Tiger's Eye Necklace — worn"
         },
         {
-          "url": "images/featured/bp-b-003-detail.jpg",
-          "alt": "Cream Pearl & Shell Coil Bracelet — detail"
+          "url": "images/featured/bp-n-010-detail.jpg",
+          "alt": "Shells, Howlite & Tiger's Eye Necklace — detail"
         }
       ],
       "available": true,
@@ -301,6 +276,31 @@
       "published": true
     },
     {
+      "sku": "BP-B-003",
+      "name": "Cream Pearl & Shell Coil Bracelet",
+      "price": 42.0,
+      "collection": "sea-shore",
+      "tier": "signature",
+      "label": "Signature Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/featured/bp-b-003-detail.jpg",
+      "images": [
+        {
+          "url": "images/featured/bp-b-003-worn.jpg",
+          "alt": "Cream Pearl & Shell Coil Bracelet — worn"
+        },
+        {
+          "url": "images/featured/bp-b-003-detail.jpg",
+          "alt": "Cream Pearl & Shell Coil Bracelet — detail"
+        }
+      ],
+      "available": true,
+      "aiNote": true,
+      "position": 130,
+      "published": true
+    },
+    {
       "sku": "BP-B-006",
       "name": "Shell, Howlite & Pearl Bracelet",
       "price": 42.0,
@@ -322,31 +322,6 @@
       ],
       "available": true,
       "aiNote": true,
-      "position": 130,
-      "published": true
-    },
-    {
-      "sku": "BP-STUDIO-001",
-      "name": "Silver Plumeria Drop Earrings",
-      "price": 85.0,
-      "collection": "sea-shore",
-      "tier": "signature",
-      "label": "Signature Piece",
-      "maxQuantity": 1,
-      "itemUrl": "/shop.html",
-      "cartImage": "images/Silver_plumeria_1.png",
-      "images": [
-        {
-          "url": "images/Silver_plumeria_2.png",
-          "alt": "Silver Plumeria Drop Earrings — worn"
-        },
-        {
-          "url": "images/Silver_plumeria_1.png",
-          "alt": "Silver Plumeria Drop Earrings — product"
-        }
-      ],
-      "available": true,
-      "aiNote": false,
       "position": 140,
       "published": true
     },
@@ -376,23 +351,23 @@
       "published": true
     },
     {
-      "sku": "BP-STUDIO-003",
-      "name": "Blue Ombré Crystal Necklace",
-      "price": 55.0,
+      "sku": "BP-STUDIO-001",
+      "name": "Silver Plumeria Drop Earrings",
+      "price": 85.0,
       "collection": "sea-shore",
       "tier": "signature",
-      "label": "Studio Series",
+      "label": "Signature Piece",
       "maxQuantity": 1,
       "itemUrl": "/shop.html",
-      "cartImage": "images/blue_bracelet_1.png",
+      "cartImage": "images/Silver_plumeria_1.png",
       "images": [
         {
-          "url": "images/blue_bracelet_2.png",
-          "alt": "Blue Ombré Crystal Necklace — worn"
+          "url": "images/Silver_plumeria_2.png",
+          "alt": "Silver Plumeria Drop Earrings — worn"
         },
         {
-          "url": "images/blue_bracelet_1.png",
-          "alt": "Blue Ombré Crystal Necklace — product"
+          "url": "images/Silver_plumeria_1.png",
+          "alt": "Silver Plumeria Drop Earrings — product"
         }
       ],
       "available": true,
@@ -540,6 +515,31 @@
       "available": true,
       "aiNote": false,
       "position": 220,
+      "published": true
+    },
+    {
+      "sku": "BP-STUDIO-003",
+      "name": "Blue Ombré Crystal Necklace",
+      "price": 55.0,
+      "collection": "sea-shore",
+      "tier": "signature",
+      "label": "Studio Series",
+      "maxQuantity": 1,
+      "itemUrl": "/shop.html",
+      "cartImage": "images/blue_bracelet_1.png",
+      "images": [
+        {
+          "url": "images/blue_bracelet_2.png",
+          "alt": "Blue Ombré Crystal Necklace — worn"
+        },
+        {
+          "url": "images/blue_bracelet_1.png",
+          "alt": "Blue Ombré Crystal Necklace — product"
+        }
+      ],
+      "available": true,
+      "aiNote": false,
+      "position": 230,
       "published": true
     }
   ]
