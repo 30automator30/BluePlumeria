@@ -7,7 +7,7 @@ Paste everything below the line into a new Claude Code session. Running it local
 You're continuing 3D-print design work for **Blue Plumeria** (Amy's jewelry business). Everything lives in the `BluePlumeria` repo under `3d-prints/`, on branch `ccr-3ea93a43-bwsqz4`. Amy's local working copy is `I:\Lost Pines Creative\BluePlumeria`; sliced CHITUBOX files are in `I:\Lost Pines Creative\BluePlumeria\3D prints`.
 
 **Read these first:**
-- `3d-prints/CLAUDE.md`: the rules (approval renders before final builds, watertight and connected parts, printability minimums, supports, file sizes).
+- `3d-prints/CLAUDE.md`: the rules (approval renders before final builds, watertight and connected parts, printability minimums, supports, file sizes), the step-by-step workflow for every new piece, and where the shared code lives.
 - `3d-prints/LESSONS_LEARNED.md`: everything learned so far: design workflow, the bugs that cost the most time, supports, support-free gyroid design, and checking `.ctb` files.
 
 **Equipment:** Elegoo **Saturn 4 Ultra** (resin, 218.88 × 122.88 × 220 mm build volume), sliced in **CHITUBOX**. CHITUBOX allows one bound device per account; if login fails, unbind the old device in the Devices dialog. Amy currently uses Elegoo **standard** resin and plans to get tough/ABS-like or castable resin.
@@ -20,6 +20,14 @@ You're continuing 3D-print design work for **Blue Plumeria** (Amy's jewelry busi
 | `openwork-band/` | Pierced openwork plumeria band, 30 mm front section |
 | `gyroid-pendant/` | Self-supporting gyroid plumeria pendant. v2 is current (pointed pinwheel petals, 2.6 mm thick); it prints with no supports and verifies with 0 islands. |
 | `fractal-plumeria/` | 158 mm lattice plumeria sculpture: `lattice_plumeria.py` (bloom + body); `print_prep.py` is an experimental support generator that over-supports, so don't use it for real prints |
+| `echo-series/` | Plumeria Echo series: strung pieces on a spine, epoxy beds |
+| `hibiscus-bonsai/` | Braided hibiscus bonsai in a pot; printed clean with no supports |
+| `bird-of-paradise/` | Tropical arrangement (bird of paradise + pride of Barbados); printed clean |
+| `ohia-bonsai/`, `silversword/`, `honu/` | Sculptures with final builds (tiled fine meshes, island repair); not yet printed |
+| `wave-suncatcher/` | 150 mm stained-glass coast suncatcher, printed clear and hand-painted; final STL delivered |
+| `stained-glass/` | The suncatcher engine and the how-to for new suncatchers |
+| `nalu/` | Surfer on a wave: on hold (human figures didn't work out) |
+| `tools/` | Shared tools: `render_views.py`, `slice_check.py`, `ctb_check.py` |
 
 **Current state and decisions:**
 1. **Ring sizes ran small.** A printed US 8 measured about 7.25–7.5, so all ring generators now add `FIT_ALLOWANCE = 0.5` mm to the inner diameter (`--fit` changes it). For casting in silver, use about `--fit 0.8` to also cover metal shrinkage. Confirm the fit with a test print before batch printing.
@@ -44,8 +52,8 @@ You're continuing 3D-print design work for **Blue Plumeria** (Amy's jewelry busi
   - `python3 openwork_band.py --size 7 --metal`
   - `python3 gyroid_pendant.py --metal`
 - Check every part: watertight, single body, and no floating islands. The gyroid script re-slices and verifies itself.
-- Show Amy preview renders and get approval before building final files (`plumeria-ring/render_preview.py` renders STLs without a GPU).
-- `.ctb` files can be decoded (the scheme is in the lessons file) to check settings and layers for islands.
+- Show Amy preview renders and get approval before building final files (`tools/render_views.py` renders STLs without a GPU).
+- `.ctb` files can be checked with `tools/ctb_check.py` (settings and layer islands).
 - Commit and push to the branch above. Keep files under 100 MB in git; zip larger ones.
 
 **Possible next steps Amy has discussed:**

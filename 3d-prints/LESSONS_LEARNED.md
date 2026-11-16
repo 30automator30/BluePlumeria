@@ -173,7 +173,7 @@ Every first-round print broke while supports were removed. The support contacts 
 
 ## 6. Checking CHITUBOX .ctb files
 
-Claude can read encrypted CHITUBOX `.ctb` files: settings, preview image and every layer. The decryption scheme is the one documented in the open-source UVtools project (AES-CBC settings block, per-layer XOR plus RLE). Workflow:
+Claude can read encrypted CHITUBOX `.ctb` files: settings, preview image and every layer. Use `tools/ctb_check.py file.ctb`, which prints the settings and runs the island check below. The decryption scheme is the one documented in the open-source UVtools project (AES-CBC settings block, per-layer XOR plus RLE). Workflow:
 1. Amy slices in CHITUBOX and sends the `.ctb`.
 2. Claude decodes the settings: printer model, layer height, exposure, lift and anti-aliasing.
 3. Claude decodes all layers and runs the island check (any region with nothing beneath it).
@@ -189,7 +189,8 @@ Writing `.ctb` files from scratch is possible (use a CHITUBOX file as the templa
 - **CHITUBOX allows one bound device per account.** "Login failed" with "can bind: 0" means another computer holds the slot: unbind it in the Devices dialog.
 - **Large STLs:** files over 100 MB can't go to GitHub. Commit generators, READMEs, previews and reasonable-size STLs; send huge files as zips.
 - **Long builds** (full-resolution sculpture parts take 4–5 minutes each; supports take longer) should run in the background with progress checks, not as one blocking command.
-- **Point-splat renders** (sampling dense surface points and drawing them with depth) are good enough for design review, without needing a GPU or Blender.
+- **Point-splat renders** (sampling dense surface points and drawing them with depth) are good enough for design review, without needing a GPU or Blender. Use `tools/render_views.py`.
+- **Keep every script in the repo.** Helper scripts written in a session's scratch folder (render panels, island checks, the `.ctb` decoder) were lost between sessions until they were moved into `tools/`. Anything a build or check needs belongs in the repo.
 
 ## 8. Where things live
 
@@ -204,7 +205,13 @@ Writing `.ctb` files from scratch is possible (use a CHITUBOX file as the templa
 | ʻŌhiʻa lehua bonsai with ʻiʻiwi | `ohia-bonsai/` | `ohia_bonsai.py` (tree + pot), `final_build.py` (fine blossoms and bird, island repair, lite copy, STL-weld check) |
 | ʻĀhinahina (silversword) with nēnē | `silversword/` | `silversword.py` (spike, rosettes, nēnē, plinth), `final_build.py` (tiled 0.06 mm build, island repair, lite copy), `patch_islands.py` (pin late islands) |
 | Honu over coral | `honu/` | `honu.py` (turtle, coral, limu, sand base), `final_build.py` (tiled 0.08 mm build, lite copy), `patch_islands.py` (shortest-post island pins) |
-| Coast suncatcher (stained glass, painted) | `wave-suncatcher/` | `suncatcher.py` (region map, warped-Voronoi cut pattern, lead lines, paint guide) |
+| Coast suncatcher (stained glass, painted) | `wave-suncatcher/` | `suncatcher.py` (the scene), drawn with the `stained-glass/` engine |
+| Stained-glass engine | `stained-glass/` | `stained_glass.py` (pieces, lead lines, frame, loop, paint guide, final build); `README.md` is the how-to for new suncatchers |
+| Hibiscus bonsai | `hibiscus-bonsai/` | `bonsai_hibiscus.py` (braided trunk, flower, pot) |
+| Hibiscus sculpture (draft, superseded by the bonsai) | `hibiscus-sculpture/` | `hibiscus_sculpture.py` |
+| Tropical arrangement (bird of paradise) | `bird-of-paradise/` | `bird_of_paradise.py`, `final_build.py` |
+| Nalu, surfer on a wave (on hold) | `nalu/` | `nalu.py` (wave), `surfer.py` and `human.py` (MakeHuman figure) |
+| Shared tools | `tools/` | `render_views.py` (previews), `slice_check.py` (STL islands), `ctb_check.py` (CHITUBOX files) |
 
 ### 5k. Nalu (surfer on a wave): on hold
 

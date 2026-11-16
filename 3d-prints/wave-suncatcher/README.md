@@ -12,7 +12,7 @@ The scene is original, in a hand-cut stained-glass style:
 
 | File | What it is |
 |---|---|
-| `suncatcher.py` | The generator. `--voxel 0.2 --preview` gives a quick look. `--voxel 0.1` is the final build, and `--guide-only` makes just the paint guide. |
+| `suncatcher.py` | The scene, drawn with the shared engine `../stained-glass/stained_glass.py`. `--guide-only` makes just the paint guide, `--voxel 0.2 --preview` gives a quick look, and `--voxel 0.1` is the final build. |
 | `wave_suncatcher.stl.zip` | The final STL, zipped. Unsupported and not oriented: lay it out as below. |
 | `paint_guide.png` | Left: the painted mock-up with suggested colours. Right: the lead lines as printed, for planning colours. |
 | `preview_stained.png` | Renders of the clear print. |
@@ -25,7 +25,7 @@ The scene is original, in a hand-cut stained-glass style:
 - **Loop:** a 4 mm hanging hole at the top.
 - **Pieces:** about 255. Any piece smaller than 5 mm² or thinner than about 2.3 mm is merged into a neighbour, so every piece can be reached with a fine brush or a paint bottle with a fine tip.
 - **How it's drawn:** the scene is a map of labelled regions. Big areas (sky, sea, rocks, surf) are cut into irregular pieces by a Voronoi pattern measured in a gently warped, stretched space, so the cuts bow like hand-cut glass and lie along the way each thing flows. The rays, cliff strips, flowers and leaves are drawn directly. Lead lines run along every boundary, plus a few free lines: the hibiscus veins and stamens.
-- **Resolution:** the design is always drawn at 0.2 mm (`DESIGN_RES`), because the cut pattern depends on the pitch. The final mesh resamples the smoothed line field onto a 0.1 mm grid, so the final matches the approved preview.
+- **Resolution:** the design is always drawn at 0.2 mm (`FRAME.design_res`), because the cut pattern depends on the pitch. The final mesh resamples the smoothed line field onto a 0.1 mm grid, so the final matches the approved preview.
 
 ## Printing
 - **Orientation:** stand it up with the loop on top. Lean it 30–45° from vertical so that, in CHITUBOX, the painted face looks up and the back faces the build plate.
@@ -37,5 +37,5 @@ The scene is original, in a hand-cut stained-glass style:
 - **Mesh:** 0.1 mm voxels, then decimated with `manifold3d`. 1.44M faces, watertight after an STL save and reload, one body, consistent winding.
 - **Size and resin:** 38.1 mL, 150.0 × 162.6 × 4.4 mm.
 - **Matches the preview:** the cut pattern is the approved one (the paint guide is pixel-identical) and has 253 pieces.
-- **Slice check:** stood up with the loop on top, at 0°, 30° and 45° lean, every layer touches the one below, so there are no islands. The only start point is the bottom of the frame, which the supports hold.
+- **Slice check:** `../tools/slice_check.py wave_suncatcher.stl --stand --lean 0 30 45 --layer 0.1 --xy 0.1` slices it the way the printer will, stood up with the loop on top. It finds no islands at 0°, 30° or 45° lean; the only start point is the bottom of the frame, which the supports hold. Standing straight up (0°) leaves a 37 mm² overhang ledge at the loop and frame top, against 1.6 mm² at 30–45°, so lean it.
 - **File:** the STL is 72 MB, zipped to 29 MB.
