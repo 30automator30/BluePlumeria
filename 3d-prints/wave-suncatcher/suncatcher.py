@@ -291,21 +291,26 @@ def design(res):
     # buttresses, jungle on top
     def tri(t):
         return 2 * np.abs(t - np.floor(t + 0.5))
-    top = 42 - 0.10 * (X + 70) + 7 * tri(X / 9.0 + 0.3) + 2.2 * tri(X / 3.1) + 1.5 * np.sin(X / 7)
-    face = -25 + 0.30 * (40 - Y) + 3.2 * tri(Y / 7.0) + 1.4 * tri(Y / 2.6) + 1.0 * np.sin(Y / 4.0)
+    # long, gently curving vertical strips running down the cliff, like
+    # streaked brown glass, each cut once or twice on a slant
+    top = 42 - 0.12 * (X + 70) + 2.5 * np.sin(X / 8.0 + 0.5) + 1.2 * np.sin(X / 3.7)
+    face = -25 + 0.30 * (40 - Y) + 1.6 * np.sin(Y / 6.0)
     cliff = (X < face) & (Y < top) & (Y > -34 + 6 * np.sin((X + 70) / 18.0) + 0.25 * (X + 70))
-    colc = (X + 0.42 * (40 - Y) + 3.0 * tri(Y / 9.0) + 0.8 * tri(Y / 4.3)) / 12.5
-    col = np.floor(colc).astype(int)
-    lit = (colc - col) < 0.42
-    ledge = np.floor((Y + 0.35 * X + 2.5 * tri(X / 8.0)) / 21.0).astype(int)
-    for k in np.unique(col[cliff]):
-        for li in (True, False):
-            for lg in np.unique(ledge[cliff & (col == k)]):
-                m = cliff & (col == k) & (lit == li) & (ledge == lg)
-                if m.sum() * res * res < 4:
-                    continue
-                shatter(M, m, "rock_lit" if li else "rock_dk", 6.0, ang=np.radians(78), stretch=2.4, amp=0.6,
-                        seed=100 + 7 * int(k) + 3 * int(lg) + int(li))
+    sx = X + 0.22 * (40 - Y) + 2.2 * np.sin(Y / 11.0) + 1.0 * np.sin(Y / 5.3 + X / 9.0)
+    srng = np.random.default_rng(21)
+    edges_x = np.cumsum(np.r_[-90.0, srng.uniform(7.0, 11.0, 14)])
+    strip = np.digitize(sx, edges_x)
+    tones = ["rock_lit", "rock", "rock_dk"]
+    for k in np.unique(strip[cliff]):
+        m = cliff & (strip == k)
+        ys = Y[m]
+        y0, y1 = ys.min(), ys.max()
+        ncut = 1 if y1 - y0 < 35 else 2
+        cuts = np.sort(srng.uniform(0.25, 0.75, ncut)) * (y1 - y0) + y0
+        slope = srng.choice([-1, 1]) * srng.uniform(0.5, 1.0)
+        seg = np.digitize(Y + slope * (X - X[m].mean()), cuts)
+        for j in range(ncut + 1):
+            M.paint(m & (seg == j), tones[srng.integers(3)])
     green = cliff & ((Y > top - 11 - 3 * np.sin(X / 4.0)) | ((X > face - 5 - 2 * np.sin(Y / 3)) & (Y > 24) & (Y < top)))
     jungle_x = [(-64, 47, 11, 60), (-54, 50, 12, 85), (-44, 49, 11, 70), (-34, 45, 10, 30), (-60, 38, 9, 150),
                 (-27, 37, 8, -20), (-49, 41, 9, 120), (-22, 30, 7, -40)]
