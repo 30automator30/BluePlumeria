@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-3TWSTSRBSR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-3TWSTSRBSR');
+  </script>
+  <title>Accessibility — Blue Plumeria</title>
+  <meta name="description" content="How Blue Plumeria makes its website usable for everyone, what we have tested, known limitations, and how to reach us if anything is hard to use.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+  <!-- Social sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Accessibility — Blue Plumeria">
+  <meta property="og:description" content="Our accessibility statement: what we aim for, what we have tested, and how to reach us.">
+  <meta property="og:image" content="images/LavaStone_2.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Accessibility — Blue Plumeria">
+  <meta name="twitter:description" content="Our accessibility statement: what we aim for, what we have tested, and how to reach us.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://cdn.snipcart.com">
+  <noscript><style>.reveal{opacity:1 !important;transform:none !important}</style></noscript>
+</head>
+<body>
+
+  <a href="#main-content" class="skip-link">Skip to content</a>
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <a href="index.html">
+      <img src="images/logo.png" alt="Blue Plumeria" class="logo">
+    </a>
+  </header>
+
+  <!-- ── Navigation ── -->
+  <nav class="site-nav">
+    <div class="container">
+      <button class="hamburger" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="shop.html">Studio</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <button class="nav-cart snipcart-checkout" aria-label="Cart">
+        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="cart-count snipcart-items-count">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <main id="main-content">
+
+  <section class="about-hero">
+    <h1>Accessibility</h1>
+  </section>
+
+  <section class="section-padding">
+    <div class="container legal-page">
+
+      <p class="legal-updated">Last tested and updated: 27 November 2026</p>
+
+      <h2>Our aim</h2>
+      <p>We want everyone to be able to browse the collection, read about the studio, and place an order, including people who use a screen reader, a keyboard instead of a mouse, magnification, or reduced-motion settings.</p>
+      <p>We aim to meet the <a href="https://www.w3.org/TR/WCAG22/">Web Content Accessibility Guidelines (WCAG) 2.2</a> at Level AA. This is a goal we work toward and test against, not a certification.</p>
+
+      <h2>What we have done</h2>
+      <ul>
+        <li>Every product photo has a text description.</li>
+        <li>Text colours meet the WCAG AA contrast minimum. We darkened two greys on 27 November 2026 to get there.</li>
+        <li>A "Skip to content" link lets keyboard users jump past the menu.</li>
+        <li>If your device is set to reduce motion, our scrolling animations switch off.</li>
+        <li>Pages work at phone width and when zoomed in.</li>
+      </ul>
+
+      <h2>How we test</h2>
+      <p>On 27 November 2026 we tested the home, studio (shop), about and contact pages with the axe-core automated checker, at desktop and phone screen sizes. After the colour fixes above, it found no issues. Automated tools catch only part of what matters, so we also check pages by hand with a keyboard, and we re-test whenever we change the site.</p>
+
+      <h2>Known limitations</h2>
+      <ul>
+        <li><strong>Cart and checkout.</strong> The cart and checkout are provided by our shop platform, Snipcart. We have not yet finished a full keyboard and screen-reader test of them.</li>
+        <li><strong>"Ask the studio" chat.</strong> The chat assistant has not yet been tested with screen readers.</li>
+      </ul>
+      <p>If either of these gets in your way, email us and we will take your order directly.</p>
+
+      <h2>Tell us if something is hard to use</h2>
+      <p>If any part of this site is difficult for you to use, or you'd like product details in another format, please email <a href="mailto:hello@blue-plumeria.com?subject=Accessibility">hello@blue-plumeria.com</a>. Tell us the page and what happened. We'll reply as soon as we can, help you get what you need, and fix the problem.</p>
+
+    </div>
+  </section>
+
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>Studio</h4>
+          <a href="shop.html">View Collection</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="about.html">Our Story</a>
+          <a href="contact.html">Contact</a>
+          <a href="accessibility.html">Accessibility</a>
+        </div>
+        <div class="footer-col">
+          <h4>Connect</h4>
+          <p>Follow along for new drops, behind-the-scenes peeks, and more.</p>
+          <div class="social-links">
+            <a href="#" aria-label="Instagram">
+              <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            </a>
+            <a href="#" aria-label="Facebook">
+              <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385h-3.047v-3.47h3.047v-2.642c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953h-1.514c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385c5.738-.9 10.126-5.864 10.126-11.854z"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; 2026 Blue Plumeria. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Snipcart — loads on first user interaction -->
+  <script>
+    window.SnipcartSettings = {
+      publicApiKey: 'ZDM4ZTlmYTYtNGQzMi00MDU1LTlmZWYtMzM0ZDJkOGJkZjA2NjM5MTg3NzgwMTA4ODEzNjky',
+      loadStrategy: 'on-user-interaction',
+      modalStyle: 'side',
+    };
+
+    (()=>{var c,d;(d=(c=window.SnipcartSettings).version)!=null||(c.version="3.0");var s,S;(S=(s=window.SnipcartSettings).timeoutDuration)!=null||(s.timeoutDuration=2750);var l,p;(p=(l=window.SnipcartSettings).domain)!=null||(l.domain="cdn.snipcart.com");var w,u;(u=(w=window.SnipcartSettings).protocol)!=null||(w.protocol="https");var f=window.SnipcartSettings.version.includes("v3.0.0-ci")||window.SnipcartSettings.version!="3.0"&&window.SnipcartSettings.version.localeCompare("3.4.0",void 0,{numeric:!0,sensitivity:"base"})===-1,m=["focus","mouseover","touchmove","scroll","keydown"];window.LoadSnipcart=o;document.readyState==="loading"?document.addEventListener("DOMContentLoaded",r):r();function r(){window.SnipcartSettings.loadStrategy?window.SnipcartSettings.loadStrategy==="on-user-interaction"&&(m.forEach(t=>document.addEventListener(t,o)),setTimeout(o,window.SnipcartSettings.timeoutDuration)):o()}var a=!1;function o(){if(a)return;a=!0;let t=document.getElementsByTagName("head")[0],e=document.querySelector("#snipcart"),i=document.querySelector(`src[src^="${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}"][src$="snipcart.js"]`),n=document.querySelector(`link[href^="${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}"][href$="snipcart.css"]`);e||(e=document.createElement("div"),e.id="snipcart",e.setAttribute("hidden","true"),document.body.appendChild(e)),v(e),i||(i=document.createElement("script"),i.src=`${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}/themes/v${window.SnipcartSettings.version}/default/snipcart.js`,i.async=!0,t.appendChild(i)),n||(n=document.createElement("link"),n.rel="stylesheet",n.type="text/css",n.href=`${window.SnipcartSettings.protocol}://${window.SnipcartSettings.domain}/themes/v${window.SnipcartSettings.version}/default/snipcart.css`,t.prepend(n)),m.forEach(g=>document.removeEventListener(g,o))}function v(t){!f||(t.dataset.apiKey=window.SnipcartSettings.publicApiKey,window.SnipcartSettings.addProductBehavior&&(t.dataset.configAddProductBehavior=window.SnipcartSettings.addProductBehavior),window.SnipcartSettings.modalStyle&&(t.dataset.configModalStyle=window.SnipcartSettings.modalStyle),window.SnipcartSettings.currency&&(t.dataset.currency=window.SnipcartSettings.currency),window.SnipcartSettings.templatesUrl&&(t.dataset.templatesUrl=window.SnipcartSettings.templatesUrl))}})();
+  </script>
+  <!-- Cloudflare Web Analytics -->
+  <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "38a6ebb3dcc84f76a18885ecca1cf73b"}'></script>
+  <!-- End Cloudflare Web Analytics -->
+  <script src="js/main.js"></script>
+  <!-- AI receptionist (floating studio assistant) -->
+  <script src="js/receptionist.js" defer></script>
+</body>
+</html>
