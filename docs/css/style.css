@@ -15,7 +15,7 @@
   --sand:         #ECE4D6;   /* deeper neutral */
   --ink:          #1C1712;   /* warm near-black — body + dark surfaces */
   --ink-soft:     #3A332B;
-  --muted:        #8A7F6E;   /* warm gray for secondary text */
+  --muted:        #6D6457;   /* warm gray for secondary text (darkened from #8A7F6E for WCAG AA: >=4.5:1 on paper, bone and sand) */
   --border:       #E4DBCC;   /* warm hairline */
 
   /* Brand accents — one dominant metallic (gold), slate as support */
@@ -922,7 +922,7 @@ p { text-wrap: pretty; }
   text-align: center;
   font-size: 0.74rem;
   letter-spacing: 0.04em;
-  color: #746b5c;
+  color: #8c816f; /* lightened from #746b5c for WCAG AA (4.65:1 on --ink) */
 }
 
 /* ── Scroll-reveal (progressive enhancement; base state visible) ── */
