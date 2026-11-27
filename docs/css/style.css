@@ -877,6 +877,7 @@ p { text-wrap: pretty; }
 /* ── Text pages (accessibility statement, policies) ── */
 .legal-page { max-width: 720px; }
 .legal-page h2 { font-size: 1.9rem; margin: 2.75rem 0 0.9rem; }
+.legal-page h3 { font-size: 1.35rem; margin: 1.6rem 0 0.5rem; }
 .legal-page p, .legal-page li { line-height: 1.8; margin-bottom: 1rem; }
 .legal-page ul { list-style: disc; padding-left: 1.4rem; margin-bottom: 1rem; }
 .legal-page a { color: var(--slate-deep); text-decoration: underline; text-underline-offset: 3px; }
@@ -900,6 +901,8 @@ p { text-wrap: pretty; }
   line-height: 1.6;
 }
 .consent-text { margin: 0 0 0.9rem; }
+.consent-text a { color: var(--bone); text-decoration: underline; text-underline-offset: 3px; }
+.consent-text a:hover { color: var(--gold); }
 .consent-actions { display: flex; gap: 0.6rem; }
 /* Accept and Decline share one style on purpose: no nudging. */
 .consent-btn {
