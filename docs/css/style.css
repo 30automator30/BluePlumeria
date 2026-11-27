@@ -874,6 +874,15 @@ p { text-wrap: pretty; }
 }
 .social-links svg { width: 17px; height: 17px; fill: currentColor; }
 
+/* ── Text pages (accessibility statement, policies) ── */
+.legal-page { max-width: 720px; }
+.legal-page h2 { font-size: 1.9rem; margin: 2.75rem 0 0.9rem; }
+.legal-page p, .legal-page li { line-height: 1.8; margin-bottom: 1rem; }
+.legal-page ul { list-style: disc; padding-left: 1.4rem; margin-bottom: 1rem; }
+.legal-page a { color: var(--slate-deep); text-decoration: underline; text-underline-offset: 3px; }
+.legal-page a:hover { color: var(--gold-deep); }
+.legal-updated { color: var(--muted); font-size: 0.85rem; letter-spacing: 0.04em; }
+
 /* ── Footer ── */
 .site-footer {
   background: var(--ink);
