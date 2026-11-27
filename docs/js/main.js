@@ -364,8 +364,9 @@ document.addEventListener('DOMContentLoaded', () => {
      event is sent — never a thrown error.
      ──────────────────────────────────────── */
   (function snipcartToGA4() {
-    // gtag() ships in each page's <head>. Send only if it's
-    // actually present so a privacy blocker can't break this.
+    // gtag() exists only after the visitor accepts analytics
+    // (js/consent.js). Send only if it's present, so declining or
+    // a privacy blocker simply means no event.
     const track = (name, params) => {
       if (typeof window.gtag === 'function') window.gtag('event', name, params);
     };
