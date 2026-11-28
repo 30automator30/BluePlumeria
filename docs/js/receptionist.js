@@ -83,6 +83,7 @@
   '.bp-rcp-send:disabled{opacity:.4;cursor:default}' +
   '.bp-rcp-send svg{width:18px;height:18px}' +
   '.bp-rcp-note{margin:.45rem 2px 0;font-size:.66rem;color:var(--muted,#8A7F6E);text-align:center;font-weight:300}' +
+  '.bp-rcp-note a{color:inherit;text-decoration:underline}' +
   '@media(max-width:480px){.bp-rcp-panel{right:8px;left:8px;bottom:82px;width:auto;max-width:none;' +
     'height:calc(100vh - 100px);height:calc(100dvh - 100px);max-height:none}' +
     '.bp-rcp-form textarea{font-size:16px}' +  // under 16px, iOS zooms the page on focus
@@ -106,7 +107,7 @@
           '<textarea rows="1" placeholder="Type your message…" aria-label="Your message"></textarea>' +
           '<button type="submit" class="bp-rcp-send" aria-label="Send">' + sendIcon() + '</button>' +
         '</form>' +
-        '<p class="bp-rcp-note">AI assistant — replies may be imperfect. Email hello@blue-plumeria.com anytime.</p>' +
+        '<p class="bp-rcp-note">AI assistant (Claude, by Anthropic). Replies may be imperfect. We don\'t save chats unless you ask us to contact you. <a href="privacy.html">Privacy</a> · Email hello@blue-plumeria.com anytime.</p>' +
       '</div>' +
     '</section>';
   document.body.appendChild(root);

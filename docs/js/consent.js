@@ -84,7 +84,8 @@
     box.innerHTML =
       '<p class="consent-text">May we use Google Analytics cookies to see which pieces people ' +
       'look at and how the shop is used? Nothing is sent to Google unless you choose Accept. ' +
-      'You can change your mind any time with “Cookie settings” at the bottom of the page.</p>' +
+      'You can change your mind any time with “Cookie settings” at the bottom of the page. ' +
+      '<a href="privacy.html">Privacy policy</a></p>' +
       '<div class="consent-actions">' +
       '<button type="button" class="consent-btn" data-consent="granted">Accept</button>' +
       '<button type="button" class="consent-btn" data-consent="denied">Decline</button>' +
